@@ -1,0 +1,141 @@
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="10dp"
+    app:cardElevation="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardBackgroundColor="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+        <!-- Doctor's Details Layout -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- Doctor Image -->
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/doctorImage"
+                android:layout_width="110dp"
+                android:layout_height="110dp"
+                android:layout_marginStart="20dp"
+                android:src="@drawable/main1"
+                app:civ_border_color="@color/blue"
+                app:civ_border_width="2dp" />
+
+            <!-- Doctor Info -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="25dp"
+                android:orientation="vertical"
+                android:padding="10dp">
+
+                <TextView
+                    android:id="@+id/doctorName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Dr. Tranquilli"
+                    android:textColor="@color/black"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/doctorSpecialty"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Specialist Medicine"
+                    android:textColor="@color/black"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/appointmentDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="22 June 2024"
+                    android:textColor="@color/black"
+                    android:textSize="15sp" />
+
+                <TextView
+                    android:id="@+id/appointmentPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₹ 540 /-"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Button Layout -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginHorizontal="10dp"
+            android:layout_marginTop="6dp">
+
+            <Button
+                android:id="@+id/viewDetailsButton"
+                android:layout_width="400dp"
+                android:layout_height="50dp"
+                android:text="View Details"
+                android:backgroundTint="@color/blue"
+                android:textColor="@android:color/white"/>
+        </LinearLayout>
+        <!-- Hidden Buttons (Initially GONE) -->
+        <LinearLayout
+            android:id="@+id/detailsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+
+            <Button
+                android:id="@+id/btnViewBill"
+                android:layout_width="350dp"
+                android:layout_height="50dp"
+                android:text="View Bill"
+                android:backgroundTint="@color/blue"
+                android:textColor="@android:color/white"/>
+
+
+
+            <Button
+                android:id="@+id/btnViewReport"
+                android:layout_width="350dp"
+                android:layout_height="50dp"
+                android:text="View Medical Report"
+                android:backgroundTint="@color/blue"
+                android:textColor="@android:color/white"/>
+
+
+            <Button
+                android:id="@+id/btnViewProfile"
+                android:layout_width="350dp"
+                android:layout_height="50dp"
+                android:text="View Doctor Profile"
+                android:backgroundTint="@color/blue"
+                android:textColor="@android:color/white"/>
+
+
+
+
+
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

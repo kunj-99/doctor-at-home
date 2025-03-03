@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/payments1"
+        android:title="Payments"
+        android:icon="@drawable/dr_payments" />
+    <item
+        android:id="@+id/records1"
+        android:title="Pathology Test"
+        android:icon="@drawable/dr_pathology_test"/>
+    <item
+        android:id="@+id/policy"
+        android:title="Privacy Policy"
+        android:icon="@drawable/dr_privacy_policy"/>
+    <item
+        android:id="@+id/notification"
+        android:title="Terms and Conditions"
+        android:icon="@drawable/dr_terms_and_conditions"/>
+    <item
+        android:id="@+id/support1"
+        android:title="Support"
+        android:icon="@drawable/dr_support"/>
+    <item
+        android:id="@+id/shareapp1"
+        android:title="Share App"
+        android:icon="@drawable/dr_share"/>
+    <item
+        android:id="@+id/rateapp"
+        android:title="Rate App"
+        android:icon="@drawable/dr_rate"/>
+    <item
+        android:id="@+id/aboutus1"
+        android:title="About Us"
+        android:icon="@drawable/dr_about"/>
+    <item
+        android:id="@+id/settings1"
+        android:title="Settings"
+        android:icon="@drawable/dr_setting"/>
+
+    <!-- Logout item -->
+    <item
+        android:id="@+id/logout"
+        android:title="Logout"
+        android:icon="@drawable/dr_logout"
+        android:layout_gravity="bottom" />
+</menu>
