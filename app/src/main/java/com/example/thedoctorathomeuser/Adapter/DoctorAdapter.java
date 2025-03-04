@@ -92,6 +92,8 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
             ratingBar = itemView.findViewById(R.id.doctor_rating);
             image = itemView.findViewById(R.id.civ_profile);
             bookButton = itemView.findViewById(R.id.schedule_button);
+
+
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.thedoctorathomeuser.Adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.thedoctorathomeuser.R;
+import com.example.thedoctorathomeuser.complet_bill;
 
 public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdapter.ViewHolder> {
 
@@ -58,7 +60,8 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         });
 
         holder.btnViewBill.setOnClickListener(v -> {
-            // Handle View Bill Click (Add action here)
+            Intent in = new Intent(context, complet_bill.class);
+            context.startActivity(in);
         });
 
         holder.btnViewReport.setOnClickListener(v -> {
