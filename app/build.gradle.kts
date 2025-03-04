@@ -54,6 +54,8 @@ dependencies {
 
     implementation ("com.android.volley:volley:1.2.1")
 
+    implementation ("com.razorpay:checkout:1.6.26")
+
 }
 
 
