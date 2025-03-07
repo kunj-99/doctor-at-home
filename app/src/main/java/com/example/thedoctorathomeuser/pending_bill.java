@@ -32,6 +32,8 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
     private CFPaymentGatewayService gatewayService;
     private String orderID;
     private String paymentSessionID;
+    private String api = "TEST1049127073b42a1e211a7cabe17207219401";
+    private String secret_api = "cfsk_ma_test_a1ff9b5ff8e6e3f11107cb84b0037b7f_88f81c16";
     private CFSession.Environment cfEnvironment = CFSession.Environment.SANDBOX; // Use sandbox for testing
 
     @Override
@@ -108,8 +110,8 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
                 Map<String, String> headers = new HashMap<>();
                 headers.put("Content-Type", "application/json");
                 headers.put("x-api-version", "2022-09-01");
-                headers.put("x-client-id", "TEST1049127073b42a1e211a7cabe17207219401"); // Your Test Client ID
-                headers.put("x-client-secret", "cfsk_ma_test_a1ff9b5ff8e6e3f11107cb84b0037b7f_88f81c16"); // Your Test Client Secret
+                headers.put("x-client-id", api); // Your Test Client ID
+                headers.put("x-client-secret", secret_api); // Your Test Client Secret
                 return headers;
             }
         };
