@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.thedoctorathomeuser.R;
 import com.example.thedoctorathomeuser.book_form;
+import com.example.thedoctorathomeuser.cancle_appintment;
 import com.example.thedoctorathomeuser.track_doctor;
 
 public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorViewHolder> {
@@ -58,7 +59,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
         holder.cancle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(context,book_form.class);
+                Intent intent = new Intent(context, cancle_appintment.class);
                 context.startActivity(intent);
             }
         });

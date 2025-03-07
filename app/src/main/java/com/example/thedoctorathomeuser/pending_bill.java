@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
@@ -51,7 +50,6 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
             return;
         }
 
-        // Set up Pay button
         Button payButton = findViewById(R.id.pay_button);
         payButton.setOnClickListener(v -> generateSessionToken());
     }

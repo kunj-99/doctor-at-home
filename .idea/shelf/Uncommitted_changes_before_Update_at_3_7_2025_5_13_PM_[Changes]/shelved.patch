@@ -1,0 +1,199 @@
+Index: app/src/main/java/com/example/thedoctorathomeuser/pending_bill.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.thedoctorathomeuser;\r\n\r\nimport android.os.Bundle;\r\nimport android.widget.Button;\r\nimport android.widget.Toast;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport com.razorpay.Checkout;\r\nimport com.razorpay.PaymentResultListener;\r\nimport org.json.JSONObject;\r\n\r\npublic class pending_bill extends AppCompatActivity implements PaymentResultListener {\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_pending_bill);\r\n\r\n        // Initialize Razorpay\r\n        Checkout.preload(getApplicationContext());\r\n\r\n        Button payButton = findViewById(R.id.pay_button);\r\n        payButton.setOnClickListener(v -> startPayment());\r\n    }\r\n\r\n    private void startPayment() {\r\n        Checkout checkout = new Checkout();\r\n        checkout.setKeyID(\"rzp_test_GDMFMRAC3bnneR\"); // Replace with your Razorpay Key ID\r\n\r\n        try {\r\n            JSONObject options = new JSONObject();\r\n            options.put(\"name\", \"Doctor at Home\");\r\n            options.put(\"description\", \"Consultation Fee\");\r\n            options.put(\"currency\", \"INR\");\r\n            options.put(\"amount\", 54000); // Amount in paisa (₹540 * 100)\r\n            options.put(\"prefill.email\", \"user@example.com\");\r\n            options.put(\"prefill.contact\", \"9876543210\");\r\n\r\n            checkout.open(this, options);\r\n        } catch (Exception e) {\r\n            Toast.makeText(this, \"Error in payment: \" + e.getMessage(), Toast.LENGTH_SHORT).show();\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public void onPaymentSuccess(String razorpayPaymentID) {\r\n        Toast.makeText(this, \"Payment Successful: \" + razorpayPaymentID, Toast.LENGTH_SHORT).show();\r\n    }\r\n\r\n    @Override\r\n    public void onPaymentError(int code, String response) {\r\n        Toast.makeText(this, \"Payment Failed: \" + response, Toast.LENGTH_SHORT).show();\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/thedoctorathomeuser/pending_bill.java b/app/src/main/java/com/example/thedoctorathomeuser/pending_bill.java
+--- a/app/src/main/java/com/example/thedoctorathomeuser/pending_bill.java	(revision 47b8d3f6e0409440eb310c438260377ac028d33c)
++++ b/app/src/main/java/com/example/thedoctorathomeuser/pending_bill.java	(date 1741333954805)
+@@ -1,53 +1,90 @@
+ package com.example.thedoctorathomeuser;
+ 
++import android.content.Intent;
+ import android.os.Bundle;
+ import android.widget.Button;
+ import android.widget.Toast;
++
++import androidx.annotation.Nullable;
+ import androidx.appcompat.app.AppCompatActivity;
+-import com.razorpay.Checkout;
+-import com.razorpay.PaymentResultListener;
+-import org.json.JSONObject;
++
++import com.cashfree.pg.api.CFPaymentGatewayService;
++import com.cashfree.pg.core.api.base.CFPayment;
++import com.cashfree.pg.core.api.upi.CFUPIPayment;
++import com.cashfree.pg.core.api.upi.CFUPI;
++import com.cashfree.pg.core.api.CFSession;
++import com.cashfree.pg.core.api.CFSession.Environment;
++import com.cashfree.pg.core.api.exception.CFException;
++import com.cashfree.pg.core.api.exception.CFInvalidArgumentException;
+ 
+-public class pending_bill extends AppCompatActivity implements PaymentResultListener {
++public class PendingBill extends AppCompatActivity {
++
++    private CFPaymentGatewayService gatewayService;
+ 
+     @Override
+     protected void onCreate(Bundle savedInstanceState) {
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_pending_bill);
+ 
+-        // Initialize Razorpay
+-        Checkout.preload(getApplicationContext());
+-
+         Button payButton = findViewById(R.id.pay_button);
+-        payButton.setOnClickListener(v -> startPayment());
+-    }
+-
+-    private void startPayment() {
+-        Checkout checkout = new Checkout();
+-        checkout.setKeyID("rzp_test_GDMFMRAC3bnneR"); // Replace with your Razorpay Key ID
+-
+-        try {
+-            JSONObject options = new JSONObject();
+-            options.put("name", "Doctor at Home");
+-            options.put("description", "Consultation Fee");
+-            options.put("currency", "INR");
+-            options.put("amount", 54000); // Amount in paisa (₹540 * 100)
+-            options.put("prefill.email", "user@example.com");
+-            options.put("prefill.contact", "9876543210");
++        payButton.setOnClickListener(v -> {
++            try {
++                startCashfreePayment();
++            } catch (CFException e) {
++                e.printStackTrace();
++                Toast.makeText(this, "Payment Initialization Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
++            }
++        });
+ 
+-            checkout.open(this, options);
+-        } catch (Exception e) {
+-            Toast.makeText(this, "Error in payment: " + e.getMessage(), Toast.LENGTH_SHORT).show();
++        try {
++            gatewayService = CFPaymentGatewayService.getInstance();
++        } catch (CFException e) {
++            throw new RuntimeException(e);
+         }
+     }
+ 
+-    @Override
+-    public void onPaymentSuccess(String razorpayPaymentID) {
+-        Toast.makeText(this, "Payment Successful: " + razorpayPaymentID, Toast.LENGTH_SHORT).show();
++    private void startCashfreePayment() throws CFException, CFInvalidArgumentException {
++        String orderId = "ORDER" + System.currentTimeMillis();
++        String paymentSessionId = "YOUR_PAYMENT_SESSION_ID"; // Replace with your actual Payment Session ID
++        double orderAmount = 540.00;
++
++        // ✅ Step 1: Create CFSession
++        CFSession cfSession = new CFSession.CFSessionBuilder()
++                .setEnvironment(Environment.SANDBOX) // Change to Environment.PRODUCTION for live mode
++                .setOrderId(orderId)
++                .setSessionToken(paymentSessionId) // Correct method for setting the session token
++                .build();
++
++        // ✅ Step 2: Define UPI Payment Type
++        CFUPI cfupi = new CFUPI.CFUPIBuilder()
++                .setOrderAmount(orderAmount)
++                .build();
++
++        // ✅ Step 3: Create CFUPIPayment using Builder
++        CFUPIPayment payment = new CFUPIPayment.CFUPIPaymentBuilder()
++                .setSession(cfSession)
++                .setUPI(cfupi)
++                .build();
++
++        // ✅ Step 4: Call doPayment() with the CFPayment object
++        gatewayService.doPayment(this, payment);
+     }
+ 
+     @Override
+-    public void onPaymentError(int code, String response) {
+-        Toast.makeText(this, "Payment Failed: " + response, Toast.LENGTH_SHORT).show();
++    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
++        super.onActivityResult(requestCode, resultCode, data);
++
++        if (data != null && data.getExtras() != null) {
++            String status = data.getStringExtra("txStatus");
++            String orderID = data.getStringExtra("orderId");
++
++            if ("SUCCESS".equalsIgnoreCase(status)) {
++                Toast.makeText(this, "Payment Successful! Order ID: " + orderID, Toast.LENGTH_LONG).show();
++            } else if ("FAILED".equalsIgnoreCase(status)) {
++                Toast.makeText(this, "Payment Failed! Order ID: " + orderID, Toast.LENGTH_LONG).show();
++            } else {
++                Toast.makeText(this, "Payment Pending. Order ID: " + orderID, Toast.LENGTH_LONG).show();
++            }
++        }
+     }
+ }
+Index: app/src/main/AndroidManifest.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:tools=\"http://schemas.android.com/tools\">\r\n    <uses-permission android:name=\"android.permission.INTERNET\"/>\r\n    <uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\"\r\n        tools:ignore=\"ScopedStorage\" />\r\n    <uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\"\r\n        android:maxSdkVersion=\"32\"\r\n        tools:ignore=\"ScopedStorage\" />\r\n    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\r\n\r\n\r\n    <application\r\n        android:usesCleartextTraffic=\"true\"\r\n        android:networkSecurityConfig=\"@xml/network_security_config\"\r\n\r\n        android:allowBackup=\"true\"\r\n        android:name=\".MyApp\"\r\n        android:dataExtractionRules=\"@xml/data_extraction_rules\"\r\n        android:fullBackupContent=\"@xml/backup_rules\"\r\n        android:icon=\"@drawable/app_logo\"\r\n        android:label=\"@string/app_name\"\r\n        android:roundIcon=\"@drawable/app_logo\"\r\n        android:supportsRtl=\"true\"\r\n        android:theme=\"@style/Theme.TheDoctorAtHomeUser\"\r\n        tools:targetApi=\"n\"\r\n        tools:ignore=\"WrongManifestParent\">\r\n\r\n        <activity\r\n            android:name=\".complet_bill\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".track_doctor\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".cancle_appintment\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".pending_bill\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".doctor_details\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".available_doctor\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".book_form\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".diseases\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".Profile\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".Rate_app\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".share_app\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".otp_verification\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".Register\"\r\n            android:exported=\"false\" />\r\n        <activity\r\n            android:name=\".login\"\r\n            android:exported=\"true\">\r\n            <intent-filter>\r\n                <action android:name=\"android.intent.action.MAIN\" />\r\n\r\n                <category android:name=\"android.intent.category.LAUNCHER\" />\r\n            </intent-filter>\r\n        </activity>\r\n        <activity\r\n            android:name=\".MainActivity\"\r\n            android:exported=\"true\">\r\n            <intent-filter>\r\n                <action android:name=\"android.intent.action.MAIN\" />\r\n\r\n                <category android:name=\"android.intent.category.LAUNCHER\" />\r\n            </intent-filter>\r\n        </activity>\r\n\r\n        <meta-data\r\n            android:name=\"com.google.android.maps.v2.API_KEY\"\r\n            android:value=\"AlzaSy01q7enExdYHYWRV4DgMWbGr8i-CTQss3z\" />\r\n        <uses-library android:name=\"org.apache.http.legacy\" android:required=\"false\"/>\r\n      \r\n\r\n    </application>\r\n\r\n</manifest>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+--- a/app/src/main/AndroidManifest.xml	(revision 47b8d3f6e0409440eb310c438260377ac028d33c)
++++ b/app/src/main/AndroidManifest.xml	(date 1741333102413)
+@@ -4,6 +4,9 @@
+     <uses-permission android:name="android.permission.INTERNET"/>
+     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+         tools:ignore="ScopedStorage" />
++
++    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
++
+     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+         android:maxSdkVersion="32"
+         tools:ignore="ScopedStorage" />
+Index: app/build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>plugins {\r\n    alias(libs.plugins.android.application)\r\n    alias(libs.plugins.google.gms.google.services)\r\n}\r\n\r\nandroid {\r\n    namespace = \"com.example.thedoctorathomeuser\"\r\n    compileSdk = 34\r\n\r\n    defaultConfig {\r\n        applicationId = \"com.example.thedoctorathomeuser\"\r\n        minSdk = 23\r\n        targetSdk = 34\r\n        versionCode = 1\r\n        versionName = \"1.0\"\r\n\r\n        testInstrumentationRunner = \"androidx.test.runner.AndroidJUnitRunner\"\r\n    }\r\n\r\n    buildTypes {\r\n        release {\r\n            isMinifyEnabled = false\r\n            proguardFiles(\r\n                getDefaultProguardFile(\"proguard-android-optimize.txt\"),\r\n                \"proguard-rules.pro\"\r\n            )\r\n        }\r\n    }\r\n    compileOptions {\r\n        sourceCompatibility = JavaVersion.VERSION_11\r\n        targetCompatibility = JavaVersion.VERSION_11\r\n    }\r\n}\r\n\r\ndependencies {\r\n\r\n    implementation(libs.appcompat)\r\n    implementation(libs.material)\r\n    implementation(libs.activity)\r\n    implementation(libs.constraintlayout)\r\n    implementation(libs.credentials)\r\n    implementation(libs.credentials.play.services.auth)\r\n    implementation(libs.googleid)\r\n    testImplementation(libs.junit)\r\n    androidTestImplementation(libs.ext.junit)\r\n    androidTestImplementation(libs.espresso.core)\r\n    implementation (\"de.hdodenhof:circleimageview:3.1.0\")\r\n    implementation (\"com.google.android.gms:play-services-maps:18.1.0\")\r\n\r\n\r\n    implementation (\"com.google.firebase:firebase-auth:23.2.0\")\r\n    implementation (\"com.google.firebase:firebase-core:21.1.1\")\r\n    implementation(platform(\"com.google.firebase:firebase-bom:33.9.0\"))\r\n\r\n    implementation (\"com.android.volley:volley:1.2.1\")\r\n\r\n    implementation (\"com.razorpay:checkout:1.6.26\")\r\n\r\n}\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+--- a/app/build.gradle.kts	(revision 47b8d3f6e0409440eb310c438260377ac028d33c)
++++ b/app/build.gradle.kts	(date 1741329265257)
+@@ -53,6 +53,10 @@
+     implementation(platform("com.google.firebase:firebase-bom:33.9.0"))
+ 
+     implementation ("com.android.volley:volley:1.2.1")
++    implementation ("com.cashfree.pg:api:2.1.27")
++
++
++
+ 
+     implementation ("com.razorpay:checkout:1.6.26")
+ 
+Index: app/src/main/java/com/example/thedoctorathomeuser/Adapter/OngoingAdapter.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.thedoctorathomeuser.Adapter;\r\n\r\nimport android.content.Context;\r\nimport android.content.Intent;\r\nimport android.view.LayoutInflater;\r\nimport android.view.View;\r\nimport android.view.ViewGroup;\r\nimport android.widget.Button;\r\nimport android.widget.ImageView;\r\nimport android.widget.RatingBar;\r\nimport android.widget.TextView;\r\n\r\nimport androidx.annotation.NonNull;\r\nimport androidx.recyclerview.widget.RecyclerView;\r\n\r\nimport com.example.thedoctorathomeuser.R;\r\nimport com.example.thedoctorathomeuser.book_form;\r\nimport com.example.thedoctorathomeuser.track_doctor;\r\n\r\npublic class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorViewHolder> {\r\n\r\n    private final String[] names;\r\n    private final String[] specialties;\r\n    private final String[] hospitals;\r\n    private final float[] ratings;\r\n    private final int[] imageResIds;\r\n\r\n    private final Context context;\r\n\r\n\r\n\r\n\r\n    // Constructor\r\n    public OngoingAdapter(Context context, String[] names, String[] specialties, String[] hospitals, float[] ratings, int[] imageResIds) {\r\n        this.context = context;\r\n        this.names = names;\r\n        this.specialties = specialties;\r\n        this.hospitals = hospitals;\r\n        this.ratings = ratings;\r\n        this.imageResIds = imageResIds;\r\n    }\r\n\r\n    @NonNull\r\n    @Override\r\n    public DoctorViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {\r\n        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_ongoing, parent, false);\r\n        return new DoctorViewHolder(view);\r\n    }\r\n\r\n    @Override\r\n    public void onBindViewHolder(@NonNull DoctorViewHolder holder, int position) {\r\n        holder.name.setText(names[position]);\r\n        holder.specialty.setText(specialties[position]);\r\n        holder.hospital.setText(hospitals[position]);\r\n        holder.ratingBar.setRating(ratings[position]);\r\n        holder.image.setImageResource(imageResIds[position]);\r\n\r\n        holder.cancle.setOnClickListener(new View.OnClickListener() {\r\n            @Override\r\n            public void onClick(View v) {\r\n                Intent intent = new Intent(context,book_form.class);\r\n                context.startActivity(intent);\r\n            }\r\n        });\r\n        holder.track.setOnClickListener(new View.OnClickListener() {\r\n            @Override\r\n            public void onClick(View v) {\r\n                Intent intent = new Intent(context, track_doctor.class);\r\n                context.startActivity(intent);\r\n            }\r\n        });\r\n    }\r\n\r\n    @Override\r\n    public int getItemCount() {\r\n        return names.length;\r\n    }\r\n\r\n    static class DoctorViewHolder extends RecyclerView.ViewHolder {\r\n        TextView name, specialty, hospital;\r\n        RatingBar ratingBar;\r\n        ImageView image;\r\n        Button track , cancle ;\r\n\r\n        public DoctorViewHolder(@NonNull View itemView) {\r\n            super(itemView);\r\n            name = itemView.findViewById(R.id.doctor_name);\r\n            specialty = itemView.findViewById(R.id.doctor_specialty);\r\n            hospital = itemView.findViewById(R.id.doctor_availability);\r\n            ratingBar = itemView.findViewById(R.id.doctor_rating);\r\n            image = itemView.findViewById(R.id.civ_profile);\r\n           track = itemView.findViewById(R.id.Track_button);\r\n           cancle = itemView.findViewById(R.id.Cancel_button);\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/thedoctorathomeuser/Adapter/OngoingAdapter.java b/app/src/main/java/com/example/thedoctorathomeuser/Adapter/OngoingAdapter.java
+--- a/app/src/main/java/com/example/thedoctorathomeuser/Adapter/OngoingAdapter.java	(revision 47b8d3f6e0409440eb310c438260377ac028d33c)
++++ b/app/src/main/java/com/example/thedoctorathomeuser/Adapter/OngoingAdapter.java	(date 1741318545612)
+@@ -15,6 +15,7 @@
+ 
+ import com.example.thedoctorathomeuser.R;
+ import com.example.thedoctorathomeuser.book_form;
++import com.example.thedoctorathomeuser.cancle_appintment;
+ import com.example.thedoctorathomeuser.track_doctor;
+ 
+ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorViewHolder> {
+@@ -58,7 +59,7 @@
+         holder.cancle.setOnClickListener(new View.OnClickListener() {
+             @Override
+             public void onClick(View v) {
+-                Intent intent = new Intent(context,book_form.class);
++                Intent intent = new Intent(context, cancle_appintment.class);
+                 context.startActivity(intent);
+             }
+         });
