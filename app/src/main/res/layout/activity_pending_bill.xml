@@ -295,12 +295,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Pay Button -->
-
-    </LinearLayout>
-</ScrollView>
-
-    <Button
+        <!-- Pay Button -->    <Button
         android:id="@+id/pay_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -311,5 +306,13 @@
         android:textColor="#FFF"
         android:textSize="20sp"
         android:textStyle="bold" />
+
+    </LinearLayout>
+
+
+
+</ScrollView>
+
+
 
 </LinearLayout>
