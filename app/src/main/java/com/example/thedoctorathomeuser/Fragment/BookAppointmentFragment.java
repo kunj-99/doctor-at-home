@@ -1,6 +1,7 @@
 package com.example.thedoctorathomeuser.Fragment;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,11 +31,11 @@ import java.util.List;
 public class BookAppointmentFragment extends Fragment {
 
     private RecyclerView recyclerView;
-    private List<String> degrees = new ArrayList<>();
-    private List<String> fees = new ArrayList<>();
+    private List<String> categoryNames = new ArrayList<>();
+    private List<String> prices = new ArrayList<>();
     private book_AppointmentAdapter adapter;
 
-    private static final String API_URL = "http://yourdomain.com/api/doctor-categories";
+    private static final String API_URL = "http://sxm.a58.mytemp.website/bookappointment.php";
 
     @Nullable
     @Override
@@ -44,7 +45,7 @@ public class BookAppointmentFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        adapter = new book_AppointmentAdapter(getContext(), degrees, fees);
+        adapter = new book_AppointmentAdapter(getContext(), categoryNames, prices);
         recyclerView.setAdapter(adapter);
 
         fetchDoctorCategories();
@@ -57,26 +58,36 @@ public class BookAppointmentFragment extends Fragment {
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, API_URL, null,
                 response -> {
+                    Log.d("API_RESPONSE", "Response: " + response.toString()); // Debugging log
                     parseDoctorCategories(response);
                 },
-                error -> Toast.makeText(getContext(), "Failed to fetch data", Toast.LENGTH_SHORT).show());
+                error -> {
+                    Log.e("API_ERROR", "Volley Error: " + error.toString());
+                    if (error.networkResponse != null) {
+                        String errorData = new String(error.networkResponse.data);
+                        Log.e("API_ERROR", "Error Response: " + errorData);
+                    }
+                    Toast.makeText(getContext(), "Failed to fetch data. Check Logcat.", Toast.LENGTH_LONG).show();
+                });
 
         queue.add(jsonArrayRequest);
     }
 
     private void parseDoctorCategories(JSONArray response) {
-        degrees.clear();
-        fees.clear();
+        categoryNames.clear();
+        prices.clear();
 
         try {
             for (int i = 0; i < response.length(); i++) {
                 JSONObject obj = response.getJSONObject(i);
-                degrees.add(obj.getString("degree"));
-                fees.add("₹" + obj.getString("fee") + "/-");
+                categoryNames.add(obj.getString("category_name"));  // Corrected JSON key
+                prices.add("₹" + obj.getString("price") + "/-");   // Corrected JSON key
             }
             adapter.notifyDataSetChanged();
         } catch (Exception e) {
+            Log.e("JSON_ERROR", "Parsing Error: " + e.getMessage());
             e.printStackTrace();
+            Toast.makeText(getContext(), "Invalid data format from server", Toast.LENGTH_SHORT).show();
         }
     }
 }
