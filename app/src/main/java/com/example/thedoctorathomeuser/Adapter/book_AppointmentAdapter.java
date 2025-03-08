@@ -44,8 +44,11 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
         // Set click listener for the RecyclerView item
         holder.itemView.setOnClickListener(v -> {
             String categoryId = categoryIds.get(position); // Fetch category ID
+            String categoryName = categoryNames.get(position); // Fetch category Name
+
             Intent intent = new Intent(context, diseases.class);
-            intent.putExtra("category_id", categoryId); // Pass category ID to Diseases activity
+            intent.putExtra("category_id", categoryId); // Pass category ID
+            intent.putExtra("category_name", categoryName); // Pass category Name
             context.startActivity(intent);
         });
     }

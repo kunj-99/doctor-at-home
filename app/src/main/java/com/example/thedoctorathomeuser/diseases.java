@@ -3,8 +3,8 @@ package com.example.thedoctorathomeuser;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,33 +26,51 @@ import java.util.List;
 
 public class diseases extends AppCompatActivity {
 
-    private static final String API_URL = "http://sxm.a58.mytemp.website/fetch_diseases.php?category_id="; // Ensure correct PHP file
+    private static final String API_URL = "http://sxm.a58.mytemp.website/fetch_diseases.php?category_id=";
     private RecyclerView recyclerView;
     private DiseaseAdapter adapter;
     private List<String> diseaseList = new ArrayList<>();
     private Button confirm;
-    private String categoryId;
+    private String categoryId, categoryName;
+    private TextView title;  // Add title variable
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_diseases);
 
+        // Initialize UI components
+        title = findViewById(R.id.title);  // Make sure title exists in XML
         confirm = findViewById(R.id.confirm_button);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Get category_id from intent
         categoryId = getIntent().getStringExtra("category_id");
+        categoryName = getIntent().getStringExtra("category_name");
 
+        Log.d("DISEASES_ACTIVITY", "Received categoryId: " + categoryId);
+        Log.d("DISEASES_ACTIVITY", "Received categoryName: " + categoryName);
+
+        if (categoryName != null && !categoryName.isEmpty()) {
+            title.setText(categoryName+ "  General Physician");
+        } else {
+            title.setText("Select a Category");  // More user-friendly default
+            Log.w("DISEASES_ACTIVITY", "Warning: categoryName is missing!");
+        }
+
+
+        // Fetch diseases only if categoryId is valid
         if (categoryId != null) {
             fetchDiseases(categoryId);
         } else {
             Toast.makeText(this, "Error: Category ID not found!", Toast.LENGTH_SHORT).show();
         }
 
+        // Confirm button click listener
         confirm.setOnClickListener(v -> {
             Intent intent = new Intent(diseases.this, available_doctor.class);
+            intent.putExtra("category_id", categoryId);
+            intent.putExtra("category_name", categoryName);
             startActivity(intent);
         });
     }
@@ -64,19 +82,16 @@ public class diseases extends AppCompatActivity {
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
-                        // Clear previous data
                         diseaseList.clear();
 
                         if (response.getBoolean("success")) {
-                            // Extract diseases array from JSON response
                             JSONArray diseasesArray = response.getJSONArray("diseases");
 
                             for (int i = 0; i < diseasesArray.length(); i++) {
                                 JSONObject diseaseObj = diseasesArray.getJSONObject(i);
-                                diseaseList.add(diseaseObj.getString("disease_name"));  // Extract disease name
+                                diseaseList.add(diseaseObj.getString("disease_name"));
                             }
 
-                            // Update RecyclerView
                             adapter = new DiseaseAdapter(diseaseList);
                             recyclerView.setAdapter(adapter);
 

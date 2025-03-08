@@ -13,29 +13,29 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.thedoctorathomeuser.R;
 import com.example.thedoctorathomeuser.book_form;
-import com.example.thedoctorathomeuser.diseases;
 import com.example.thedoctorathomeuser.doctor_details;
+
+import java.util.List;
 
 public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorViewHolder> {
 
-    private final String[] names;
-    private final String[] specialties;
-    private final String[] hospitals;
-    private final float[] ratings;
-    private final int[] imageResIds;
-
     private final Context context;
+    private final List<String> names;
+    private final List<String> specialties;
+    private final List<String> hospitals;
+    private final List<Float> ratings;
+    private final List<String> imageUrls;
 
-    public DoctorAdapter( Context context,String[] names, String[] specialties, String[] hospitals, float[] ratings, int[] imageResIds) {
+    public DoctorAdapter(Context context, List<String> names, List<String> specialties, List<String> hospitals, List<Float> ratings, List<String> imageUrls) {
         this.context = context;
         this.names = names;
         this.specialties = specialties;
         this.hospitals = hospitals;
         this.ratings = ratings;
-        this.imageResIds = imageResIds;
-
+        this.imageUrls = imageUrls;
     }
 
     @NonNull
@@ -47,35 +47,40 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
 
     @Override
     public void onBindViewHolder(@NonNull DoctorViewHolder holder, int position) {
-        holder.name.setText(names[position]);
-        holder.specialty.setText(specialties[position]);
-        holder.hospital.setText(hospitals[position]);
-        holder.ratingBar.setRating(ratings[position]);
-        holder.image.setImageResource(imageResIds[position]);
+        holder.name.setText(names.get(position));
+        holder.specialty.setText(specialties.get(position));
+        holder.hospital.setText(hospitals.get(position));
+        holder.ratingBar.setRating(ratings.get(position));
 
+        // Load image using Glide with a placeholder
+        Glide.with(context)
+                .load(imageUrls.get(position)) // Load from URL
+                .placeholder(R.drawable.plasholder) // Ensure `placeholder.png` exists in `res/drawable`
+                .error(R.drawable.plaseholder_error) // Show if load fails
+                .into(holder.image);
+
+        // Click listener for Doctor Details page
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, doctor_details.class); // Replace with your details activity
-            intent.putExtra("doctor_name", names[position]);
-            intent.putExtra("doctor_specialty", specialties[position]);
-            intent.putExtra("doctor_hospital", hospitals[position]);
-            intent.putExtra("doctor_rating", ratings[position]);
-            intent.putExtra("doctor_image", imageResIds[position]);
+            Intent intent = new Intent(context, doctor_details.class);
+            intent.putExtra("doctor_name", names.get(position));
+            intent.putExtra("doctor_specialty", specialties.get(position));
+            intent.putExtra("doctor_hospital", hospitals.get(position));
+            intent.putExtra("doctor_rating", ratings.get(position));
+            intent.putExtra("doctor_image", imageUrls.get(position)); // Pass URL
             context.startActivity(intent);
         });
 
+        // Click listener for Book Appointment
         holder.bookButton.setOnClickListener(v -> {
-
             Intent intent = new Intent(context, book_form.class);
-
+            intent.putExtra("doctor_name", names.get(position));
             context.startActivity(intent);
         });
-
-
     }
 
     @Override
     public int getItemCount() {
-        return names.length;
+        return names.size();
     }
 
     static class DoctorViewHolder extends RecyclerView.ViewHolder {
@@ -92,8 +97,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
             ratingBar = itemView.findViewById(R.id.doctor_rating);
             image = itemView.findViewById(R.id.civ_profile);
             bookButton = itemView.findViewById(R.id.schedule_button);
-
-
         }
     }
 }
