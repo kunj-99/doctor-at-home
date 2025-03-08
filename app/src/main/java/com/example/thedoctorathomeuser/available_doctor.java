@@ -1,8 +1,11 @@
 package com.example.thedoctorathomeuser;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -27,34 +30,68 @@ public class available_doctor extends AppCompatActivity {
     private ArrayList<String> specialties = new ArrayList<>();
     private ArrayList<String> hospitals = new ArrayList<>();
     private ArrayList<Float> ratings = new ArrayList<>();
-    private ArrayList<String> imageUrls = new ArrayList<>(); // URLs instead of drawable IDs
-
+    private ArrayList<String> imageUrls = new ArrayList<>();
+    private EditText edtPincode;
+    private ImageButton btnSearch;
     private String categoryId, categoryName;
+    private static final String DEFAULT_PINCODE = "110001";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_available_doctor);
 
-        categoryId = getIntent().getStringExtra("category_id");
-        categoryName = getIntent().getStringExtra("category_name");
-
-        Log.d("AvailableDoctor", "Received categoryId: " + categoryId);
-        Log.d("AvailableDoctor", "Received categoryName: " + categoryName);
-
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        fetchDoctors(categoryId);
+        edtPincode = findViewById(R.id.edt_pincode);
+        btnSearch = findViewById(R.id.btn_search);
+
+        // Get Category ID from Intent
+        categoryId = getIntent().getStringExtra("category_id");
+        categoryName = getIntent().getStringExtra("category_name");
+
+        // **Search default pincode first (364470)**
+        fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
+
+        btnSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String pincode = edtPincode.getText().toString().trim();
+                if (!pincode.isEmpty() && categoryId != null) {
+                    fetchDoctorsByPincodeAndCategory(pincode, categoryId, true);
+                } else {
+                    Toast.makeText(available_doctor.this, "Please enter a valid pincode", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
-    private void fetchDoctors(String categoryId) {
-        String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?category_id=" + categoryId; // Replace with your API URL
+    private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
+        String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode=" + pincode + "&category_id=" + categoryId;
 
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
+                        names.clear();
+                        specialties.clear();
+                        hospitals.clear();
+                        ratings.clear();
+                        imageUrls.clear();
+
+                        if (response.length() == 0) {
+                            if (!userSearch) {
+                                // **If no doctors found for 364470, allow user to enter another pincode**
+                                Toast.makeText(available_doctor.this, "No doctors found in 364470. Please enter a different pincode.", Toast.LENGTH_LONG).show();
+                            } else {
+                                // **User searched manually but no doctors found**
+                                Toast.makeText(available_doctor.this, "No doctors found for this pincode", Toast.LENGTH_SHORT).show();
+                            }
+                            recyclerView.setAdapter(null);
+                            return;
+                        }
+
                         try {
                             for (int i = 0; i < response.length(); i++) {
                                 JSONObject doctor = response.getJSONObject(i);
@@ -62,10 +99,9 @@ public class available_doctor extends AppCompatActivity {
                                 specialties.add(doctor.getString("specialization"));
                                 hospitals.add(doctor.getString("hospital_affiliation"));
                                 ratings.add((float) doctor.getDouble("rating"));
-                                imageUrls.add(doctor.getString("profile_picture")); // URL instead of drawable
-
+                                imageUrls.add(doctor.getString("profile_picture"));
                             }
-                            // Update RecyclerView adapter
+
                             adapter = new DoctorAdapter(available_doctor.this, names, specialties, hospitals, ratings, imageUrls);
                             recyclerView.setAdapter(adapter);
                         } catch (JSONException e) {
