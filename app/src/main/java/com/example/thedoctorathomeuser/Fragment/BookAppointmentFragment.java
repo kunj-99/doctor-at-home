@@ -15,8 +15,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.Adapter.book_AppointmentAdapter;
@@ -33,6 +31,8 @@ public class BookAppointmentFragment extends Fragment {
     private RecyclerView recyclerView;
     private List<String> categoryNames = new ArrayList<>();
     private List<String> prices = new ArrayList<>();
+    private List<String> categoryIds = new ArrayList<>(); // Store category IDs
+
     private book_AppointmentAdapter adapter;
 
     private static final String API_URL = "http://sxm.a58.mytemp.website/bookappointment.php";
@@ -45,7 +45,8 @@ public class BookAppointmentFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        adapter = new book_AppointmentAdapter(getContext(), categoryNames, prices);
+        // Pass categoryIds to adapter
+        adapter = new book_AppointmentAdapter(getContext(), categoryNames, prices, categoryIds);
         recyclerView.setAdapter(adapter);
 
         fetchDoctorCategories();
@@ -76,12 +77,14 @@ public class BookAppointmentFragment extends Fragment {
     private void parseDoctorCategories(JSONArray response) {
         categoryNames.clear();
         prices.clear();
+        categoryIds.clear(); // Clear previous IDs
 
         try {
             for (int i = 0; i < response.length(); i++) {
                 JSONObject obj = response.getJSONObject(i);
-                categoryNames.add(obj.getString("category_name"));  // Corrected JSON key
-                prices.add("₹" + obj.getString("price") + "/-");   // Corrected JSON key
+                categoryIds.add(obj.getString("id"));  // Get category_id
+                categoryNames.add(obj.getString("category_name")); // Get category_name
+                prices.add("₹" + obj.getString("price") + "/-");  // Get price
             }
             adapter.notifyDataSetChanged();
         } catch (Exception e) {

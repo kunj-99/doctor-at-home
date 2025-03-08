@@ -18,13 +18,15 @@ import java.util.List;
 public class book_AppointmentAdapter extends RecyclerView.Adapter<book_AppointmentAdapter.AppointmentViewHolder> {
 
     private final Context context;
-    private final List<String> degrees;
-    private final List<String> fees;
+    private final List<String> categoryNames;
+    private final List<String> prices;
+    private final List<String> categoryIds; // Store category IDs
 
-    public book_AppointmentAdapter(Context context, List<String> degrees, List<String> fees) {
+    public book_AppointmentAdapter(Context context, List<String> categoryNames, List<String> prices, List<String> categoryIds) {
         this.context = context;
-        this.degrees = degrees;
-        this.fees = fees;
+        this.categoryNames = categoryNames;
+        this.prices = prices;
+        this.categoryIds = categoryIds;
     }
 
     @NonNull
@@ -36,30 +38,30 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
 
     @Override
     public void onBindViewHolder(@NonNull AppointmentViewHolder holder, int position) {
-        holder.degreeTextView.setText(degrees.get(position));
-        holder.feeTextView.setText(fees.get(position));
+        holder.categoryTextView.setText(categoryNames.get(position));
+        holder.priceTextView.setText(prices.get(position));
 
         // Set click listener for the RecyclerView item
         holder.itemView.setOnClickListener(v -> {
-            // Navigate to Disease activity
+            String categoryId = categoryIds.get(position); // Fetch category ID
             Intent intent = new Intent(context, diseases.class);
-            intent.putExtra("degree", degrees.get(position));
+            intent.putExtra("category_id", categoryId); // Pass category ID to Diseases activity
             context.startActivity(intent);
         });
     }
 
     @Override
     public int getItemCount() {
-        return degrees.size();
+        return categoryNames.size();
     }
 
     public static class AppointmentViewHolder extends RecyclerView.ViewHolder {
-        TextView degreeTextView, feeTextView;
+        TextView categoryTextView, priceTextView;
 
         public AppointmentViewHolder(@NonNull View itemView) {
             super(itemView);
-            degreeTextView = itemView.findViewById(R.id.degreeTextView);
-            feeTextView = itemView.findViewById(R.id.feeTextView);
+            categoryTextView = itemView.findViewById(R.id.degreeTextView); // Ensure correct ID
+            priceTextView = itemView.findViewById(R.id.feeTextView); // Ensure correct ID
         }
     }
 }

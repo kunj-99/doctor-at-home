@@ -10,18 +10,19 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.thedoctorathomeuser.R;
 
+import java.util.List;
+
 public class DiseaseAdapter extends RecyclerView.Adapter<DiseaseAdapter.DiseaseViewHolder> {
 
-    private String[] diseases;
+    private List<String> diseaseList;
 
-    public DiseaseAdapter(String[] diseases) {
-        this.diseases = diseases;
+    public DiseaseAdapter(List<String> diseaseList) {
+        this.diseaseList = diseaseList != null ? diseaseList : List.of(); // Avoid null list
     }
 
     @NonNull
     @Override
     public DiseaseViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Inflate the item layout for each disease
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_disease, parent, false);
         return new DiseaseViewHolder(view);
@@ -29,14 +30,12 @@ public class DiseaseAdapter extends RecyclerView.Adapter<DiseaseAdapter.DiseaseV
 
     @Override
     public void onBindViewHolder(@NonNull DiseaseViewHolder holder, int position) {
-        // Bind the disease name to the TextView
-        holder.diseaseText.setText(diseases[position]);
+        holder.diseaseText.setText(diseaseList.get(position));
     }
 
     @Override
     public int getItemCount() {
-        // Return the total number of diseases
-        return diseases.length;
+        return diseaseList == null ? 0 : diseaseList.size(); // Prevent crashes
     }
 
     // ViewHolder class for the RecyclerView
