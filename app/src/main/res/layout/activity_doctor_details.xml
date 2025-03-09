@@ -5,8 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F8FAFC"
-    android:layout_marginTop="30dp"
-    android:padding="16dp">
+    android:padding="16dp"
+    tools:context=".doctor_details">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -25,7 +25,6 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_back"
-
                 android:layout_marginEnd="16dp" />
 
             <TextView
@@ -79,19 +78,27 @@
                         android:textSize="20sp"
                         android:textStyle="bold" />
 
+                    <!-- Specialization -->
+                    <TextView
+                        android:id="@+id/doctor_specialty"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Specialization"
+                        android:textSize="16sp"
+                        android:textColor="#666666"
+                        android:layout_marginTop="5dp" />
 
-                    <!-- Rating -->
-                    <!-- RatingBar for rating stars -->
+                    <!-- RatingBar -->
                     <RatingBar
                         android:id="@+id/doctor_rating"
                         style="@style/Widget.AppCompat.RatingBar.Small"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
                         android:isIndicator="true"
                         android:numStars="5"
-                        android:rating="2"
                         android:stepSize="0.5"
+                        android:rating="2"
+                        android:layout_marginTop="8dp"
                         android:progressTint="@color/blue" />
 
                     <!-- Trust Badge -->
@@ -99,18 +106,41 @@
                         android:id="@+id/trustBadge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="5dp"
+                        android:text="Trusted"
+                        android:textSize="16sp"
                         android:textStyle="bold"
-                        android:layout_marginTop="10dp"
+                        android:textColor="#4CAF50"
                         android:drawableStart="@drawable/ic_trusted"
                         android:drawablePadding="4dp"
-                        android:text="Trusted"
-                        android:textColor="#4CAF50"
-                        android:textSize="16sp" />
-
+                        android:layout_marginTop="10dp" />
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+
+        <!-- Hospital Affiliation -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:text="Hospital Affiliation"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#000000" />
+
+            <TextView
+                android:id="@+id/doctor_hospital"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hospital Name"
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:layout_marginTop="5dp" />
+        </LinearLayout>
 
         <!-- Experience Section -->
         <LinearLayout
@@ -120,20 +150,19 @@
             android:layout_marginTop="16dp">
 
             <TextView
-                android:id="@+id/experienceHeader"
+                android:layout_height="match_parent"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:text="Experience"
-                android:textColor="#000000"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textColor="#000000" />
 
             <TextView
                 android:id="@+id/experienceDetails"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="2009 - 2010 Consultant at Ayush\n2010 - 2011 Consultant at Kottakal\n2013 - Present Consultant at Shathayu Ayurveda"
+                android:layout_marginTop="5dp"
+                android:text="5 years"
                 android:textSize="14sp"
                 android:textColor="#666666" />
         </LinearLayout>
@@ -146,11 +175,10 @@
             android:layout_marginTop="16dp">
 
             <TextView
-                android:id="@+id/degreeHeader"
+                android:layout_height="match_parent"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:text="Degree  University"
-                android:textSize="16sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#000000" />
 
@@ -158,24 +186,82 @@
                 android:id="@+id/degreeDetails"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="BAMS - Govt. Ayurvedic Medical College,\n Bangalore, 2009"
+                android:layout_marginTop="5dp"
+                android:text="MBBS - XYZ University"
                 android:textSize="14sp"
                 android:textColor="#666666" />
         </LinearLayout>
+
+        <!-- Consultation Fee -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:text="Consultation Fee"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#000000" />
+
+            <TextView
+                android:id="@+id/doctor_fee"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="₹500"
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:layout_marginTop="5dp" />
+        </LinearLayout>
+
+        <!-- Availability Schedule -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:text="Availability"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#000000" />
+
+            <TextView
+                android:id="@+id/doctor_availability"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Monday - Friday, 10 AM - 5 PM"
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:layout_marginTop="5dp" />
+        </LinearLayout>
+
+        <!-- ProgressBar (Loading) -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:layout_gravity="center"
+            android:layout_marginTop="10dp" />
 
         <!-- Book Button -->
         <Button
             android:id="@+id/bookButton"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:layout_marginTop="300dp"
-            android:backgroundTint="#003399"
-            android:elevation="4dp"
-            android:gravity="center"
-            android:text="book"
-            android:textColor="#FFFFFF"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:backgroundTint="#1A73E8"
+            android:text="Book Appointment"
             android:textSize="16sp"
+            android:textColor="#FFFFFF"
             android:textStyle="bold" />
+
     </LinearLayout>
 </ScrollView>

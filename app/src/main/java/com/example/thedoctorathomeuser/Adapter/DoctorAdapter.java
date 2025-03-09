@@ -23,14 +23,18 @@ import java.util.List;
 public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorViewHolder> {
 
     private final Context context;
+    private final List<String> doctorIds;  // ✅ Added doctor ID list
     private final List<String> names;
     private final List<String> specialties;
     private final List<String> hospitals;
     private final List<Float> ratings;
     private final List<String> imageUrls;
 
-    public DoctorAdapter(Context context, List<String> names, List<String> specialties, List<String> hospitals, List<Float> ratings, List<String> imageUrls) {
+    // ✅ Updated Constructor (Added doctorIds)
+    public DoctorAdapter(Context context, List<String> doctorIds, List<String> names, List<String> specialties,
+                         List<String> hospitals, List<Float> ratings, List<String> imageUrls) {
         this.context = context;
+        this.doctorIds = doctorIds;
         this.names = names;
         this.specialties = specialties;
         this.hospitals = hospitals;
@@ -59,20 +63,19 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                 .error(R.drawable.plaseholder_error) // Show if load fails
                 .into(holder.image);
 
-        // Click listener for Doctor Details page
+        // ✅ Click listener for Doctor Details page (Pass doctor_id)
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, doctor_details.class);
+            intent.putExtra("doctor_id", doctorIds.get(position)); // ✅ Pass doctor_id
             intent.putExtra("doctor_name", names.get(position));
-            intent.putExtra("doctor_specialty", specialties.get(position));
-            intent.putExtra("doctor_hospital", hospitals.get(position));
-            intent.putExtra("doctor_rating", ratings.get(position));
             intent.putExtra("doctor_image", imageUrls.get(position)); // Pass URL
             context.startActivity(intent);
         });
 
-        // Click listener for Book Appointment
+        // ✅ Click listener for Book Appointment
         holder.bookButton.setOnClickListener(v -> {
             Intent intent = new Intent(context, book_form.class);
+            intent.putExtra("doctor_id", doctorIds.get(position)); // ✅ Pass doctor_id
             intent.putExtra("doctor_name", names.get(position));
             context.startActivity(intent);
         });

@@ -26,6 +26,7 @@ public class available_doctor extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private DoctorAdapter adapter;
+    private ArrayList<String> doctorIds = new ArrayList<>();
     private ArrayList<String> names = new ArrayList<>();
     private ArrayList<String> specialties = new ArrayList<>();
     private ArrayList<String> hospitals = new ArrayList<>();
@@ -51,7 +52,7 @@ public class available_doctor extends AppCompatActivity {
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
-        // **Search default pincode first (364470)**
+        // **Search default pincode first**
         fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
 
         btnSearch.setOnClickListener(new View.OnClickListener() {
@@ -74,6 +75,7 @@ public class available_doctor extends AppCompatActivity {
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
+                        doctorIds.clear();
                         names.clear();
                         specialties.clear();
                         hospitals.clear();
@@ -82,10 +84,8 @@ public class available_doctor extends AppCompatActivity {
 
                         if (response.length() == 0) {
                             if (!userSearch) {
-                                // **If no doctors found for 364470, allow user to enter another pincode**
                                 Toast.makeText(available_doctor.this, "No doctors found in 364470. Please enter a different pincode.", Toast.LENGTH_LONG).show();
                             } else {
-                                // **User searched manually but no doctors found**
                                 Toast.makeText(available_doctor.this, "No doctors found for this pincode", Toast.LENGTH_SHORT).show();
                             }
                             recyclerView.setAdapter(null);
@@ -95,6 +95,8 @@ public class available_doctor extends AppCompatActivity {
                         try {
                             for (int i = 0; i < response.length(); i++) {
                                 JSONObject doctor = response.getJSONObject(i);
+
+                                doctorIds.add(doctor.getString("doctor_id")); // Store doctor ID
                                 names.add(doctor.getString("full_name"));
                                 specialties.add(doctor.getString("specialization"));
                                 hospitals.add(doctor.getString("hospital_affiliation"));
@@ -102,7 +104,7 @@ public class available_doctor extends AppCompatActivity {
                                 imageUrls.add(doctor.getString("profile_picture"));
                             }
 
-                            adapter = new DoctorAdapter(available_doctor.this, names, specialties, hospitals, ratings, imageUrls);
+                            adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties, hospitals, ratings, imageUrls);
                             recyclerView.setAdapter(adapter);
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -112,7 +114,7 @@ public class available_doctor extends AppCompatActivity {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Toast.makeText(available_doctor.this, "Error fetching data", Toast.LENGTH_SHORT).show();
+                Toast.makeText(available_doctor.this, "No Doctor available, try another pincode ", Toast.LENGTH_SHORT).show();
                 Log.e("VolleyError", error.toString());
             }
         });
