@@ -75,7 +75,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
         holder.bookButton.setOnClickListener(v -> {
             Intent intent = new Intent(context, book_form.class);
             intent.putExtra("doctor_id", doctorIds.get(position)); // ✅ Pass doctor_id
-            intent.putExtra("doctor_name", names.get(position));
             context.startActivity(intent);
         });
     }
