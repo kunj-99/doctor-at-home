@@ -3,9 +3,9 @@ package com.example.thedoctorathomeuser;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -34,6 +34,7 @@ public class available_doctor extends AppCompatActivity {
     private ArrayList<String> imageUrls = new ArrayList<>();
     private EditText edtPincode;
     private ImageButton btnSearch;
+    private TextView tvNoDoctors;
     private String categoryId, categoryName;
     private static final String DEFAULT_PINCODE = "110001";
 
@@ -47,12 +48,13 @@ public class available_doctor extends AppCompatActivity {
 
         edtPincode = findViewById(R.id.edt_pincode);
         btnSearch = findViewById(R.id.btn_search);
+        tvNoDoctors = findViewById(R.id.tv_no_doctors); // Initialize the TextView
 
         // Get Category ID from Intent
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
-        // **Search default pincode first**
+        // Search default pincode first
         fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
 
         btnSearch.setOnClickListener(new View.OnClickListener() {
@@ -83,13 +85,18 @@ public class available_doctor extends AppCompatActivity {
                         imageUrls.clear();
 
                         if (response.length() == 0) {
+                            tvNoDoctors.setVisibility(View.VISIBLE); // Show "No doctors available" message
+                            recyclerView.setVisibility(View.GONE);  // Hide RecyclerView
+
                             if (!userSearch) {
-                                Toast.makeText(available_doctor.this, "No doctors found in 364470. Please enter a different pincode.", Toast.LENGTH_LONG).show();
+                                Toast.makeText(available_doctor.this, "No doctors found in default location. Try another pincode.", Toast.LENGTH_LONG).show();
                             } else {
                                 Toast.makeText(available_doctor.this, "No doctors found for this pincode", Toast.LENGTH_SHORT).show();
                             }
-                            recyclerView.setAdapter(null);
                             return;
+                        } else {
+                            tvNoDoctors.setVisibility(View.GONE); // Hide message
+                            recyclerView.setVisibility(View.VISIBLE); // Show RecyclerView
                         }
 
                         try {
@@ -114,7 +121,10 @@ public class available_doctor extends AppCompatActivity {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Toast.makeText(available_doctor.this, "No Doctor available, try another pincode ", Toast.LENGTH_SHORT).show();
+                tvNoDoctors.setVisibility(View.VISIBLE); // Show "No doctors available" message
+                recyclerView.setVisibility(View.GONE);  // Hide RecyclerView
+
+                Toast.makeText(available_doctor.this, "No Doctor available, try another pincode", Toast.LENGTH_SHORT).show();
                 Log.e("VolleyError", error.toString());
             }
         });
