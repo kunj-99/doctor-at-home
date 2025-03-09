@@ -16,8 +16,8 @@
         android:gravity="center"
         android:padding="16dp"
         android:layout_marginBottom="16dp" />
-    <!-- Form Section -->
 
+    <!-- Form Section -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -28,7 +28,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_card"
-
             android:orientation="vertical"
             android:padding="16dp">
 
@@ -42,6 +41,7 @@
                 android:textSize="16sp" />
 
             <EditText
+                android:id="@+id/patient_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/rounded_edittext"
@@ -68,6 +68,7 @@
                 android:weightSum="3">
 
                 <Spinner
+                    android:id="@+id/day_spinner"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -77,6 +78,7 @@
                     android:textColorHint="#9E9E9E" />
 
                 <Spinner
+                    android:id="@+id/month_spinner"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
@@ -88,6 +90,7 @@
                     android:textColorHint="#9E9E9E" />
 
                 <Spinner
+                    android:id="@+id/year_spinner"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -108,11 +111,13 @@
                 android:textSize="16sp" />
 
             <RadioGroup
+                android:id="@+id/gender_group"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
                 <RadioButton
+                    android:id="@+id/gender_male"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:buttonTint="#0E76D6"
@@ -120,6 +125,7 @@
                     android:textColor="#000" />
 
                 <RadioButton
+                    android:id="@+id/gender_female"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
@@ -128,6 +134,7 @@
                     android:textColor="#000" />
 
                 <RadioButton
+                    android:id="@+id/gender_other"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="16dp"
@@ -155,7 +162,6 @@
                 android:hint="Select Problem"
                 android:padding="12dp"
                 android:textColor="#000"
-
                 android:textColorHint="#9E9E9E"
                 android:textSize="14sp" />
 
@@ -170,11 +176,11 @@
                 android:textSize="16sp" />
 
             <EditText
+                android:id="@+id/address"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/rounded_edittext"
                 android:hint="Enter Address"
-
                 android:padding="12dp"
                 android:textColor="#000"
                 android:textColorHint="#9E9E9E"

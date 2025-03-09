@@ -1,16 +1,17 @@
 package com.example.thedoctorathomeuser;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.cashfree.pg.api.CFPaymentGatewayService;
 import com.cashfree.pg.core.api.CFSession;
@@ -19,10 +20,8 @@ import com.cashfree.pg.core.api.exception.CFException;
 import com.cashfree.pg.core.api.utils.CFErrorResponse;
 import com.cashfree.pg.core.api.webcheckout.CFWebCheckoutPayment;
 import com.cashfree.pg.core.api.webcheckout.CFWebCheckoutTheme;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,12 +34,25 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
     private String secret_api = "cfsk_ma_test_a1ff9b5ff8e6e3f11107cb84b0037b7f_88f81c16";
     private CFSession.Environment cfEnvironment = CFSession.Environment.SANDBOX; // Use sandbox for testing
 
+    // Booking Data
+    private String patientName, age, gender, problem, address, doctorId, doctorName;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pending_bill);
 
-        // Initialize Cashfree SDK
+        // ✅ Get booking details from Intent
+        Intent intent = getIntent();
+        patientName = intent.getStringExtra("patient_name");
+        age = String.valueOf(intent.getIntExtra("age", 0));
+        gender = intent.getStringExtra("gender");
+        problem = intent.getStringExtra("problem");
+        address = intent.getStringExtra("address");
+        doctorId = intent.getStringExtra("doctor_id");
+        doctorName = intent.getStringExtra("doctor_name");
+
+        // ✅ Initialize Cashfree SDK
         try {
             gatewayService = CFPaymentGatewayService.getInstance();
             gatewayService.setCheckoutCallback(this);
@@ -50,24 +62,26 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
             return;
         }
 
+        // ✅ Payment Button
         Button payButton = findViewById(R.id.pay_button);
         payButton.setOnClickListener(v -> generateSessionToken());
     }
+
     private void generateSessionToken() {
         orderID = "ORDER_" + System.currentTimeMillis(); // Unique order ID
 
         String url = "https://sandbox.cashfree.com/pg/orders"; // Sandbox API
 
-        // Create request body
+        // ✅ Create request body
         JSONObject requestBody = new JSONObject();
         try {
             requestBody.put("order_id", orderID);
-            requestBody.put("order_amount", "100.00");
+            requestBody.put("order_amount", "100.00"); // Change this if needed
             requestBody.put("order_currency", "INR");
 
-            // ✅ FIX: Wrap customer details inside "customer_details"
+            // ✅ Customer details inside "customer_details"
             JSONObject customerDetails = new JSONObject();
-            customerDetails.put("customer_id", "CUST_12345");
+            customerDetails.put("customer_id", doctorId);
             customerDetails.put("customer_email", "test@example.com");
             customerDetails.put("customer_phone", "9999999999");
 
@@ -76,7 +90,7 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
             e.printStackTrace();
         }
 
-        // Make API request to generate session token
+        // ✅ API Request to generate session token
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, requestBody,
                 response -> {
                     try {
@@ -108,8 +122,8 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
                 Map<String, String> headers = new HashMap<>();
                 headers.put("Content-Type", "application/json");
                 headers.put("x-api-version", "2022-09-01");
-                headers.put("x-client-id", api); // Your Test Client ID
-                headers.put("x-client-secret", secret_api); // Your Test Client Secret
+                headers.put("x-client-id", api);
+                headers.put("x-client-secret", secret_api);
                 return headers;
             }
         };
@@ -118,7 +132,7 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         requestQueue.add(jsonObjectRequest);
     }
 
-
+    // ✅ Start Payment (Fully retained)
     private void startPayment() {
         try {
             CFSession cfSession = new CFSession.CFSessionBuilder()
@@ -144,9 +158,17 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         }
     }
 
+    // ✅ Handle Payment Success and store data in DB
     @Override
     public void onPaymentVerify(String orderID) {
-        Log.e("onPaymentVerify", "verifyPayment triggered for order: " + orderID);
+        Log.e("onPaymentVerify", "Payment verified for order: " + orderID);
+
+        // ✅ Check if this method is being called
+        Log.e("DB_SAVE", "Calling saveBookingData() method...");
+
+        // ✅ Store booking details in database
+        saveBookingData();
+
         runOnUiThread(() -> Toast.makeText(this, "Payment Verified! Order ID: " + orderID, Toast.LENGTH_LONG).show());
     }
 
@@ -155,5 +177,52 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         Log.e("onPaymentFailure", "Payment failed for order: " + orderID + ", Error: " + cfErrorResponse.getMessage());
         runOnUiThread(() -> Toast.makeText(this, "Payment Failed! Order ID: " + orderID, Toast.LENGTH_LONG).show());
     }
-}
 
+    // ✅ Save booking details to database (Updated API call)
+    private void saveBookingData() {
+        String url = "http://sxm.a58.mytemp.website/appointment.php";
+
+        // Convert data to Form URL Encoding (Fix for 500 error)
+        StringRequest request = new StringRequest(Request.Method.POST, url,
+                response -> {
+                    Log.d("DB_SAVE", "Server Response: " + response);
+                    Toast.makeText(this, "Appointment saved successfully!", Toast.LENGTH_SHORT).show();
+                },
+                error -> {
+                    if (error.networkResponse != null) {
+                        String responseBody = new String(error.networkResponse.data);
+                        Log.e("DB_SAVE", "Failed to save booking | Status Code: " + error.networkResponse.statusCode);
+                        Log.e("DB_SAVE", "Error Response: " + responseBody);
+                    } else {
+                        Log.e("DB_SAVE", "API Request Failed: " + error.getMessage());
+                    }
+                    Toast.makeText(this, "Error saving appointment. Contact support.", Toast.LENGTH_LONG).show();
+                }
+        ) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("patient_name", patientName);
+                params.put("age", age);
+                params.put("gender", gender);
+                params.put("problem", problem);
+                params.put("address", address);
+                params.put("doctor_id", doctorId);
+                params.put("doctor_name", doctorName);
+                params.put("order_id", orderID);
+                return params;
+            }
+
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/x-www-form-urlencoded");
+                return headers;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(this);
+        queue.add(request);
+    }
+
+}
