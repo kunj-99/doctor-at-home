@@ -18,10 +18,10 @@ import java.util.Calendar;
 
 public class book_form extends AppCompatActivity {
 
-    EditText patientName, address;
+    EditText patientName, address,problem;
     Spinner daySpinner, monthSpinner, yearSpinner;
     RadioGroup genderGroup;
-    AutoCompleteTextView problemAutoComplete;
+
     Button bookButton;
 
     String doctorId, doctorName; // Doctor details from Intent
@@ -39,13 +39,13 @@ public class book_form extends AppCompatActivity {
         monthSpinner = findViewById(R.id.month_spinner);
         yearSpinner = findViewById(R.id.year_spinner);
         genderGroup = findViewById(R.id.gender_group);
-        problemAutoComplete = findViewById(R.id.problem_auto_complete);
+        problem = findViewById(R.id.problem);
         bookButton = findViewById(R.id.book_button);
 
         // Fetch Doctor ID & Name from Intent
         Intent intent = getIntent();
         doctorId = intent.getStringExtra("doctor_id");
-        doctorName = intent.getStringExtra("doctor_name");
+        doctorName = intent.getStringExtra("doctorName");
 
         // Handle Book Button Click
         bookButton.setOnClickListener(new View.OnClickListener() {
@@ -54,7 +54,7 @@ public class book_form extends AppCompatActivity {
                 // Get Data
                 String name = patientName.getText().toString().trim();
                 String addressText = address.getText().toString().trim();
-                String selectedProblem = problemAutoComplete.getText().toString().trim();
+                String selectedProblem = problem.getText().toString().trim();
 
                 // Get selected values from Spinners
                 try {
@@ -87,7 +87,7 @@ public class book_form extends AppCompatActivity {
                     intent.putExtra("problem", selectedProblem);
                     intent.putExtra("address", addressText);
                     intent.putExtra("doctor_id", doctorId);
-                    intent.putExtra("doctor_name", doctorName);
+                    intent.putExtra("doctorName", doctorName);
                     startActivity(intent);
 
                 } catch (Exception e) {

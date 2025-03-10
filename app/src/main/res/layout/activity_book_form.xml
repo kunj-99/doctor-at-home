@@ -153,8 +153,8 @@
                 android:textColor="#000"
                 android:textSize="16sp" />
 
-            <AutoCompleteTextView
-                android:id="@+id/problem_auto_complete"
+            <EditText
+                android:id="@+id/problem"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/rounded_edittext"

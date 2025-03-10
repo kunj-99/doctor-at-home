@@ -1,6 +1,8 @@
 package com.example.thedoctorathomeuser;
 
 import android.content.Intent;
+import android.icu.text.SimpleDateFormat;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -22,7 +24,10 @@ import com.cashfree.pg.core.api.webcheckout.CFWebCheckoutPayment;
 import com.cashfree.pg.core.api.webcheckout.CFWebCheckoutTheme;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 public class pending_bill extends AppCompatActivity implements CFCheckoutResponseCallback {
@@ -50,7 +55,7 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         problem = intent.getStringExtra("problem");
         address = intent.getStringExtra("address");
         doctorId = intent.getStringExtra("doctor_id");
-        doctorName = intent.getStringExtra("doctor_name");
+        doctorName = intent.getStringExtra("doctorName");
 
         // ✅ Initialize Cashfree SDK
         try {
@@ -179,13 +184,15 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
     }
 
     // ✅ Save booking details to database (Updated API call)
+    // ✅ Save booking details to database (Updated API call)
     private void saveBookingData() {
-        String url = "http://sxm.a58.mytemp.website/appointment.php";
+        String url = "http://sxm.a58.mytemp.website/save_appointment.php";
 
-        // Convert data to Form URL Encoding (Fix for 500 error)
+        Log.d("DB_SAVE", "Sending request to: " + url); // ✅ Log request URL
+
         StringRequest request = new StringRequest(Request.Method.POST, url,
                 response -> {
-                    Log.d("DB_SAVE", "Server Response: " + response);
+                    Log.d("DB_SAVE", "Server Response: " + response); // ✅ Log API Response
                     Toast.makeText(this, "Appointment saved successfully!", Toast.LENGTH_SHORT).show();
                 },
                 error -> {
@@ -202,14 +209,23 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
+                params.put("patient_id", "1"); // 🔥 Static Patient ID
                 params.put("patient_name", patientName);
                 params.put("age", age);
                 params.put("gender", gender);
-                params.put("problem", problem);
                 params.put("address", address);
                 params.put("doctor_id", doctorId);
-                params.put("doctor_name", doctorName);
-                params.put("order_id", orderID);
+                params.put("reason_for_visit", problem);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    params.put("appointment_date", new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()));
+                }
+                params.put("time_slot", "10:00 AM"); // ✅ Ensure non-null value
+                params.put("pincode", "112345"); // ✅ Check if this reaches the API
+                params.put("appointment_mode", "Offline");
+                params.put("status", "Pending");
+
+                Log.d("DB_SAVE", "Params: " + params.toString()); // ✅ Debugging - Log request parameters
+
                 return params;
             }
 
@@ -224,5 +240,6 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(request);
     }
+
 
 }
