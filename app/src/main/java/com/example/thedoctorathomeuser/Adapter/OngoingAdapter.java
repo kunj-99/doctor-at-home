@@ -13,32 +13,34 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.thedoctorathomeuser.R;
-import com.example.thedoctorathomeuser.book_form;
 import com.example.thedoctorathomeuser.cancle_appintment;
 import com.example.thedoctorathomeuser.track_doctor;
 
+import java.util.List;
+
 public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorViewHolder> {
 
-    private final String[] names;
-    private final String[] specialties;
-    private final String[] hospitals;
-    private final float[] ratings;
-    private final int[] imageResIds;
-
+    private final List<String> names;
+    private final List<String> specialties;
+    private final List<String> hospitals;
+    private final List<Float> ratings;
+    private final List<Integer> imageResIds;
+    private final List<Integer> appointmentIds;  // ✅ Added List to store appointment IDs
     private final Context context;
 
-
-
-
-    // Constructor
-    public OngoingAdapter(Context context, String[] names, String[] specialties, String[] hospitals, float[] ratings, int[] imageResIds) {
+    // Constructor (Now accepts appointmentIds)
+    public OngoingAdapter(Context context, List<String> names, List<String> specialties,
+                          List<String> hospitals, List<Float> ratings,
+                          List<Integer> imageResIds, List<Integer> appointmentIds) {
         this.context = context;
         this.names = names;
         this.specialties = specialties;
         this.hospitals = hospitals;
         this.ratings = ratings;
         this.imageResIds = imageResIds;
+        this.appointmentIds = appointmentIds;  // ✅ Initialize appointment IDs
     }
 
     @NonNull
@@ -50,38 +52,45 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
 
     @Override
     public void onBindViewHolder(@NonNull DoctorViewHolder holder, int position) {
-        holder.name.setText(names[position]);
-        holder.specialty.setText(specialties[position]);
-        holder.hospital.setText(hospitals[position]);
-        holder.ratingBar.setRating(ratings[position]);
-        holder.image.setImageResource(imageResIds[position]);
+        holder.setIsRecyclable(false); // Prevents incorrect data binding
 
-        holder.cancle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(context, cancle_appintment.class);
-                context.startActivity(intent);
-            }
+        holder.name.setText(names.get(position));
+        holder.specialty.setText(specialties.get(position));
+        holder.hospital.setText(hospitals.get(position));
+        holder.ratingBar.setRating(ratings.get(position));
+
+        // Load image using Glide
+        Glide.with(context)
+                .load(imageResIds.get(position))
+                .placeholder(R.drawable.plasholder) // Default placeholder
+                .into(holder.image);
+
+        // Handle Cancel button click (Pass appointment_id)
+        holder.cancel.setOnClickListener(v -> {
+            Intent intent = new Intent(context, cancle_appintment.class);
+            intent.putExtra("appointment_id", appointmentIds.get(position)); // ✅ Pass appointment_id
+            context.startActivity(intent);
         });
-        holder.track.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(context, track_doctor.class);
-                context.startActivity(intent);
-            }
+
+        // Handle Track button click
+        holder.track.setOnClickListener(v -> {
+            Intent intent = new Intent(context, track_doctor.class);
+            intent.putExtra("doctor_name", names.get(position));
+            intent.putExtra("specialty", specialties.get(position));
+            context.startActivity(intent);
         });
     }
 
     @Override
     public int getItemCount() {
-        return names.length;
+        return names.size();
     }
 
     static class DoctorViewHolder extends RecyclerView.ViewHolder {
         TextView name, specialty, hospital;
         RatingBar ratingBar;
         ImageView image;
-        Button track , cancle ;
+        Button track, cancel;
 
         public DoctorViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -90,8 +99,8 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
             hospital = itemView.findViewById(R.id.doctor_availability);
             ratingBar = itemView.findViewById(R.id.doctor_rating);
             image = itemView.findViewById(R.id.civ_profile);
-           track = itemView.findViewById(R.id.Track_button);
-           cancle = itemView.findViewById(R.id.Cancel_button);
+            track = itemView.findViewById(R.id.Track_button);
+            cancel = itemView.findViewById(R.id.Cancel_button);
         }
     }
 }

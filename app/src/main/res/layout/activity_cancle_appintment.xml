@@ -59,6 +59,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/doctoName1"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Dr. Smith Johnson"
@@ -66,6 +67,7 @@
                         android:textColor="@color/onSurface"/>
 
                     <TextView
+                        android:id="@+id/doctorQualification1"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="BAMS General Physician"
@@ -112,9 +114,10 @@
                             android:textColor="@color/onSurfaceVariant"/>
 
                         <TextView
+                            android:id="@+id/patientName1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="John Michael Doe"
+
                             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                             android:textColor="@color/onSurface"
                             android:layout_marginStart="16dp"/>
@@ -160,9 +163,9 @@
                             android:textColor="@color/onSurfaceVariant"/>
 
                         <TextView
+                            android:id="@+id/appointment_date1"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="August 15, 2023"
                             android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                             android:textColor="@color/onSurface"
                             android:layout_marginStart="16dp"/>
