@@ -294,18 +294,42 @@
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+        <RadioGroup
+            android:id="@+id/payment_method_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="5dp"
+            android:orientation="horizontal">
 
-        <!-- Pay Button -->    <Button
-        android:id="@+id/pay_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="140dp"
-        android:backgroundTint="@color/blue"
-        android:text="pay"
-        android:textColor="#FFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+            <RadioButton
+                android:id="@+id/payment_online"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Online Payment"
+                android:checked="true"/>  <!-- Default selection -->
+
+            <RadioButton
+                android:id="@+id/payment_offline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Offline Payment"/>
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/pay_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="@color/blue"
+            android:text="Proceed to Payment"
+            android:textColor="#FFF"
+            android:textSize="20sp"
+            android:textStyle="bold"/>
+
+
+
 
     </LinearLayout>
 

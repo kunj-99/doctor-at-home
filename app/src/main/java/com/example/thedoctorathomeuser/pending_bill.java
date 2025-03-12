@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.android.volley.Request;
@@ -40,7 +41,7 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
     private CFSession.Environment cfEnvironment = CFSession.Environment.SANDBOX; // Use sandbox for testing
 
     // Booking Data
-    private String patientName, age, gender, problem, address, doctorId, doctorName;
+    private String patientName, age, gender, problem, address, doctorId, doctorName,Status,selectedPaymentMethod;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +57,16 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         address = intent.getStringExtra("address");
         doctorId = intent.getStringExtra("doctor_id");
         doctorName = intent.getStringExtra("doctorName");
+         Status = intent.getStringExtra("appointment_status");
+
+        if (Status != null) {
+            if (Status.equals("Request for visit")) {
+                Status = "Request";
+            } else if (Status.equals("Book Appointment")) {
+                Status = "Confirm";
+            }
+        }
+
 
         // ✅ Initialize Cashfree SDK
         try {
@@ -67,9 +78,20 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
             return;
         }
 
-        // ✅ Payment Button
+        RadioGroup paymentMethodGroup = findViewById(R.id.payment_method_group);
         Button payButton = findViewById(R.id.pay_button);
-        payButton.setOnClickListener(v -> generateSessionToken());
+
+        payButton.setOnClickListener(v -> {
+            int selectedId = paymentMethodGroup.getCheckedRadioButtonId();
+             selectedPaymentMethod = (selectedId == R.id.payment_online) ? "Online" : "Offline";
+            if (selectedId == R.id.payment_online) {
+                generateSessionToken();  // Online Payment
+            } else if (selectedId == R.id.payment_offline) {
+                saveBookingData();
+            }
+        });
+
+
     }
 
     private void generateSessionToken() {
@@ -222,7 +244,8 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
                 params.put("time_slot", "10:00 AM"); // ✅ Ensure non-null value
                 params.put("pincode", "112345"); // ✅ Check if this reaches the API
                 params.put("appointment_mode", "Offline");
-                params.put("status", "Pending");
+                params.put("payment_method",selectedPaymentMethod);
+                params.put("status", Status);
 
                 Log.d("DB_SAVE", "Params: " + params.toString()); // ✅ Debugging - Log request parameters
 

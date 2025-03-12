@@ -10,35 +10,34 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="182dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="10dp">
 
         <!-- Doctor's Details Layout -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="115dp"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <!-- Doctor Image -->
-
-            <!-- Doctor Info -->
             <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/civ_profile"
-                android:layout_marginLeft="20dp"
                 android:layout_width="110dp"
                 android:layout_height="110dp"
                 android:src="@drawable/main1"
+                android:layout_marginStart="10dp"
+                android:layout_marginEnd="20dp"
                 app:civ_border_color="@color/blue"
                 app:civ_border_width="2dp" />
 
+            <!-- Doctor Info -->
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="120dp"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginHorizontal="25dp"
-                android:orientation="vertical"
-                android:padding="10dp">
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/doctor_name"
@@ -66,52 +65,57 @@
                     android:textColor="@color/black"
                     android:textSize="15sp" />
 
+                <TextView
+                    android:id="@+id/request_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Requests: 0"
+                    android:textColor="#FF0000"
+                    android:textSize="14sp"
+                    android:layout_marginTop="5dp"
+                    android:visibility="gone"/>
 
-                <!-- RatingBar for rating stars -->
+                <TextView
+                    android:id="@+id/pending_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pending: 0"
+                    android:textColor="#FFA500"
+                    android:textSize="14sp"
+                    android:layout_marginTop="5dp"
+                    android:visibility="gone"/>
+
+                <!-- RatingBar -->
                 <RatingBar
                     android:id="@+id/doctor_rating"
                     style="@style/Widget.AppCompat.RatingBar.Small"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:isIndicator="true"
                     android:numStars="5"
-                    android:rating="2"
                     android:stepSize="0.5"
-                    android:progressTint="@color/blue" />
-
-
+                    android:rating="4"
+                    android:layout_marginTop="8dp"
+                    android:progressTint="@color/blue"/>
             </LinearLayout>
-
-            <!-- Favorite Icon and Book Button -->
-
-
         </LinearLayout>
+
+        <!-- Book Appointment Button -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginHorizontal="10dp"
             android:layout_marginTop="6dp">
-
-
-
 
             <Button
                 android:id="@+id/schedule_button"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="Continue"
+                android:layout_height="50dp"
+                android:text="Book Appointment"
                 android:backgroundTint="@color/blue"
-                android:textColor="@android:color/white"
-               />
-
+                android:textColor="@android:color/white" />
 
         </LinearLayout>
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>
-
-
-

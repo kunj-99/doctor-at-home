@@ -3,6 +3,7 @@ package com.example.thedoctorathomeuser;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -24,7 +25,7 @@ public class book_form extends AppCompatActivity {
 
     Button bookButton;
 
-    String doctorId, doctorName; // Doctor details from Intent
+    String doctorId, doctorName, appointmentStatus; // Doctor details from Intent
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -46,6 +47,18 @@ public class book_form extends AppCompatActivity {
         Intent intent = getIntent();
         doctorId = intent.getStringExtra("doctor_id");
         doctorName = intent.getStringExtra("doctorName");
+        appointmentStatus = intent.getStringExtra("appointment_status"); // Get
+
+        Log.d("BookForm", "Doctor ID: " + doctorId);
+        Log.d("BookForm", "Doctor Name: " + doctorName);
+        Log.d("BookForm", "Appointment Status: " + appointmentStatus);
+
+        // Set the status text
+        if (appointmentStatus != null) {
+            bookButton.setText(appointmentStatus);
+        } else {
+            bookButton.setText("book ");
+        }
 
         // Handle Book Button Click
         bookButton.setOnClickListener(new View.OnClickListener() {
@@ -88,6 +101,8 @@ public class book_form extends AppCompatActivity {
                     intent.putExtra("address", addressText);
                     intent.putExtra("doctor_id", doctorId);
                     intent.putExtra("doctorName", doctorName);
+                    intent.putExtra("appointment_status", appointmentStatus);
+
                     startActivity(intent);
 
                 } catch (Exception e) {
