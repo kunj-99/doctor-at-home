@@ -61,9 +61,9 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
 
         if (Status != null) {
             if (Status.equals("Request for visit")) {
-                Status = "Request";
+                Status = "Requested";
             } else if (Status.equals("Book Appointment")) {
-                Status = "Confirm";
+                Status = "Confirmed";
             }
         }
 
@@ -204,9 +204,6 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         Log.e("onPaymentFailure", "Payment failed for order: " + orderID + ", Error: " + cfErrorResponse.getMessage());
         runOnUiThread(() -> Toast.makeText(this, "Payment Failed! Order ID: " + orderID, Toast.LENGTH_LONG).show());
     }
-
-    // ✅ Save booking details to database (Updated API call)
-    // ✅ Save booking details to database (Updated API call)
     private void saveBookingData() {
         String url = "http://sxm.a58.mytemp.website/save_appointment.php";
 
