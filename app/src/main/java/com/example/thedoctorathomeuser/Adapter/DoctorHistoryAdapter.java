@@ -11,21 +11,28 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.thedoctorathomeuser.R;
 import com.example.thedoctorathomeuser.complet_bill;
+import com.example.thedoctorathomeuser.doctor_details;
+
+import java.util.List;
 
 public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdapter.ViewHolder> {
 
     private Context context;
-    private String[] doctorNames;
-    private String[] doctorSpecialties;
-    private String[] appointmentDates;
-    private String[] appointmentPrices;
-    private int[] doctorImages;
+    private List<Integer> doctorIds;  // ✅ Doctor IDs for future use
+    private List<String> doctorNames;
+    private List<String> doctorSpecialties;
+    private List<String> appointmentDates;
+    private List<String> appointmentPrices;
+    private List<Integer> doctorImages;
 
-    public DoctorHistoryAdapter(Context context, String[] doctorNames, String[] doctorSpecialties,
-                                String[] appointmentDates, String[] appointmentPrices, int[] doctorImages) {
+    public DoctorHistoryAdapter(Context context, List<Integer> doctorIds, List<String> doctorNames,
+                                List<String> doctorSpecialties, List<String> appointmentDates,
+                                List<String> appointmentPrices, List<Integer> doctorImages) {
         this.context = context;
+        this.doctorIds = doctorIds;
         this.doctorNames = doctorNames;
         this.doctorSpecialties = doctorSpecialties;
         this.appointmentDates = appointmentDates;
@@ -42,11 +49,13 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.doctorName.setText(doctorNames[position]);
-        holder.doctorSpecialty.setText(doctorSpecialties[position]);
-        holder.appointmentDate.setText(appointmentDates[position]);
-        holder.appointmentPrice.setText(appointmentPrices[position]);
-        holder.doctorImage.setImageResource(doctorImages[position]);
+        holder.doctorName.setText(doctorNames.get(position));
+        holder.doctorSpecialty.setText(doctorSpecialties.get(position));
+        holder.appointmentDate.setText(appointmentDates.get(position));
+        holder.appointmentPrice.setText(appointmentPrices.get(position));
+        holder.doctorImage.setImageResource(doctorImages.get(position));
+
+        int doctorId = doctorIds.get(position);  // ✅ Get doctor_id for future use
 
         // Set click listener to toggle the visibility of additional buttons
         holder.viewDetailsButton.setOnClickListener(v -> {
@@ -69,13 +78,16 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         });
 
         holder.btnViewProfile.setOnClickListener(v -> {
-            // Handle View Doctor Profile Click (Add action here)
+            Intent intent = new Intent(context, doctor_details.class);
+            intent.putExtra("doctor_id", String.valueOf(doctorIds.get(position))); // ✅ Convert Integer to String
+            context.startActivity(intent);
         });
+
     }
 
     @Override
     public int getItemCount() {
-        return doctorNames.length;
+        return doctorNames.size();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
