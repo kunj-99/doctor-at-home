@@ -21,7 +21,7 @@ import java.util.List;
 public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdapter.ViewHolder> {
 
     private Context context;
-    private List<Integer> doctorIds;  // ✅ Doctor IDs for future use
+    private List<Integer> doctorIds;
     private List<String> doctorNames;
     private List<String> doctorSpecialties;
     private List<String> appointmentDates;

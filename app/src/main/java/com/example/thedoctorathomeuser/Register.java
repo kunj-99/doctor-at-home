@@ -77,7 +77,7 @@ public class Register extends AppCompatActivity {
         // Set up Sign Up button click
         signup.setOnClickListener(v -> {
             if (validateInputs()) {
-                registerOrUpdateUser(); // Send data to the server
+                registerUser(); // Send data to the server
             }
         });
     }
@@ -119,60 +119,52 @@ public class Register extends AppCompatActivity {
         return true;
     }
 
-    private void registerOrUpdateUser() {
+    private void registerUser() {
+        signup.setEnabled(false);
+        signup.setText("Processing...");
+
         String name = etName.getText().toString().trim();
         String mobile = etMobile.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
         String city = actvCity.getText().toString().trim();
         String age = actvAge.getText().toString().trim();
         String pincode = etPincode.getText().toString().trim();
-
         int selectedGenderId = rgGender.getCheckedRadioButtonId();
-        String gender = selectedGenderId != -1
-                ? ((RadioButton) findViewById(selectedGenderId)).getText().toString()
-                : "";
+        String gender = selectedGenderId != -1 ? ((RadioButton) findViewById(selectedGenderId)).getText().toString() : "Not Specified";
 
-        // API URL (Replace with your actual domain)
         String URL = "http://sxm.a58.mytemp.website/register.php";
-
-        // Disable the button while sending request and log the attempt
-        signup.setEnabled(false);
-        signup.setText("Please wait...");
-        Log.d(TAG, "Attempting to register user: " + name + ", " + mobile + ", " + email);
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, URL,
                 response -> {
-                    Log.d(TAG, "Server response: " + response);
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         String message = jsonObject.getString("message");
-                        Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
+                        boolean success = jsonObject.getBoolean("success");
 
-                        if (jsonObject.getBoolean("success")) {
-                            // If success, move to OTP screen
+                        if (success) {
+                            Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
+                            // ✅ Redirect to login only when registration is successful
                             Intent intent = new Intent(Register.this, login.class);
-                            intent.putExtra("name", name);
-                            intent.putExtra("mobile", mobile);
-                            intent.putExtra("email", email);
-                            intent.putExtra("city", city);
-                            intent.putExtra("age", age);
-                            intent.putExtra("pincode", pincode);
-                            intent.putExtra("gender", gender);
                             startActivity(intent);
                             finish();
+                        } else {
+                            Log.e(TAG, "Registration Failed: " + message);
+                            // ✅ Only show Toast, no redirect
+                            Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "JSON Parsing Error: " + e.getMessage(), e);
-                        Toast.makeText(Register.this, "JSON Parsing Error", Toast.LENGTH_SHORT).show();
                     }
-                    // Re-enable the button after response
                     signup.setEnabled(true);
                     signup.setText("Sign Up");
                 },
                 error -> {
-                    Log.e(TAG, "Volley error: " + error.getMessage(), error);
-                    Toast.makeText(Register.this, "Failed to connect. Check your internet!", Toast.LENGTH_SHORT).show();
-                    // Re-enable the button on error
+                    if (error.networkResponse != null) {
+                        String responseBody = new String(error.networkResponse.data);
+                        Log.e(TAG, "Server Error: " + responseBody);
+                    } else {
+                        Log.e(TAG, "Volley error: " + error.getMessage(), error);
+                    }
                     signup.setEnabled(true);
                     signup.setText("Sign Up");
                 }) {
@@ -186,7 +178,6 @@ public class Register extends AppCompatActivity {
                 params.put("age", age);
                 params.put("pincode", pincode);
                 params.put("gender", gender);
-                Log.d(TAG, "Request parameters: " + params.toString());
                 return params;
             }
         };
@@ -194,4 +185,5 @@ public class Register extends AppCompatActivity {
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(stringRequest);
     }
+
 }

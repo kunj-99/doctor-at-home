@@ -40,7 +40,7 @@ public class OngoingAppointmentFragment extends Fragment {
     private Button bookAppointment;
     private OngoingAdapter adapter;
 
-    private static final String PATIENT_ID = "2"; // Change to dynamic if needed
+    private static final String PATIENT_ID = "1"; // Change to dynamic if needed
     private static final String API_URL = "http://sxm.a58.mytemp.website/getOngoingAppointment.php";
     private static final int REFRESH_INTERVAL = 5000; // 5 seconds
 
@@ -116,10 +116,13 @@ public class OngoingAppointmentFragment extends Fragment {
                                 appointmentIds.add(appointment.getInt("appointment_id"));  // ✅ Store appointment ID
                             }
 
-                            requireActivity().runOnUiThread(() -> {
-                                adapter.notifyDataSetChanged();
-                                Log.d("ADAPTER_UPDATE", "Adapter updated with " + doctorNames.size() + " items");
-                            });
+                            // ✅ Prevent UI update if fragment is not attached
+                            if (isAdded()) {
+                                requireActivity().runOnUiThread(() -> {
+                                    adapter.notifyDataSetChanged();
+                                    Log.d("ADAPTER_UPDATE", "Adapter updated with " + doctorNames.size() + " items");
+                                });
+                            }
 
                         } else {
                             Toast.makeText(requireContext(), "No ongoing appointments found", Toast.LENGTH_SHORT).show();
@@ -130,8 +133,9 @@ public class OngoingAppointmentFragment extends Fragment {
                     }
                 },
                 error -> {
-                    Log.e("VOLLEY_ERROR", "Error: " + error.getMessage());
-                    Toast.makeText(requireContext(), "Volley Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                    String errorMsg = (error.getMessage() != null) ? error.getMessage() : "Unknown Error";
+                    Log.e("VOLLEY_ERROR", "Error: " + errorMsg);
+                    Toast.makeText(requireContext(), "Volley Error: " + errorMsg, Toast.LENGTH_SHORT).show();
                 }) {
             @Override
             protected Map<String, String> getParams() {
@@ -147,22 +151,29 @@ public class OngoingAppointmentFragment extends Fragment {
 
     // 🔄 Start auto-refreshing data every 5 seconds
     private void startAutoRefresh() {
+        stopAutoRefresh(); // Prevent multiple handlers running
         refreshRunnable = new Runnable() {
             @Override
             public void run() {
-                fetchOngoingAppointments();
-                handler.postDelayed(this, REFRESH_INTERVAL);
+                if (isAdded()) { // ✅ Only fetch data if fragment is attached
+                    fetchOngoingAppointments();
+                    handler.postDelayed(this, REFRESH_INTERVAL);
+                }
             }
         };
         handler.postDelayed(refreshRunnable, REFRESH_INTERVAL);
     }
 
     // 🛑 Stop auto-refreshing when fragment is destroyed
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
+    private void stopAutoRefresh() {
         if (refreshRunnable != null) {
             handler.removeCallbacks(refreshRunnable);
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopAutoRefresh();
     }
 }

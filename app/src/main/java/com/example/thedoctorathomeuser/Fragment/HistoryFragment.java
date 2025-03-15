@@ -1,6 +1,10 @@
 package com.example.thedoctorathomeuser.Fragment;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -36,7 +40,7 @@ public class HistoryFragment extends Fragment {
     private DoctorHistoryAdapter adapter;
     private ProgressBar progressBar;
 
-    // Lists for only necessary data
+    // Lists for necessary data
     private List<String> doctorNames = new ArrayList<>();
     private List<String> doctorSpecialties = new ArrayList<>();
     private List<String> appointmentDates = new ArrayList<>();
@@ -45,6 +49,17 @@ public class HistoryFragment extends Fragment {
     private List<Integer> doctorIds = new ArrayList<>();  // ✅ Store doctor_id
 
     private static final String API_URL = "http://sxm.a58.mytemp.website/get_history.php?patient_id=1";  // Replace with actual API URL
+
+    private Handler handler = new Handler(Looper.getMainLooper());  // Handler for auto-refresh
+    private final int REFRESH_INTERVAL = 10000;  // Refresh every 10 seconds
+
+    private final Runnable autoRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            fetchData();
+            handler.postDelayed(this, REFRESH_INTERVAL);  // Schedule next update
+        }
+    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -56,24 +71,26 @@ public class HistoryFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         recyclerView = view.findViewById(R.id.recyclerView);
-        progressBar = view.findViewById(R.id.progressBar_history);  // Ensure this is added in your XML layout
+        progressBar = view.findViewById(R.id.progressBar_history);  // Ensure this exists in your XML layout
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         adapter = new DoctorHistoryAdapter(requireContext(), doctorIds, doctorNames, doctorSpecialties, appointmentDates, appointmentPrices, doctorImages);
         recyclerView.setAdapter(adapter);
 
-        fetchData();
+        fetchData();  // Initial data load
+        handler.postDelayed(autoRefreshRunnable, REFRESH_INTERVAL);  // Start auto-refresh
     }
 
     private void fetchData() {
-        progressBar.setVisibility(View.VISIBLE);  // Show loading
+        progressBar.setVisibility(View.VISIBLE);  // Show loading indicator
 
         RequestQueue queue = Volley.newRequestQueue(requireContext());
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, API_URL, null,
                 new Response.Listener<JSONObject>() {
+                    @SuppressLint("NotifyDataSetChanged")
                     @Override
                     public void onResponse(JSONObject response) {
-                        progressBar.setVisibility(View.GONE);  // Hide loading
+                        progressBar.setVisibility(View.GONE);  // Hide loading indicator
 
                         try {
                             if (response.getBoolean("success")) {
@@ -123,5 +140,11 @@ public class HistoryFragment extends Fragment {
         });
 
         queue.add(request);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        handler.removeCallbacks(autoRefreshRunnable);  // Stop auto-refresh when fragment is destroyed
     }
 }

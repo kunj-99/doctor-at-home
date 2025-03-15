@@ -1,6 +1,7 @@
 package com.example.thedoctorathomeuser;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -38,6 +39,10 @@ public class available_doctor extends AppCompatActivity {
     private String categoryId, categoryName;
     private static final String DEFAULT_PINCODE = "110001";
 
+    private Handler handler = new Handler(); // Auto-refresh handler
+    private Runnable autoRefreshRunnable;   // Auto-refresh runnable
+    private static final int REFRESH_INTERVAL = 10000; // 10 seconds
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,14 +53,25 @@ public class available_doctor extends AppCompatActivity {
 
         edtPincode = findViewById(R.id.edt_pincode);
         btnSearch = findViewById(R.id.btn_search);
-        tvNoDoctors = findViewById(R.id.tv_no_doctors); // Initialize the TextView
+        tvNoDoctors = findViewById(R.id.tv_no_doctors);
 
-        // Get Category ID from Intent
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
-        // Search default pincode first
+        // Fetch doctors for default pincode
         fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
+
+        // Auto-refresh logic
+        autoRefreshRunnable = new Runnable() {
+            @Override
+            public void run() {
+                fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
+                handler.postDelayed(this, REFRESH_INTERVAL); // Re-run after 10 seconds
+            }
+        };
+
+        // Start auto-refresh
+        handler.postDelayed(autoRefreshRunnable, REFRESH_INTERVAL);
 
         btnSearch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -85,8 +101,8 @@ public class available_doctor extends AppCompatActivity {
                         imageUrls.clear();
 
                         if (response.length() == 0) {
-                            tvNoDoctors.setVisibility(View.VISIBLE); // Show "No doctors available" message
-                            recyclerView.setVisibility(View.GONE);  // Hide RecyclerView
+                            tvNoDoctors.setVisibility(View.VISIBLE);
+                            recyclerView.setVisibility(View.GONE);
 
                             if (!userSearch) {
                                 Toast.makeText(available_doctor.this, "No doctors found in default location. Try another pincode.", Toast.LENGTH_LONG).show();
@@ -95,15 +111,14 @@ public class available_doctor extends AppCompatActivity {
                             }
                             return;
                         } else {
-                            tvNoDoctors.setVisibility(View.GONE); // Hide message
-                            recyclerView.setVisibility(View.VISIBLE); // Show RecyclerView
+                            tvNoDoctors.setVisibility(View.GONE);
+                            recyclerView.setVisibility(View.VISIBLE);
                         }
 
                         try {
                             for (int i = 0; i < response.length(); i++) {
                                 JSONObject doctor = response.getJSONObject(i);
-
-                                doctorIds.add(doctor.getString("doctor_id")); // Store doctor ID
+                                doctorIds.add(doctor.getString("doctor_id"));
                                 names.add(doctor.getString("full_name"));
                                 specialties.add(doctor.getString("specialization"));
                                 hospitals.add(doctor.getString("hospital_affiliation"));
@@ -121,8 +136,8 @@ public class available_doctor extends AppCompatActivity {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                tvNoDoctors.setVisibility(View.VISIBLE); // Show "No doctors available" message
-                recyclerView.setVisibility(View.GONE);  // Hide RecyclerView
+                tvNoDoctors.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.GONE);
 
                 Toast.makeText(available_doctor.this, "No Doctor available, try another pincode", Toast.LENGTH_SHORT).show();
                 Log.e("VolleyError", error.toString());
@@ -131,5 +146,12 @@ public class available_doctor extends AppCompatActivity {
 
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(request);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Stop auto-refresh when activity is destroyed to prevent memory leaks
+        handler.removeCallbacks(autoRefreshRunnable);
     }
 }
