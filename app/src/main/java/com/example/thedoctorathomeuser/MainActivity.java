@@ -2,6 +2,7 @@ package com.example.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.MenuItem;
@@ -151,7 +152,17 @@ public class MainActivity extends AppCompatActivity {
             } else if (item.getItemId() == R.id.rateapp) {
                 intent = new Intent(MainActivity.this, Rate_app.class);
             } else if (item.getItemId() == R.id.logout) {
-                // Handle logout logic here
+                // Clear all SharedPreferences
+                SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.clear();
+                editor.apply();
+
+                // Redirect to Login activity
+                intent = new Intent(this, login.class);
+                startActivity(intent);
+                finish();
+
                 return true;
             }
 
