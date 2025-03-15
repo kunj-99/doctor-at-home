@@ -1,166 +1,210 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center_horizontal"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/white">
 
-
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="230dp"
-        android:layout_marginBottom="20dp"
-        android:background="@drawable/bottom_curve">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="16dp">
 
-        <!-- Back Arrow -->
-
-        <!-- Centered Content -->
-
-        <ImageView
-            android:id="@+id/iv_back_arrow"
-            android:layout_width="31dp"
-            android:layout_height="28dp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="24dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginTop="43dp"
-            android:layout_marginEnd="20dp"
-            android:layout_marginRight="20dp"
+        <!-- Profile Header Section -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="230dp"
             android:layout_marginBottom="20dp"
-            android:clickable="true"
-            android:contentDescription="Back Arrow"
-            android:focusable="true"
-            android:src="@drawable/ic_back_arrow" />
+            android:background="@drawable/bottom_curve">
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:gravity="center"
-            android:layout_marginTop="40dp"
-            android:orientation="vertical">
+            <!-- Back Button -->
+            <ImageView
+                android:id="@+id/iv_back_arrow"
+                android:layout_width="31dp"
+                android:layout_height="28dp"
+                android:layout_margin="20dp"
+                android:layout_alignParentStart="true"
+                android:src="@drawable/ic_back_arrow"
+                android:contentDescription="Back Button"
+                android:clickable="true"
+                android:focusable="true"/>
 
-            <!-- User Avatar -->
-
-            <!-- Username -->
-
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/civ_profile"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:src="@drawable/pr_ic_profile_placeholder"
-                app:civ_border_color="@color/black"
-                app:civ_border_width="2dp" />
-
-            <TextView
-                android:id="@+id/tv_username"
+            <!-- Profile Picture & Name -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="User profile"
-                android:textAppearance="@style/CustomToolbarTitle"
-                android:textColor="@color/white"
-                android:textSize="30sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </RelativeLayout>
+                android:layout_centerInParent="true"
+                android:gravity="center"
+                android:orientation="vertical">
 
-    <LinearLayout
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:orientation="vertical"
-      android:padding="16dp">
+                <!-- User Profile Image -->
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/civ_profile"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:src="@drawable/pr_ic_profile_placeholder"
+                    app:civ_border_color="@color/black"
+                    app:civ_border_width="2dp"/>
 
+                <TextView
+                    android:id="@+id/tv_username"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="User Profile"
+                    android:textColor="@color/white"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="10dp"/>
+            </LinearLayout>
+        </RelativeLayout>
 
-    <EditText
-        android:id="@+id/et_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Name"
-        android:background="@drawable/bg_edit_text"
-        android:padding="12dp"
-        android:inputType="textPersonName"
-        android:textColor="@color/black"
-        android:textColorHint="@color/gray"
-        android:layout_marginBottom="16dp" />
+        <!-- Editable Form Fields -->
+        <EditText
+            android:id="@+id/et_full_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Full Name"
+            android:inputType="textPersonName"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
-    <!-- Editable Details -->
-    <EditText
-        android:id="@+id/et_phone"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Phone Number"
-        android:inputType="phone"
-        android:background="@drawable/bg_edit_text"
-        android:padding="16dp"
-        android:textColor="@color/black"
-        android:textColorHint="@color/gray"
-        android:layout_marginBottom="12dp" />
+        <EditText
+            android:id="@+id/et_date_of_birth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Date of Birth"
+            android:inputType="date"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
-      <EditText
-          android:id="@+id/et_gmail"
-          android:layout_width="match_parent"
-          android:layout_height="wrap_content"
-          android:layout_marginBottom="16dp"
-          android:background="@drawable/bg_edit_text"
-          android:hint="gmail"
-          android:inputType="textEmailAddress"
-          android:padding="12dp"
-          android:textColor="@color/black"
-          android:textColorHint="@color/gray" />
+        <Spinner
+            android:id="@+id/spinner_gender"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"/>
 
-      <EditText
-        android:id="@+id/et_age"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="age"
-        android:background="@drawable/bg_edit_text"
-        android:padding="12dp"
-          android:inputType="number"
-        android:textColor="@color/black"
-        android:textColorHint="@color/gray"
-        android:layout_marginBottom="16dp" />
+        <Spinner
+            android:id="@+id/spinner_blood_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"/>
 
-    <EditText
-        android:id="@+id/et_city"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="City"
-        android:background="@drawable/bg_edit_text"
-        android:padding="12dp"
-        android:inputType="text"
-        android:textColor="@color/black"
-        android:textColorHint="@color/gray"
-        android:layout_marginBottom="12dp" />
-    <EditText
-        android:id="@+id/et_pincod"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Pincod"
-        android:background="@drawable/bg_edit_text"
-        android:padding="16dp"
-        android:inputType="number"
-        android:textColor="@color/black"
-        android:textColorHint="@color/gray"
-        android:layout_marginBottom="100dp" />
+        <EditText
+            android:id="@+id/et_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Address"
+            android:inputType="textPostalAddress"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
+        <EditText
+            android:id="@+id/et_mobile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Mobile Number"
+            android:inputType="phone"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
+        <EditText
+            android:id="@+id/et_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Email"
+            android:inputType="textEmailAddress"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
+        <EditText
+            android:id="@+id/et_emergency_contact_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Emergency Contact Name"
+            android:inputType="textPersonName"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
-    <!-- Update Button -->
-    <Button
-    android:id="@+id/btn_update"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:backgroundTint="@color/blue"
-    android:text="Update Profile"
-    android:textColor="@color/white"
-        android:padding="12dp" />
-  </LinearLayout>
+        <EditText
+            android:id="@+id/et_emergency_contact_number"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Emergency Contact Number"
+            android:inputType="phone"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
+        <EditText
+            android:id="@+id/et_medical_history"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Medical History"
+            android:inputType="textMultiLine"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
+        <EditText
+            android:id="@+id/et_allergies"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Allergies"
+            android:inputType="textMultiLine"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="16dp"/>
 
-</LinearLayout>
+        <EditText
+            android:id="@+id/et_current_medications"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Current Medications"
+            android:inputType="textMultiLine"
+            android:background="@drawable/bg_edit_text"
+            android:padding="12dp"
+            android:textColor="@color/black"
+            android:textColorHint="@color/gray"
+            android:layout_marginBottom="30dp"/>
+
+        <!-- Update Profile Button -->
+        <Button
+            android:id="@+id/btn_update_profile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/blue"
+            android:text="Update Profile"
+            android:textColor="@color/white"
+            android:padding="12dp"/>
+    </LinearLayout>
+</ScrollView>
