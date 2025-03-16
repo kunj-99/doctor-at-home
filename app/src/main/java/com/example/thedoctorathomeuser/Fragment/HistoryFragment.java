@@ -4,20 +4,17 @@ import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -26,11 +23,9 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.Adapter.DoctorHistoryAdapter;
 import com.example.thedoctorathomeuser.R;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,18 +41,19 @@ public class HistoryFragment extends Fragment {
     private List<String> appointmentDates = new ArrayList<>();
     private List<String> appointmentPrices = new ArrayList<>();
     private List<Integer> doctorImages = new ArrayList<>();  // Placeholder images
-    private List<Integer> doctorIds = new ArrayList<>();  // ✅ Store doctor_id
+    private List<Integer> doctorIds = new ArrayList<>();       // Store doctor_id
+    private List<Integer> appointmentIds = new ArrayList<>();    // NEW: Store appointment_id
 
     private static final String API_URL = "http://sxm.a58.mytemp.website/get_history.php?patient_id=1";  // Replace with actual API URL
 
-    private Handler handler = new Handler(Looper.getMainLooper());  // Handler for auto-refresh
+    private Handler handler = new Handler(Looper.getMainLooper());
     private final int REFRESH_INTERVAL = 10000;  // Refresh every 10 seconds
 
     private final Runnable autoRefreshRunnable = new Runnable() {
         @Override
         public void run() {
             fetchData();
-            handler.postDelayed(this, REFRESH_INTERVAL);  // Schedule next update
+            handler.postDelayed(this, REFRESH_INTERVAL);
         }
     };
 
@@ -69,29 +65,28 @@ public class HistoryFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         recyclerView = view.findViewById(R.id.recyclerView);
-        progressBar = view.findViewById(R.id.progressBar_history);  // Ensure this exists in your XML layout
+        progressBar = view.findViewById(R.id.progressBar_history);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        adapter = new DoctorHistoryAdapter(requireContext(), doctorIds, doctorNames, doctorSpecialties, appointmentDates, appointmentPrices, doctorImages);
+        // Pass the appointmentIds list in the adapter constructor
+        adapter = new DoctorHistoryAdapter(requireContext(), doctorIds, doctorNames, doctorSpecialties,
+                appointmentDates, appointmentPrices, doctorImages, appointmentIds);
         recyclerView.setAdapter(adapter);
 
         fetchData();  // Initial data load
-        handler.postDelayed(autoRefreshRunnable, REFRESH_INTERVAL);  // Start auto-refresh
+        handler.postDelayed(autoRefreshRunnable, REFRESH_INTERVAL);
     }
 
     private void fetchData() {
-        progressBar.setVisibility(View.VISIBLE);  // Show loading indicator
-
+        progressBar.setVisibility(View.VISIBLE);
         RequestQueue queue = Volley.newRequestQueue(requireContext());
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, API_URL, null,
                 new Response.Listener<JSONObject>() {
                     @SuppressLint("NotifyDataSetChanged")
                     @Override
                     public void onResponse(JSONObject response) {
-                        progressBar.setVisibility(View.GONE);  // Hide loading indicator
-
+                        progressBar.setVisibility(View.GONE);
                         try {
                             if (response.getBoolean("success")) {
                                 JSONArray appointments = response.getJSONArray("appointments");
@@ -103,25 +98,22 @@ public class HistoryFragment extends Fragment {
                                 appointmentDates.clear();
                                 appointmentPrices.clear();
                                 doctorImages.clear();
+                                appointmentIds.clear();
 
                                 // Loop through appointments
                                 for (int i = 0; i < appointments.length(); i++) {
                                     JSONObject obj = appointments.getJSONObject(i);
-
-                                    // Get only necessary data
-                                    doctorIds.add(obj.getInt("doctor_id"));  // ✅ Pass doctor_id
+                                    // Retrieve appointment_id from API response
+                                    appointmentIds.add(obj.getInt("appointment_id"));
+                                    doctorIds.add(obj.getInt("doctor_id"));
                                     doctorNames.add(obj.getString("doctor_name"));
                                     doctorSpecialties.add(obj.getString("specialty"));
                                     appointmentDates.add(obj.getString("appointment_date"));
                                     appointmentPrices.add("₹ " + obj.getString("fee") + " /-");
-
-                                    // Use a placeholder image for now
+                                    // Use a placeholder image
                                     doctorImages.add(R.drawable.plasholder);
                                 }
-
-                                // Notify adapter
                                 adapter.notifyDataSetChanged();
-
                             } else {
                                 Toast.makeText(requireContext(), "No history found", Toast.LENGTH_SHORT).show();
                             }
@@ -145,6 +137,6 @@ public class HistoryFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        handler.removeCallbacks(autoRefreshRunnable);  // Stop auto-refresh when fragment is destroyed
+        handler.removeCallbacks(autoRefreshRunnable);
     }
 }

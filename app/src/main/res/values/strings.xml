@@ -107,7 +107,25 @@
         <item>2024</item>
         <item>2025</item>
     </string-array>
+    <string-array name="gender_array">
+        <item>Male</item>
+        <item>Female</item>
+        <item>Other</item>
+    </string-array>
+
+    <string-array name="blood_group_array">
+        <item>A+</item>
+        <item>A-</item>
+        <item>B+</item>
+        <item>B-</item>
+        <item>AB+</item>
+        <item>AB-</item>
+        <item>O+</item>
+        <item>O-</item>
+    </string-array>
+
 
     <string name="cancellation_policy">By proceeding, you agree to our cancellation policy:\n• Cancellations within 24 hours may incur charges\n• No refunds for same-day cancellations\n• Rescheduling subject to availability</string>
+    <string name="view_medicine_medical_report"><![CDATA[View medicine & Medical Report]]></string>
 
 </resources>

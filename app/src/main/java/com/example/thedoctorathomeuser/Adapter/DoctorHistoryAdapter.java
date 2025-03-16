@@ -11,11 +11,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.thedoctorathomeuser.R;
 import com.example.thedoctorathomeuser.complet_bill;
 import com.example.thedoctorathomeuser.doctor_details;
-
+import com.example.thedoctorathomeuser.medical_riport;
 import java.util.List;
 
 public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdapter.ViewHolder> {
@@ -27,10 +26,13 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
     private List<String> appointmentDates;
     private List<String> appointmentPrices;
     private List<Integer> doctorImages;
+    // New list for appointment IDs
+    private List<Integer> appointmentIds;
 
     public DoctorHistoryAdapter(Context context, List<Integer> doctorIds, List<String> doctorNames,
                                 List<String> doctorSpecialties, List<String> appointmentDates,
-                                List<String> appointmentPrices, List<Integer> doctorImages) {
+                                List<String> appointmentPrices, List<Integer> doctorImages,
+                                List<Integer> appointmentIds) {
         this.context = context;
         this.doctorIds = doctorIds;
         this.doctorNames = doctorNames;
@@ -38,6 +40,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         this.appointmentDates = appointmentDates;
         this.appointmentPrices = appointmentPrices;
         this.doctorImages = doctorImages;
+        this.appointmentIds = appointmentIds;
     }
 
     @NonNull
@@ -55,9 +58,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         holder.appointmentPrice.setText(appointmentPrices.get(position));
         holder.doctorImage.setImageResource(doctorImages.get(position));
 
-        int doctorId = doctorIds.get(position);  // ✅ Get doctor_id for future use
-
-        // Set click listener to toggle the visibility of additional buttons
+        // Toggle details visibility
         holder.viewDetailsButton.setOnClickListener(v -> {
             if (holder.detailsLayout.getVisibility() == View.GONE) {
                 holder.detailsLayout.setVisibility(View.VISIBLE);
@@ -73,16 +74,18 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             context.startActivity(in);
         });
 
+        // Pass the appointment ID when launching the medical report activity
         holder.btnViewReport.setOnClickListener(v -> {
-            // Handle View Medical Report Click (Add action here)
+            Intent in = new Intent(context, medical_riport.class);
+            in.putExtra("appointment_id", String.valueOf(appointmentIds.get(position)));
+            context.startActivity(in);
         });
 
         holder.btnViewProfile.setOnClickListener(v -> {
             Intent intent = new Intent(context, doctor_details.class);
-            intent.putExtra("doctor_id", String.valueOf(doctorIds.get(position))); // ✅ Convert Integer to String
+            intent.putExtra("doctor_id", String.valueOf(doctorIds.get(position)));
             context.startActivity(intent);
         });
-
     }
 
     @Override

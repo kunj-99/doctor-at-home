@@ -118,7 +118,7 @@
                 android:id="@+id/btnViewReport"
                 android:layout_width="350dp"
                 android:layout_height="50dp"
-                android:text="View Medical Report"
+                android:text="@string/view_medicine_medical_report"
                 android:backgroundTint="@color/blue"
                 android:textColor="@android:color/white"/>
 

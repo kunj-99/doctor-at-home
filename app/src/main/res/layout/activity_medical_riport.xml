@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Hospital Header -->
+        <TextView
+            android:id="@+id/tv_hospital_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="VRAJ HOSPITAL"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tv_hospital_address"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="150 Feet Ring Road, Rajkot - 360 004"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:paddingBottom="16dp" />
+
+        <!-- Patient Details Section -->
+        <!-- Patient Details Section -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_patient_details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_patient_details_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Patient Details"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/black"
+                    android:paddingBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_patient_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Name: Vanatibai Macdonka"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_patient_age"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Age: 86 Years"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_patient_sex"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Sex: Female"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_patient_weight"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Weight: 63.8 kg"
+                    android:textSize="16sp" />
+
+                <!-- Added Address Field -->
+                <TextView
+                    android:id="@+id/tv_patient_address"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Address: 123 Main Street, Rajkot, India"
+                    android:textSize="16sp"
+                    android:paddingTop="4dp" />
+
+                <TextView
+                    android:id="@+id/tv_visit_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Date: 16/03/2025"
+                    android:textSize="16sp"
+                    android:paddingTop="4dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+
+        <!-- Vital Signs Section -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_vital_signs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_vital_signs_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Vital Signs"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/black"
+                    android:paddingBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_temperature"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Temperature: 97.4°F"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_pulse"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Pulse: 80/min"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_spo2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="SP02: 98%"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_blood_pressure"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Blood Pressure: 132/86 mmHg"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_respiratory"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Respiratory System: Clear"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Symptoms & Observations -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_symptoms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_symptoms_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Symptoms  Observations"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/black"
+                    android:paddingBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_symptoms"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Complaints of: Weakness, Tremors"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_no_fever"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No recurrent fevers"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_no_cough"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No cough, No cold"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_flu_symptoms"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Mild flu-like symptoms"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+
+
+
+
+
+        <!-- Prescribed Medications (Table Format) -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_medications"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_medications_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Prescribed Medications"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/black"
+                    android:paddingBottom="8dp" />
+
+                <TableLayout
+                    android:id="@+id/table_medications"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:stretchColumns="1">
+
+                    <TableRow>
+                        <TextView
+                            android:id="@+id/tv_med_no_header"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="No"
+                            android:textStyle="bold"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_medicine_header"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Medicine Name"
+                            android:textStyle="bold"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_dosage_header"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Dosage"
+                            android:textStyle="bold"
+                            android:textSize="16sp" />
+                    </TableRow>
+
+                    <TableRow>
+                        <TextView
+                            android:id="@+id/tv_med_no_1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_medicine_1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PCM 650 mg"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_dosage_1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1 Tab - 3 times/day"
+                            android:textSize="16sp" />
+                    </TableRow>
+
+                    <TableRow>
+                        <TextView
+                            android:id="@+id/tv_med_no_2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="2"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_medicine_2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tab. Ciplox"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_dosage_2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1 Tab - 2 times/day"
+                            android:textSize="16sp" />
+                    </TableRow>
+
+                    <TableRow>
+                        <TextView
+                            android:id="@+id/tv_med_no_3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="3"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_medicine_3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tab. Rabez IT"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_dosage_3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1 Tab - Morning"
+                            android:textSize="16sp" />
+                    </TableRow>
+
+                    <TableRow>
+                        <TextView
+                            android:id="@+id/tv_med_no_4"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="4"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_medicine_4"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tab. Becosules M3"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_dosage_4"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1 Tab - Night"
+                            android:textSize="16sp" />
+                    </TableRow>
+
+                    <TableRow>
+                        <TextView
+                            android:id="@+id/tv_med_no_5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="5"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_medicine_5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tab. Pantostec"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_dosage_5"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="1 Tab - Before Meals"
+                            android:textSize="16sp" />
+                    </TableRow>
+
+                    <TableRow>
+                        <TextView
+                            android:id="@+id/tv_med_no_6"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="6"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_medicine_6"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Naproxen"
+                            android:textSize="16sp" />
+                        <TextView
+                            android:id="@+id/tv_dosage_6"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="As needed for pain"
+                            android:textSize="16sp" />
+                    </TableRow>
+                </TableLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Investigations Suggested Section -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_investigations"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_investigations_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Investigations Suggested (if any)"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/black"
+                    android:paddingBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_investigations_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Blood Tests, X-ray, MRI, ECG, etc."
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+
+        <!-- Doctor’s Signature -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_doctor_signature"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_doctor_signature_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Doctor’s Signature"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/black"
+                    android:paddingBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/tv_doctor_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Dr. Bhavesh Virani"
+                    android:textSize="16sp" />
+                <TextView
+                    android:id="@+id/tv_doctor_details"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="MD Medicine, Reg No: 615543"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+</ScrollView>
