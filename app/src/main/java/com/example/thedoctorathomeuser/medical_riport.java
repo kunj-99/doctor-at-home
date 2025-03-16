@@ -19,6 +19,9 @@ import com.android.volley.toolbox.Volley;
 
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class medical_riport extends AppCompatActivity {
 
     // API endpoint URL (update with your actual server URL)
@@ -31,7 +34,7 @@ public class medical_riport extends AppCompatActivity {
     // UI elements (make sure these IDs match those in your layout file activity_medical_riport.xml)
     private TextView tvHospitalName, tvHospitalAddress;
     private TextView tvPatientName, tvPatientAddress, tvVisitDate;
-    private TextView tvPatientAge, tvPatientWeight , tvPatientSex;
+    private TextView tvPatientAge, tvPatientWeight, tvPatientSex;
     private TextView tvTemperature, tvPulse, tvSpo2, tvBloodPressure, tvRespiratory;
     private TextView tvSymptoms, tvInvestigations;
     private TextView tvDoctorName, tvDoctorDetails;
@@ -71,7 +74,7 @@ public class medical_riport extends AppCompatActivity {
         tvSymptoms = findViewById(R.id.tv_symptoms);
         tvInvestigations = findViewById(R.id.tv_investigations_content);
         tvDoctorName = findViewById(R.id.tv_doctor_name);
-        tvDoctorDetails = findViewById(R.id.tv_doctor_details);
+//        tvDoctorDetails = findViewById(R.id.tv_doctor_details);
 
         // Optionally, set static header texts
         tvHospitalName.setText("VRAJ HOSPITAL");
@@ -118,28 +121,26 @@ public class medical_riport extends AppCompatActivity {
                                     Log.d(TAG, "doctor_details: " + data.optString("doctor_details", "N/A"));
                                     Log.d(TAG, "age: " + data.optString("age", "N/A"));
                                     Log.d(TAG, "weight: " + data.optString("weight", "N/A"));
+                                    Log.d(TAG, "medications: " + data.optString("medications", ""));
+                                    Log.d(TAG, "dosage: " + data.optString("dosage", ""));
 
                                     // Update UI with fetched data
                                     tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
                                     tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
                                     tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
                                     tvTemperature.setText("Temperature: " + data.optString("temperature", "N/A"));
-
-                                    // Update age and weight correctly
                                     tvPatientAge.setText("Age: " + data.optString("age", "N/A") + " Years");
                                     tvPatientWeight.setText("Weight: " + data.optString("weight", "N/A") + " kg");
-                                    tvPatientSex.setText("Sex : "+ data.optString("sex","N/a"));
+                                    tvPatientSex.setText("Sex: " + data.optString("sex", "N/A"));
 
-                                    // Update additional vital signs if available
                                     tvPulse.setText("Pulse: " + data.optString("pulse", "N/A"));
                                     tvSpo2.setText("SP02: " + data.optString("spo2", "N/A"));
                                     tvBloodPressure.setText("Blood Pressure: " + data.optString("blood_pressure", "N/A"));
                                     tvRespiratory.setText("Respiratory: " + data.optString("respiratory_system", "N/A"));
-
                                     tvSymptoms.setText("Symptoms: " + data.optString("symptoms", "N/A"));
                                     tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
                                     tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
-//                                    tvDoctorDetails.setText(data.optString("doctor_details", "N/A"));
+                                    // tvDoctorDetails.setText(data.optString("doctor_details", "N/A"));
 
                                     // --- Parse and update the Medications table ---
                                     String medicationsStr = data.optString("medications", "");
@@ -152,8 +153,32 @@ public class medical_riport extends AppCompatActivity {
                                     String[] medicationsArray = medicationsStr.split("\\n");
                                     String[] dosageArray = dosageStr.split("\\n");
 
-                                    int rowCount = Math.min(medicationsArray.length, dosageArray.length);
-                                    Log.d(TAG, "Number of medication rows: " + rowCount);
+                                    // Filter out any empty lines
+                                    List<String> medList = new ArrayList<>();
+                                    for (String med : medicationsArray) {
+                                        med = med.trim();
+                                        if (!med.isEmpty()) {
+                                            if (med.endsWith(",")) {
+                                                med = med.substring(0, med.length() - 1);
+                                            }
+                                            medList.add(med);
+                                        }
+                                    }
+
+                                    List<String> dosageList = new ArrayList<>();
+                                    for (String dos : dosageArray) {
+                                        dos = dos.trim();
+                                        if (!dos.isEmpty()) {
+                                            if (dos.endsWith(",")) {
+                                                dos = dos.substring(0, dos.length() - 1);
+                                            }
+                                            dosageList.add(dos);
+                                        }
+                                    }
+
+                                    // Use maximum count so that if there is a missing dosage, it will be defaulted to an empty string.
+                                    int rowCount = Math.max(medList.size(), dosageList.size());
+                                    Log.d(TAG, "Number of medication rows after filtering: " + rowCount);
 
                                     // Obtain reference to the TableLayout from XML
                                     TableLayout tableMedications = findViewById(R.id.table_medications);
@@ -164,17 +189,15 @@ public class medical_riport extends AppCompatActivity {
                                         tableMedications.removeViews(1, childCount - 1);
                                     }
 
-                                    // Loop through each medication and add a row to the table
+                                    // Loop through each medication row
                                     for (int i = 0; i < rowCount; i++) {
-                                        String medName = medicationsArray[i].trim();
-                                        String dosage = dosageArray[i].trim();
-
-                                        // Remove trailing commas if present
-                                        if (medName.endsWith(",")) {
-                                            medName = medName.substring(0, medName.length() - 1);
+                                        String medName = "";
+                                        String dosage = "";
+                                        if (i < medList.size()) {
+                                            medName = medList.get(i);
                                         }
-                                        if (dosage.endsWith(",")) {
-                                            dosage = dosage.substring(0, dosage.length() - 1);
+                                        if (i < dosageList.size()) {
+                                            dosage = dosageList.get(i);
                                         }
 
                                         // Create a new TableRow

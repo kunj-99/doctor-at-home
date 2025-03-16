@@ -198,27 +198,6 @@
                     android:layout_height="wrap_content"
                     android:text="Complaints of: Weakness, Tremors"
                     android:textSize="16sp" />
-
-<!--                <TextView-->
-<!--                    android:id="@+id/tv_no_fever"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="No recurrent fevers"-->
-<!--                    android:textSize="16sp" />-->
-
-<!--                <TextView-->
-<!--                    android:id="@+id/tv_no_cough"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="No cough, No cold"-->
-<!--                    android:textSize="16sp" />-->
-
-<!--                <TextView-->
-<!--                    android:id="@+id/tv_flu_symptoms"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="Mild flu-like symptoms"-->
-<!--                    android:textSize="16sp" />-->
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -247,14 +226,13 @@
                     android:textColor="@color/black"
                     android:paddingBottom="8dp" />
 
-                <!-- Note: The table rows below are placeholders.
-                     You may want to generate these rows dynamically based on the API response -->
                 <TableLayout
                     android:id="@+id/table_medications"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:stretchColumns="1">
 
+                    <!-- Header Row -->
                     <TableRow>
                         <TextView
                             android:id="@+id/tv_med_no_header"
@@ -278,133 +256,7 @@
                             android:textStyle="bold"
                             android:textSize="16sp" />
                     </TableRow>
-
-                    <!-- Example Medication Rows -->
-                    <TableRow>
-                        <TextView
-                            android:id="@+id/tv_med_no_1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="1"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_medicine_1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="PCM 650 mg"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_dosage_1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="1 Tab - 3 times/day"
-                            android:textSize="16sp" />
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:id="@+id/tv_med_no_2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="2"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_medicine_2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tab. Ciplox"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_dosage_2"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="1 Tab - 2 times/day"
-                            android:textSize="16sp" />
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:id="@+id/tv_med_no_3"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="3"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_medicine_3"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tab. Rabez IT"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_dosage_3"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="1 Tab - Morning"
-                            android:textSize="16sp" />
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:id="@+id/tv_med_no_4"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="4"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_medicine_4"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tab. Becosules M3"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_dosage_4"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="1 Tab - Night"
-                            android:textSize="16sp" />
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:id="@+id/tv_med_no_5"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="5"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_medicine_5"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tab. Pantostec"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_dosage_5"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="1 Tab - Before Meals"
-                            android:textSize="16sp" />
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:id="@+id/tv_med_no_6"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="6"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_medicine_6"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Naproxen"
-                            android:textSize="16sp" />
-                        <TextView
-                            android:id="@+id/tv_dosage_6"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="As needed for pain"
-                            android:textSize="16sp" />
-                    </TableRow>
+                    <!-- Dynamic medication rows will be added here -->
                 </TableLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -474,12 +326,12 @@
                     android:layout_height="wrap_content"
                     android:text="Dr. Bhavesh Virani"
                     android:textSize="16sp" />
-                <TextView
-                    android:id="@+id/tv_doctor_details"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="MD Medicine, Reg No: 615543"
-                    android:textSize="16sp" />
+<!--                <TextView-->
+<!--                    android:id="@+id/tv_doctor_details"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="MD Medicine, Reg No: 615543"-->
+<!--                    android:textSize="16sp" />-->
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
