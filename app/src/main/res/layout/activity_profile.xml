@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/white">
 
     <LinearLayout
@@ -17,7 +18,8 @@
             android:layout_width="match_parent"
             android:layout_height="230dp"
             android:layout_marginBottom="20dp"
-            android:background="@drawable/bottom_curve">
+            android:background="@drawable/bottom_curve"
+            android:paddingTop="0dp">
 
             <!-- Back Button -->
             <ImageView
@@ -29,7 +31,7 @@
                 android:src="@drawable/ic_back_arrow"
                 android:contentDescription="Back Button"
                 android:clickable="true"
-                android:focusable="true"/>
+                android:focusable="true" />
 
             <!-- Profile Picture & Name -->
             <LinearLayout
@@ -46,7 +48,7 @@
                     android:layout_height="100dp"
                     android:src="@drawable/pr_ic_profile_placeholder"
                     app:civ_border_color="@color/black"
-                    app:civ_border_width="2dp"/>
+                    app:civ_border_width="2dp" />
 
                 <TextView
                     android:id="@+id/tv_username"
@@ -56,146 +58,259 @@
                     android:textColor="@color/white"
                     android:textSize="24sp"
                     android:textStyle="bold"
-                    android:layout_marginTop="10dp"/>
+                    android:layout_marginTop="10dp" />
             </LinearLayout>
         </RelativeLayout>
 
-        <!-- Editable Form Fields -->
+        <!-- Editable Form Fields with Titles -->
+
+        <!-- Full Name -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Full Name"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_full_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Full Name"
+            android:hint="Enter Full Name"
             android:inputType="textPersonName"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
+
+        <!-- Date of Birth -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Date of Birth"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
 
         <EditText
             android:id="@+id/et_date_of_birth"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Date of Birth"
-            android:inputType="date"
+            android:hint="Enter Date of Birth"
+            android:focusable="false"
+            android:clickable="true"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
+        <!-- Gender -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Gender"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <Spinner
             android:id="@+id/spinner_gender"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp"
+            android:prompt="@string/app_name" />
 
+        <!-- Blood Group -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Blood Group"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <Spinner
             android:id="@+id/spinner_blood_group"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp"
+            android:prompt="@string/app_name" />
 
+        <!-- Address -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Address"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_address"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Address"
+            android:hint="Enter Address"
             android:inputType="textPostalAddress"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
+        <!-- Mobile Number -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mobile Number"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_mobile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Mobile Number"
+            android:hint="Enter Mobile Number"
             android:inputType="phone"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
+        <!-- Email -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Email"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email"
+            android:hint="Enter Email"
             android:inputType="textEmailAddress"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
+        <!-- Emergency Contact Name -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Emergency Contact Name"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_emergency_contact_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Emergency Contact Name"
+            android:hint="Enter Emergency Contact Name"
             android:inputType="textPersonName"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
+        <!-- Emergency Contact Number -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Emergency Contact Number"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_emergency_contact_number"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Emergency Contact Number"
+            android:hint="Enter Emergency Contact Number"
             android:inputType="phone"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
+        <!-- Medical History -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Medical History"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_medical_history"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Medical History"
+            android:hint="Enter Medical History"
             android:inputType="textMultiLine"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
+        <!-- Allergies -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Allergies"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_allergies"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Allergies"
+            android:hint="Enter Allergies"
             android:inputType="textMultiLine"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp" />
 
+        <!-- Current Medications -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Current Medications"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="4dp" />
         <EditText
             android:id="@+id/et_current_medications"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Current Medications"
+            android:hint="Enter Current Medications"
             android:inputType="textMultiLine"
             android:background="@drawable/bg_edit_text"
             android:padding="12dp"
             android:textColor="@color/black"
             android:textColorHint="@color/gray"
-            android:layout_marginBottom="30dp"/>
+            android:layout_marginBottom="30dp" />
 
         <!-- Update Profile Button -->
         <Button
@@ -205,6 +320,6 @@
             android:backgroundTint="@color/blue"
             android:text="Update Profile"
             android:textColor="@color/white"
-            android:padding="12dp"/>
+            android:padding="12dp" />
     </LinearLayout>
 </ScrollView>

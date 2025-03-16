@@ -1,6 +1,7 @@
 package com.example.thedoctorathomeuser;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.icu.text.SimpleDateFormat;
 import android.os.Build;
 import android.os.Bundle;
@@ -8,7 +9,9 @@ import android.util.Log;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -21,6 +24,7 @@ import com.cashfree.pg.core.api.exception.CFException;
 import com.cashfree.pg.core.api.utils.CFErrorResponse;
 import com.cashfree.pg.core.api.webcheckout.CFWebCheckoutPayment;
 import com.cashfree.pg.core.api.webcheckout.CFWebCheckoutTheme;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -33,7 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class pending_bill extends AppCompatActivity implements CFCheckoutResponseCallback {
 
     private static final String TAG = "PendingBill";
-
     private CFPaymentGatewayService gatewayService;
     private String orderID;
     private String paymentSessionID;
@@ -43,8 +46,8 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
 
     // Booking Data
     private String patientName, age, gender, problem, address, doctorId, doctorName, Status, selectedPaymentMethod;
+    private String patientId;  // Retrieved from SharedPreferences
 
-    // Flag to track if a request is in progress
     private AtomicBoolean isProcessing = new AtomicBoolean(false);
     private Button payButton;
 
@@ -53,7 +56,6 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pending_bill);
 
-        // Get booking details from Intent
         Intent intent = getIntent();
         patientName = intent.getStringExtra("patient_name");
         age = String.valueOf(intent.getIntExtra("age", 0));
@@ -63,16 +65,23 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         doctorId = intent.getStringExtra("doctor_id");
         doctorName = intent.getStringExtra("doctorName");
         Status = intent.getStringExtra("appointment_status");
-
-        if (Status != null) {
-            if (Status.equals("Request for visit")) {
-                Status = "Requested";
-            } else if (Status.equals("Book Appointment")) {
-                Status = "Confirmed";
-            }
+        if ("Request for visit".equals(Status)) {
+            Status = "Requested";
+        } else if ("Book Appointment".equals(Status)) {
+            Status = "Confirmed";
         }
 
-        // Initialize Cashfree SDK
+        // Retrieve patient_id from SharedPreferences
+        SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        patientId = sp.getString("patient_id", "");
+        if (patientId.isEmpty()) {
+            Log.e(TAG, "Patient ID not found in SharedPreferences");
+            Toast.makeText(this, "Patient ID not available", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+        Log.d(TAG, "Patient ID retrieved: " + patientId);
+
         try {
             gatewayService = CFPaymentGatewayService.getInstance();
             gatewayService.setCheckoutCallback(this);
@@ -86,20 +95,16 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         payButton = findViewById(R.id.pay_button);
 
         payButton.setOnClickListener(v -> {
-            // Check if processing is already happening and prevent multiple clicks
             if (isProcessing.compareAndSet(false, true)) {
                 try {
-                    // Disable the button to provide visual feedback
                     payButton.setEnabled(false);
-
-                    // Show processing message
                     Toast.makeText(pending_bill.this, "Processing your request...", Toast.LENGTH_SHORT).show();
 
                     int selectedId = paymentMethodGroup.getCheckedRadioButtonId();
                     selectedPaymentMethod = (selectedId == R.id.payment_online) ? "Online" : "Offline";
 
                     if (selectedId == R.id.payment_online) {
-                        generateSessionToken();  // Online Payment
+                        generateSessionToken();
                     } else if (selectedId == R.id.payment_offline) {
                         saveBookingData();
                     }
@@ -114,29 +119,25 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         });
     }
 
-    // Helper method to reset the processing state
     private void resetProcessingState() {
         isProcessing.set(false);
         runOnUiThread(() -> payButton.setEnabled(true));
     }
 
     private void generateSessionToken() {
-        orderID = "ORDER_" + System.currentTimeMillis(); // Unique order ID
-        String url = "https://sandbox.cashfree.com/pg/orders"; // Sandbox API
+        orderID = "ORDER_" + System.currentTimeMillis();
+        String url = "https://sandbox.cashfree.com/pg/orders";
 
-        // Create request body
         JSONObject requestBody = new JSONObject();
         try {
             requestBody.put("order_id", orderID);
             requestBody.put("order_amount", "100.00");
             requestBody.put("order_currency", "INR");
 
-            // Customer details inside "customer_details"
             JSONObject customerDetails = new JSONObject();
             customerDetails.put("customer_id", doctorId);
             customerDetails.put("customer_email", "test@example.com");
             customerDetails.put("customer_phone", "9999999999");
-
             requestBody.put("customer_details", customerDetails);
         } catch (JSONException e) {
             Log.e(TAG, "Error preparing payment JSON: " + e.getMessage());
@@ -145,7 +146,6 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
             return;
         }
 
-        // API Request to generate session token
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, requestBody,
                 response -> {
                     try {
@@ -187,7 +187,6 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         requestQueue.add(jsonObjectRequest);
     }
 
-    // Start Payment
     private void startPayment() {
         try {
             CFSession cfSession = new CFSession.CFSessionBuilder()
@@ -214,18 +213,15 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
         }
     }
 
-    // Handle Payment Success and store data in DB
     @Override
     public void onPaymentVerify(String orderID) {
         Log.i(TAG, "Payment verified for order: " + orderID);
         saveBookingData();
-        runOnUiThread(() -> {
-            Toast.makeText(this, "Payment Verified! Order ID: " + orderID, Toast.LENGTH_LONG).show();
-        });
+        runOnUiThread(() -> Toast.makeText(this, "Payment Verified! Order ID: " + orderID, Toast.LENGTH_LONG).show());
     }
 
     @Override
-    public void onPaymentFailure(CFErrorResponse cfErrorResponse, String orderID) {
+    public void onPaymentFailure(com.cashfree.pg.core.api.utils.CFErrorResponse cfErrorResponse, String orderID) {
         Log.e(TAG, "Payment failed for order: " + orderID + ", Error: " + cfErrorResponse.getMessage());
         resetProcessingState();
         runOnUiThread(() -> Toast.makeText(this, "Payment Failed! Order ID: " + orderID, Toast.LENGTH_LONG).show());
@@ -239,20 +235,18 @@ public class pending_bill extends AppCompatActivity implements CFCheckoutRespons
                     Log.i(TAG, "Appointment saved successfully");
                     resetProcessingState();
                     Toast.makeText(this, "Appointment saved successfully!", Toast.LENGTH_SHORT).show();
-                    // Move to success screen or finish activity
                     finish();
                 },
                 error -> {
                     resetProcessingState();
-                    Log.e(TAG, "Failed to save appointment: " +
-                            (error.getMessage() != null ? error.getMessage() : "Unknown error"));
+                    Log.e(TAG, "Failed to save appointment: " + (error.getMessage() != null ? error.getMessage() : "Unknown error"));
                     Toast.makeText(this, "Error saving appointment. Contact support.", Toast.LENGTH_LONG).show();
                 }
         ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
-                params.put("patient_id", "1");
+                params.put("patient_id", patientId);
                 params.put("patient_name", patientName);
                 params.put("age", age);
                 params.put("gender", gender);

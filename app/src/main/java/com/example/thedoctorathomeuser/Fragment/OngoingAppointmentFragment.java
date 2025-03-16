@@ -1,5 +1,7 @@
 package com.example.thedoctorathomeuser.Fragment;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import androidx.annotation.NonNull;
@@ -7,14 +9,12 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
-
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
-
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -24,11 +24,9 @@ import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.Adapter.OngoingAdapter;
 import com.example.thedoctorathomeuser.MainActivity;
 import com.example.thedoctorathomeuser.R;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +38,7 @@ public class OngoingAppointmentFragment extends Fragment {
     private Button bookAppointment;
     private OngoingAdapter adapter;
 
-    private static final String PATIENT_ID = "1"; // Change to dynamic if needed
+    private String patientId;
     private static final String API_URL = "http://sxm.a58.mytemp.website/getOngoingAppointment.php";
     private static final int REFRESH_INTERVAL = 5000; // 5 seconds
 
@@ -49,7 +47,7 @@ public class OngoingAppointmentFragment extends Fragment {
     private List<String> hospitals = new ArrayList<>();
     private List<Float> ratings = new ArrayList<>();
     private List<Integer> imageResIds = new ArrayList<>();
-    private List<Integer> appointmentIds = new ArrayList<>();  // ✅ Added list to store appointment IDs
+    private List<Integer> appointmentIds = new ArrayList<>();
 
     private Handler handler = new Handler();
     private Runnable refreshRunnable;
@@ -64,19 +62,27 @@ public class OngoingAppointmentFragment extends Fragment {
             vp = mainActivity.findViewById(R.id.vp);
         }
 
+        // Retrieve patient_id from SharedPreferences
+        SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        patientId = sp.getString("patient_id", "");
+        if (patientId.isEmpty()) {
+            Log.e("OngoingAppointmentFragment", "Patient ID not found in SharedPreferences");
+            Toast.makeText(getContext(), "Patient ID not available", Toast.LENGTH_SHORT).show();
+        } else {
+            Log.d("OngoingAppointmentFragment", "Patient ID retrieved: " + patientId);
+        }
+
         bookAppointment = view.findViewById(R.id.bookButton);
         recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // ✅ Updated adapter to include appointmentIds
         adapter = new OngoingAdapter(requireContext(), doctorNames, specialties, hospitals, ratings, imageResIds, appointmentIds);
         recyclerView.setAdapter(adapter);
 
-        fetchOngoingAppointments(); // Initial fetch
+        fetchOngoingAppointments();
 
         bookAppointment.setOnClickListener(v -> vp.setCurrentItem(1));
 
-        // Auto-refresh every 5 seconds
         startAutoRefresh();
 
         return view;
@@ -102,7 +108,7 @@ public class OngoingAppointmentFragment extends Fragment {
                             hospitals.clear();
                             ratings.clear();
                             imageResIds.clear();
-                            appointmentIds.clear();  // ✅ Clear previous appointment IDs
+                            appointmentIds.clear();
 
                             for (int i = 0; i < appointmentsArray.length(); i++) {
                                 JSONObject appointment = appointmentsArray.getJSONObject(i);
@@ -113,17 +119,15 @@ public class OngoingAppointmentFragment extends Fragment {
                                 hospitals.add(appointment.getString("hospital_name"));
                                 ratings.add((float) appointment.getDouble("experience"));
                                 imageResIds.add(R.drawable.main1);
-                                appointmentIds.add(appointment.getInt("appointment_id"));  // ✅ Store appointment ID
+                                appointmentIds.add(appointment.getInt("appointment_id"));
                             }
 
-                            // ✅ Prevent UI update if fragment is not attached
                             if (isAdded()) {
                                 requireActivity().runOnUiThread(() -> {
                                     adapter.notifyDataSetChanged();
                                     Log.d("ADAPTER_UPDATE", "Adapter updated with " + doctorNames.size() + " items");
                                 });
                             }
-
                         } else {
                             Toast.makeText(requireContext(), "No ongoing appointments found", Toast.LENGTH_SHORT).show();
                         }
@@ -140,7 +144,7 @@ public class OngoingAppointmentFragment extends Fragment {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
-                params.put("patient_id", PATIENT_ID);
+                params.put("patient_id", patientId);
                 return params;
             }
         };
@@ -149,13 +153,12 @@ public class OngoingAppointmentFragment extends Fragment {
         requestQueue.add(stringRequest);
     }
 
-    // 🔄 Start auto-refreshing data every 5 seconds
     private void startAutoRefresh() {
-        stopAutoRefresh(); // Prevent multiple handlers running
+        stopAutoRefresh();
         refreshRunnable = new Runnable() {
             @Override
             public void run() {
-                if (isAdded()) { // ✅ Only fetch data if fragment is attached
+                if (isAdded()) {
                     fetchOngoingAppointments();
                     handler.postDelayed(this, REFRESH_INTERVAL);
                 }
@@ -164,7 +167,6 @@ public class OngoingAppointmentFragment extends Fragment {
         handler.postDelayed(refreshRunnable, REFRESH_INTERVAL);
     }
 
-    // 🛑 Stop auto-refreshing when fragment is destroyed
     private void stopAutoRefresh() {
         if (refreshRunnable != null) {
             handler.removeCallbacks(refreshRunnable);

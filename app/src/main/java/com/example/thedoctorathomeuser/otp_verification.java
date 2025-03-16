@@ -70,7 +70,7 @@ public class otp_verification extends AppCompatActivity {
     }
 
     private void verifyOtp() {
-        String enteredOtp = etOtp.getText().toString().trim();
+        final String enteredOtp = etOtp.getText().toString().trim();
 
         if (enteredOtp.isEmpty()) {
             Log.w(TAG, "OTP field is empty.");
@@ -96,16 +96,19 @@ public class otp_verification extends AppCompatActivity {
                                 String userId = jsonObject.getString("user_id");
                                 String username = jsonObject.getString("username");
                                 String email = jsonObject.getString("email");
+                                // Retrieve patient_id from API response
+                                String patientId = jsonObject.getString("patient_id");
 
                                 // Store user data in SharedPreferences
                                 SharedPreferences.Editor editor = sharedPreferences.edit();
                                 editor.putString("user_id", userId);
                                 editor.putString("username", username);
                                 editor.putString("email", email);
+                                editor.putString("patient_id", patientId);
                                 editor.apply();
 
                                 Log.d(TAG, "User data saved in SharedPreferences: user_id=" + userId +
-                                        ", username=" + username + ", email=" + email);
+                                        ", username=" + username + ", email=" + email + ", patient_id=" + patientId);
 
                                 // Redirect to MainActivity
                                 Intent intent = new Intent(otp_verification.this, MainActivity.class);
