@@ -34,7 +34,6 @@
             android:paddingBottom="16dp" />
 
         <!-- Patient Details Section -->
-        <!-- Patient Details Section -->
         <androidx.cardview.widget.CardView
             android:id="@+id/card_patient_details"
             android:layout_width="match_parent"
@@ -53,11 +52,11 @@
                     android:id="@+id/tv_patient_details_header"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:paddingBottom="8dp"
                     android:text="Patient Details"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
                     android:textColor="@color/black"
-                    android:paddingBottom="8dp" />
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_patient_name"
@@ -92,20 +91,19 @@
                     android:id="@+id/tv_patient_address"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingTop="4dp"
                     android:text="Address: 123 Main Street, Rajkot, India"
-                    android:textSize="16sp"
-                    android:paddingTop="4dp" />
+                    android:textSize="16sp" />
 
                 <TextView
                     android:id="@+id/tv_visit_date"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingTop="4dp"
                     android:text="Date: 16/03/2025"
-                    android:textSize="16sp"
-                    android:paddingTop="4dp" />
+                    android:textSize="16sp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
-
 
         <!-- Vital Signs Section -->
         <androidx.cardview.widget.CardView
@@ -201,33 +199,28 @@
                     android:text="Complaints of: Weakness, Tremors"
                     android:textSize="16sp" />
 
-                <TextView
-                    android:id="@+id/tv_no_fever"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="No recurrent fevers"
-                    android:textSize="16sp" />
+<!--                <TextView-->
+<!--                    android:id="@+id/tv_no_fever"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="No recurrent fevers"-->
+<!--                    android:textSize="16sp" />-->
 
-                <TextView
-                    android:id="@+id/tv_no_cough"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="No cough, No cold"
-                    android:textSize="16sp" />
+<!--                <TextView-->
+<!--                    android:id="@+id/tv_no_cough"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="No cough, No cold"-->
+<!--                    android:textSize="16sp" />-->
 
-                <TextView
-                    android:id="@+id/tv_flu_symptoms"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Mild flu-like symptoms"
-                    android:textSize="16sp" />
+<!--                <TextView-->
+<!--                    android:id="@+id/tv_flu_symptoms"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Mild flu-like symptoms"-->
+<!--                    android:textSize="16sp" />-->
             </LinearLayout>
         </androidx.cardview.widget.CardView>
-
-
-
-
-
 
         <!-- Prescribed Medications (Table Format) -->
         <androidx.cardview.widget.CardView
@@ -254,6 +247,8 @@
                     android:textColor="@color/black"
                     android:paddingBottom="8dp" />
 
+                <!-- Note: The table rows below are placeholders.
+                     You may want to generate these rows dynamically based on the API response -->
                 <TableLayout
                     android:id="@+id/table_medications"
                     android:layout_width="match_parent"
@@ -284,6 +279,7 @@
                             android:textSize="16sp" />
                     </TableRow>
 
+                    <!-- Example Medication Rows -->
                     <TableRow>
                         <TextView
                             android:id="@+id/tv_med_no_1"
@@ -447,7 +443,6 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-
         <!-- Doctor’s Signature -->
         <androidx.cardview.widget.CardView
             android:id="@+id/card_doctor_signature"
@@ -487,5 +482,43 @@
                     android:textSize="16sp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+
+        <!-- Report Details Section (Updated: Only Report Type is displayed) -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_report_details"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_report_details_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Report Details"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="@color/black"
+                    android:paddingBottom="8dp" />
+
+                <!-- Report Type -->
+                <TextView
+                    android:id="@+id/tv_report_type"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Report Type: Initial"
+                    android:textSize="16sp"
+                    android:paddingBottom="8dp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
     </LinearLayout>
 </ScrollView>

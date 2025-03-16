@@ -42,6 +42,7 @@
             android:hint="enter otp"
             android:inputType="phone"
             android:padding="12dp"
+            android:maxLength="4"
             android:textColor="#000000"
             android:textColorHint="#9E9E9E" />
 

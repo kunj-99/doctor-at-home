@@ -1,7 +1,10 @@
 package com.example.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -28,6 +31,7 @@ public class medical_riport extends AppCompatActivity {
     // UI elements (make sure these IDs match those in your layout file activity_medical_riport.xml)
     private TextView tvHospitalName, tvHospitalAddress;
     private TextView tvPatientName, tvPatientAddress, tvVisitDate;
+    private TextView tvPatientAge, tvPatientWeight , tvPatientSex;
     private TextView tvTemperature, tvPulse, tvSpo2, tvBloodPressure, tvRespiratory;
     private TextView tvSymptoms, tvInvestigations;
     private TextView tvDoctorName, tvDoctorDetails;
@@ -35,6 +39,7 @@ public class medical_riport extends AppCompatActivity {
     private RequestQueue requestQueue;
     private static final String TAG = "MedicalReport";
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,8 +60,11 @@ public class medical_riport extends AppCompatActivity {
         tvPatientName = findViewById(R.id.tv_patient_name);
         tvPatientAddress = findViewById(R.id.tv_patient_address);
         tvVisitDate = findViewById(R.id.tv_visit_date);
+        tvPatientAge = findViewById(R.id.tv_patient_age);
+        tvPatientSex = findViewById(R.id.tv_patient_sex);
+        tvPatientWeight = findViewById(R.id.tv_patient_weight);
         tvTemperature = findViewById(R.id.tv_temperature);
-        tvPulse = findViewById(R.id.tv_pulse);               // Ensure these exist in your XML
+        tvPulse = findViewById(R.id.tv_pulse);
         tvSpo2 = findViewById(R.id.tv_spo2);
         tvBloodPressure = findViewById(R.id.tv_blood_pressure);
         tvRespiratory = findViewById(R.id.tv_respiratory);
@@ -82,35 +90,136 @@ public class medical_riport extends AppCompatActivity {
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 new Response.Listener<JSONObject>() {
+                    @SuppressLint("SetTextI18n")
                     @Override
                     public void onResponse(JSONObject response) {
-                        Log.d(TAG, "API Response: " + response.toString());
+                        Log.d(TAG, "API Response received: " + response.toString());
+
                         try {
-                            if (response.getString("status").equals("success")) {
-                                JSONObject data = response.getJSONObject("data");
+                            String status = response.optString("status", "");
+                            Log.d(TAG, "Response status: " + status);
 
-                                // Update UI with fetched data
-                                tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
-                                tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
-                                tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
-                                tvTemperature.setText("Temperature: " + data.optString("temperature", "N/A"));
+                            if (status.equalsIgnoreCase("success")) {
+                                JSONObject data = response.optJSONObject("data");
+                                if (data != null) {
+                                    Log.d(TAG, "Data object received: " + data.toString());
+                                    // Log individual fields for debugging
+                                    Log.d(TAG, "patient_name: " + data.optString("patient_name", "N/A"));
+                                    Log.d(TAG, "patient_address: " + data.optString("patient_address", "N/A"));
+                                    Log.d(TAG, "visit_date: " + data.optString("visit_date", "N/A"));
+                                    Log.d(TAG, "temperature: " + data.optString("temperature", "N/A"));
+                                    Log.d(TAG, "pulse: " + data.optString("pulse", "N/A"));
+                                    Log.d(TAG, "spo2: " + data.optString("spo2", "N/A"));
+                                    Log.d(TAG, "blood_pressure: " + data.optString("blood_pressure", "N/A"));
+                                    Log.d(TAG, "respiratory_system: " + data.optString("respiratory_system", "N/A"));
+                                    Log.d(TAG, "symptoms: " + data.optString("symptoms", "N/A"));
+                                    Log.d(TAG, "investigations: " + data.optString("investigations", "N/A"));
+                                    Log.d(TAG, "doctor_name: " + data.optString("doctor_name", "N/A"));
+                                    Log.d(TAG, "doctor_details: " + data.optString("doctor_details", "N/A"));
+                                    Log.d(TAG, "age: " + data.optString("age", "N/A"));
+                                    Log.d(TAG, "weight: " + data.optString("weight", "N/A"));
 
-                                // Update additional vital signs if available
-                                tvPulse.setText("Pulse: " + data.optString("pulse", "N/A"));
-                                tvSpo2.setText("SP02: " + data.optString("spo2", "N/A"));
-                                tvBloodPressure.setText("Blood Pressure: " + data.optString("blood_pressure", "N/A"));
-                                tvRespiratory.setText("Respiratory: " + data.optString("respiratory_system", "N/A"));
+                                    // Update UI with fetched data
+                                    tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
+                                    tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
+                                    tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
+                                    tvTemperature.setText("Temperature: " + data.optString("temperature", "N/A"));
 
-                                tvSymptoms.setText("Symptoms: " + data.optString("symptoms", "N/A"));
-                                tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
-                                tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
-                                tvDoctorDetails.setText(data.optString("doctor_details", "N/A"));
+                                    // Update age and weight correctly
+                                    tvPatientAge.setText("Age: " + data.optString("age", "N/A") + " Years");
+                                    tvPatientWeight.setText("Weight: " + data.optString("weight", "N/A") + " kg");
+                                    tvPatientSex.setText("Sex : "+ data.optString("sex","N/a"));
+
+                                    // Update additional vital signs if available
+                                    tvPulse.setText("Pulse: " + data.optString("pulse", "N/A"));
+                                    tvSpo2.setText("SP02: " + data.optString("spo2", "N/A"));
+                                    tvBloodPressure.setText("Blood Pressure: " + data.optString("blood_pressure", "N/A"));
+                                    tvRespiratory.setText("Respiratory: " + data.optString("respiratory_system", "N/A"));
+
+                                    tvSymptoms.setText("Symptoms: " + data.optString("symptoms", "N/A"));
+                                    tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
+                                    tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
+//                                    tvDoctorDetails.setText(data.optString("doctor_details", "N/A"));
+
+                                    // --- Parse and update the Medications table ---
+                                    String medicationsStr = data.optString("medications", "");
+                                    String dosageStr = data.optString("dosage", "");
+
+                                    Log.d(TAG, "Medications string: " + medicationsStr);
+                                    Log.d(TAG, "Dosage string: " + dosageStr);
+
+                                    // Split the strings by newline (\\n)
+                                    String[] medicationsArray = medicationsStr.split("\\n");
+                                    String[] dosageArray = dosageStr.split("\\n");
+
+                                    int rowCount = Math.min(medicationsArray.length, dosageArray.length);
+                                    Log.d(TAG, "Number of medication rows: " + rowCount);
+
+                                    // Obtain reference to the TableLayout from XML
+                                    TableLayout tableMedications = findViewById(R.id.table_medications);
+
+                                    // Remove any existing rows except header (assuming header is at index 0)
+                                    int childCount = tableMedications.getChildCount();
+                                    if (childCount > 1) {
+                                        tableMedications.removeViews(1, childCount - 1);
+                                    }
+
+                                    // Loop through each medication and add a row to the table
+                                    for (int i = 0; i < rowCount; i++) {
+                                        String medName = medicationsArray[i].trim();
+                                        String dosage = dosageArray[i].trim();
+
+                                        // Remove trailing commas if present
+                                        if (medName.endsWith(",")) {
+                                            medName = medName.substring(0, medName.length() - 1);
+                                        }
+                                        if (dosage.endsWith(",")) {
+                                            dosage = dosage.substring(0, dosage.length() - 1);
+                                        }
+
+                                        // Create a new TableRow
+                                        TableRow row = new TableRow(medical_riport.this);
+                                        TableRow.LayoutParams lp = new TableRow.LayoutParams(
+                                                TableRow.LayoutParams.WRAP_CONTENT,
+                                                TableRow.LayoutParams.WRAP_CONTENT);
+                                        row.setLayoutParams(lp);
+
+                                        // Create a TextView for the row number
+                                        TextView tvNo = new TextView(medical_riport.this);
+                                        tvNo.setText(String.valueOf(i + 1));
+                                        tvNo.setTextSize(16);
+                                        tvNo.setPadding(4, 4, 4, 4);
+
+                                        // Create a TextView for the medicine name
+                                        TextView tvMedName = new TextView(medical_riport.this);
+                                        tvMedName.setText(medName);
+                                        tvMedName.setTextSize(16);
+                                        tvMedName.setPadding(4, 4, 4, 4);
+
+                                        // Create a TextView for the dosage
+                                        TextView tvDosage = new TextView(medical_riport.this);
+                                        tvDosage.setText(dosage);
+                                        tvDosage.setTextSize(16);
+                                        tvDosage.setPadding(4, 4, 4, 4);
+
+                                        // Add the TextViews to the TableRow
+                                        row.addView(tvNo);
+                                        row.addView(tvMedName);
+                                        row.addView(tvDosage);
+
+                                        // Add the TableRow to the TableLayout
+                                        tableMedications.addView(row);
+                                    }
+                                } else {
+                                    Toast.makeText(medical_riport.this, "Report not found", Toast.LENGTH_SHORT).show();
+                                    Log.e(TAG, "Report not found. Returned status: " + status);
+                                }
                             } else {
                                 Toast.makeText(medical_riport.this, "Report not found", Toast.LENGTH_SHORT).show();
-                                Log.e(TAG, "Report not found in API response");
+                                Log.e(TAG, "Report not found. Returned status: " + status);
                             }
                         } catch (Exception e) {
-                            Log.e(TAG, "Parsing error: " + e.getMessage(), e);
+                            Log.e(TAG, "Exception during parsing: " + e.getMessage(), e);
                             Toast.makeText(medical_riport.this, "Error parsing report data", Toast.LENGTH_SHORT).show();
                         }
                     }
@@ -118,7 +227,11 @@ public class medical_riport extends AppCompatActivity {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.e(TAG, "Volley error", error);
+                        if (error.networkResponse != null) {
+                            Log.e(TAG, "Volley error. HTTP Status Code: " + error.networkResponse.statusCode);
+                            Log.e(TAG, "Volley error data: " + new String(error.networkResponse.data));
+                        }
+                        Log.e(TAG, "Volley error: " + error.getMessage(), error);
                         Toast.makeText(medical_riport.this, "Error fetching report", Toast.LENGTH_SHORT).show();
                     }
                 }
