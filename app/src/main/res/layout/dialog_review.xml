@@ -40,13 +40,33 @@
         android:textColor="@android:color/black"
         android:minHeight="100dp"/>
 
-    <!-- Submit Button -->
-    <Button
-        android:id="@+id/btnSubmitReview"
+    <!-- Buttons Layout -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Submit"
-        android:textColor="@android:color/white"
-        android:backgroundTint="@color/blue"
-        android:layout_marginTop="15dp" />
+        android:orientation="horizontal"
+        android:layout_marginTop="15dp"
+        android:gravity="center">
+
+        <!-- Submit Button -->
+        <Button
+            android:id="@+id/btnSubmitReview"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Submit"
+            android:textColor="@android:color/white"
+            android:backgroundTint="@color/blue"
+            android:layout_marginEnd="20dp"/>
+
+        <!-- Cancel Button -->
+        <Button
+            android:id="@+id/btnCancelReview"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="skip"
+            android:textColor="@color/black"
+            android:backgroundTint="@android:color/darker_gray" />
+    </LinearLayout>
 </LinearLayout>

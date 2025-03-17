@@ -115,11 +115,13 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
     private void checkAndPromptForReview(int doctorId, int appointmentId) {
         SharedPreferences sp = context.getSharedPreferences("ReviewPrefs", Context.MODE_PRIVATE);
         boolean isReviewed = sp.getBoolean("reviewed_" + doctorId, false);
+        boolean isSkipped = sp.getBoolean("review_skipped_" + doctorId, false); // Check if canceled
 
-        if (!isReviewed) {
+        if (!isReviewed && !isSkipped) {
             showReviewPopup(doctorId, appointmentId);
         }
     }
+
 
     private void showReviewPopup(int doctorId, int appointmentId) {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -130,6 +132,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         RatingBar ratingBar = dialogView.findViewById(R.id.ratingBar);
         EditText etReviewComment = dialogView.findViewById(R.id.etReviewComment);
         Button btnSubmitReview = dialogView.findViewById(R.id.btnSubmitReview);
+        Button btnCancelReview = dialogView.findViewById(R.id.btnCancelReview); // New cancel button
 
         btnSubmitReview.setOnClickListener(v -> {
             int rating = (int) ratingBar.getRating();
@@ -144,8 +147,18 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             dialog.dismiss();
         });
 
+        btnCancelReview.setOnClickListener(v -> {
+            // Save in SharedPreferences to prevent the pop-up from appearing again
+            SharedPreferences sp = context.getSharedPreferences("ReviewPrefs", Context.MODE_PRIVATE);
+            sp.edit().putBoolean("review_skipped_" + doctorId, true).apply();
+
+            Toast.makeText(context, "Review canceled", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
         dialog.show();
     }
+
 
     private void submitReview(int doctorId, int rating, String comment) {
         StringRequest stringRequest = new StringRequest(Request.Method.POST, REVIEW_API_URL,
