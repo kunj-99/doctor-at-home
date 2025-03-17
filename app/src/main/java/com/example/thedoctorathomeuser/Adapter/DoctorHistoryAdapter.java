@@ -1,21 +1,38 @@
 package com.example.thedoctorathomeuser.Adapter;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.R;
 import com.example.thedoctorathomeuser.complet_bill;
 import com.example.thedoctorathomeuser.doctor_details;
 import com.example.thedoctorathomeuser.medical_riport;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdapter.ViewHolder> {
 
@@ -26,13 +43,16 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
     private List<String> appointmentDates;
     private List<String> appointmentPrices;
     private List<Integer> doctorImages;
-    // New list for appointment IDs
     private List<Integer> appointmentIds;
+    private List<String> appointmentStatuses; // Store appointment status
+
+    private static final String REVIEW_API_URL = "http://sxm.a58.mytemp.website/submit_review.php";
+    private static final String CHECK_REVIEW_API_URL = "http://sxm.a58.mytemp.website/check_review_status.php";
 
     public DoctorHistoryAdapter(Context context, List<Integer> doctorIds, List<String> doctorNames,
                                 List<String> doctorSpecialties, List<String> appointmentDates,
                                 List<String> appointmentPrices, List<Integer> doctorImages,
-                                List<Integer> appointmentIds) {
+                                List<Integer> appointmentIds, List<String> appointmentStatuses) {
         this.context = context;
         this.doctorIds = doctorIds;
         this.doctorNames = doctorNames;
@@ -41,6 +61,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         this.appointmentPrices = appointmentPrices;
         this.doctorImages = doctorImages;
         this.appointmentIds = appointmentIds;
+        this.appointmentStatuses = appointmentStatuses;
     }
 
     @NonNull
@@ -58,7 +79,11 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         holder.appointmentPrice.setText(appointmentPrices.get(position));
         holder.doctorImage.setImageResource(doctorImages.get(position));
 
-        // Toggle details visibility
+        // Detect completed appointment
+        if (appointmentStatuses.get(position).equalsIgnoreCase("Completed")) {
+            checkAndPromptForReview(doctorIds.get(position), appointmentIds.get(position));
+        }
+
         holder.viewDetailsButton.setOnClickListener(v -> {
             if (holder.detailsLayout.getVisibility() == View.GONE) {
                 holder.detailsLayout.setVisibility(View.VISIBLE);
@@ -74,7 +99,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             context.startActivity(in);
         });
 
-        // Pass the appointment ID when launching the medical report activity
         holder.btnViewReport.setOnClickListener(v -> {
             Intent in = new Intent(context, medical_riport.class);
             in.putExtra("appointment_id", String.valueOf(appointmentIds.get(position)));
@@ -86,6 +110,72 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             intent.putExtra("doctor_id", String.valueOf(doctorIds.get(position)));
             context.startActivity(intent);
         });
+    }
+
+    private void checkAndPromptForReview(int doctorId, int appointmentId) {
+        SharedPreferences sp = context.getSharedPreferences("ReviewPrefs", Context.MODE_PRIVATE);
+        boolean isReviewed = sp.getBoolean("reviewed_" + doctorId, false);
+
+        if (!isReviewed) {
+            showReviewPopup(doctorId, appointmentId);
+        }
+    }
+
+    private void showReviewPopup(int doctorId, int appointmentId) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_review, null);
+        builder.setView(dialogView);
+        AlertDialog dialog = builder.create();
+
+        RatingBar ratingBar = dialogView.findViewById(R.id.ratingBar);
+        EditText etReviewComment = dialogView.findViewById(R.id.etReviewComment);
+        Button btnSubmitReview = dialogView.findViewById(R.id.btnSubmitReview);
+
+        btnSubmitReview.setOnClickListener(v -> {
+            int rating = (int) ratingBar.getRating();
+            String comment = etReviewComment.getText().toString().trim();
+
+            if (rating == 0) {
+                Toast.makeText(context, "Please give a rating", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            submitReview(doctorId, rating, comment);
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    private void submitReview(int doctorId, int rating, String comment) {
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, REVIEW_API_URL,
+                response -> {
+                    try {
+                        JSONObject jsonObject = new JSONObject(response);
+                        if (jsonObject.getBoolean("success")) {
+                            SharedPreferences sp = context.getSharedPreferences("ReviewPrefs", Context.MODE_PRIVATE);
+                            sp.edit().putBoolean("reviewed_" + doctorId, true).apply();
+                            Toast.makeText(context, "Review submitted successfully!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(context, "Failed to submit review", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                },
+                error -> Toast.makeText(context, "Network error", Toast.LENGTH_SHORT).show()) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("doctor_id", String.valueOf(doctorId));
+                params.put("rating", String.valueOf(rating));
+                params.put("review_comment", comment);
+                return params;
+            }
+        };
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+        queue.add(stringRequest);
     }
 
     @Override
