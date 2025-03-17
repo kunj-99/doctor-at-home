@@ -72,7 +72,7 @@ public class HistoryFragment extends Fragment {
         // Initialize RequestQueue
         requestQueue = Volley.newRequestQueue(requireContext());
 
-        // Get Patient ID
+        // Get Patient ID from UserPrefs
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
 
@@ -85,7 +85,8 @@ public class HistoryFragment extends Fragment {
         Log.d("HistoryFragment", "Patient ID: " + patientId);
         apiUrl = "http://sxm.a58.mytemp.website/get_history.php?patient_id=" + patientId;
 
-        adapter = new DoctorHistoryAdapter(requireContext(), doctorIds, doctorNames, doctorSpecialties,
+        // Updated adapter instantiation: include patientId as the second parameter
+        adapter = new DoctorHistoryAdapter(requireContext(), patientId, doctorIds, doctorNames, doctorSpecialties,
                 appointmentDates, appointmentPrices, doctorImages, appointmentIds, appointmentStatuses);
         recyclerView.setAdapter(adapter);
 

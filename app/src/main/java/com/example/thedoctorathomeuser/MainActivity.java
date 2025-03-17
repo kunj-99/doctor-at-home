@@ -152,14 +152,20 @@ public class MainActivity extends AppCompatActivity {
             } else if (item.getItemId() == R.id.rateapp) {
                 intent = new Intent(MainActivity.this, Rate_app.class);
             } else if (item.getItemId() == R.id.logout) {
-                // Clear all SharedPreferences
-                SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.clear();
-                editor.apply();
+                // Clear UserPrefs SharedPreferences
+                SharedPreferences userPrefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor userEditor = userPrefs.edit();
+                userEditor.clear();
+                userEditor.apply();
+
+                // Clear ReviewPrefs SharedPreferences
+                SharedPreferences reviewPrefs = getSharedPreferences("ReviewPrefs", MODE_PRIVATE);
+                SharedPreferences.Editor reviewEditor = reviewPrefs.edit();
+                reviewEditor.clear();
+                reviewEditor.apply();
 
                 // Redirect to Login activity
-                intent = new Intent(this, login.class);
+                 intent = new Intent(this, login.class);
                 startActivity(intent);
                 finish();
 
