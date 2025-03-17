@@ -95,18 +95,18 @@
 
             <Button
                 android:id="@+id/Track_button"
-                android:layout_width="140dp"
+                android:layout_width="200dp"
                 android:layout_height="50dp"
                 android:text="track"
                 android:backgroundTint="@color/blue"
                 android:textColor="@android:color/white"
-                android:layout_marginEnd="50dp"
+                android:layout_marginEnd="10dp"
                 />
 
 
             <Button
                 android:id="@+id/Cancel_button"
-                android:layout_width="140dp"
+                android:layout_width="100dp"
                 android:layout_height="50dp"
                 android:text="Cancel"
                 android:backgroundTint="@color/blue"

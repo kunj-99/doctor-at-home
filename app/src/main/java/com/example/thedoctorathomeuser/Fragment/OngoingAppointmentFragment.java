@@ -17,8 +17,6 @@ import android.widget.Button;
 import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.Adapter.OngoingAdapter;
@@ -48,6 +46,7 @@ public class OngoingAppointmentFragment extends Fragment {
     private List<Float> ratings = new ArrayList<>();
     private List<Integer> imageResIds = new ArrayList<>();
     private List<Integer> appointmentIds = new ArrayList<>();
+    private List<String> statuses = new ArrayList<>(); // List to store appointment statuses
 
     private Handler handler = new Handler();
     private Runnable refreshRunnable;
@@ -76,7 +75,8 @@ public class OngoingAppointmentFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        adapter = new OngoingAdapter(requireContext(), doctorNames, specialties, hospitals, ratings, imageResIds, appointmentIds);
+        // Pass all lists including statuses to the adapter
+        adapter = new OngoingAdapter(requireContext(), doctorNames, specialties, hospitals, ratings, imageResIds, appointmentIds, statuses);
         recyclerView.setAdapter(adapter);
 
         fetchOngoingAppointments();
@@ -103,12 +103,14 @@ public class OngoingAppointmentFragment extends Fragment {
                         if (jsonObject.getBoolean("success")) {
                             JSONArray appointmentsArray = jsonObject.getJSONArray("appointments");
 
+                            // Clear existing lists
                             doctorNames.clear();
                             specialties.clear();
                             hospitals.clear();
                             ratings.clear();
                             imageResIds.clear();
                             appointmentIds.clear();
+                            statuses.clear();
 
                             for (int i = 0; i < appointmentsArray.length(); i++) {
                                 JSONObject appointment = appointmentsArray.getJSONObject(i);
@@ -118,6 +120,7 @@ public class OngoingAppointmentFragment extends Fragment {
                                 specialties.add(appointment.getString("specialty"));
                                 hospitals.add(appointment.getString("hospital_name"));
                                 ratings.add((float) appointment.getDouble("experience"));
+                                statuses.add(appointment.getString("status")); // Capture status
                                 imageResIds.add(R.drawable.main1);
                                 appointmentIds.add(appointment.getInt("appointment_id"));
                             }
