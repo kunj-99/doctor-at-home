@@ -59,6 +59,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+
                         android:text="Bill Date"
                         android:textColor="@color/black"
                         android:textSize="15sp" />
@@ -66,7 +67,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="21 April, 2023"
+                        android:id="@+id/tv_bill_date"
                         android:textStyle="bold"
                         android:layout_marginTop="8dp"
                         android:textColor="@color/black"
@@ -105,7 +106,7 @@
                             android:layout_marginLeft="84dp"
                             android:textSize="16dp"
                             android:layout_marginBottom="8dp"
-                            android:text="9:30 PM"
+                            android:id="@+id/tv_bill_time"
                             android:textColor="@color/black" />
                     </LinearLayout>
 
@@ -125,6 +126,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:id="@+id/tv_bill_patient_name"
                         android:text="Vansh Mandanka"
                         android:textColor="@color/black"
                         android:textSize="16dp"
@@ -148,6 +150,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:id="@+id/tv_bill_doctor_name"
                         android:text="Hetanshi Mandanka"
                         android:textColor="@color/black"
                         android:textSize="15dp"

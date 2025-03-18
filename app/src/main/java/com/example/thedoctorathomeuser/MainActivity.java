@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout profileSection;
     private TextView toolbarTitle; // To dynamically update the title
 
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -109,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
 
+            @SuppressLint("SetTextI18n")
             @Override
             public void onPageSelected(int position) {
                 if (position == 0) {

@@ -75,7 +75,7 @@
                     android:background="@drawable/rounded_spinner"
                     android:entries="@array/day_array"
                     android:padding="12dp"
-                    android:textColorHint="#9E9E9E" />
+                    android:textColorHint="#141313" />
 
                 <Spinner
                     android:id="@+id/month_spinner"
