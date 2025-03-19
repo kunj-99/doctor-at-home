@@ -33,6 +33,9 @@ public class available_doctor extends AppCompatActivity {
     private ArrayList<String> hospitals = new ArrayList<>();
     private ArrayList<Float> ratings = new ArrayList<>();
     private ArrayList<String> imageUrls = new ArrayList<>();
+    // New list for experience duration
+    private ArrayList<String> Duration = new ArrayList<>();
+
     private EditText edtPincode;
     private ImageButton btnSearch;
     private TextView tvNoDoctors;
@@ -93,12 +96,14 @@ public class available_doctor extends AppCompatActivity {
                 new Response.Listener<JSONArray>() {
                     @Override
                     public void onResponse(JSONArray response) {
+                        // Clear all lists to avoid duplicate data
                         doctorIds.clear();
                         names.clear();
                         specialties.clear();
                         hospitals.clear();
                         ratings.clear();
                         imageUrls.clear();
+                        Duration.clear();
 
                         if (response.length() == 0) {
                             tvNoDoctors.setVisibility(View.VISIBLE);
@@ -124,9 +129,12 @@ public class available_doctor extends AppCompatActivity {
                                 hospitals.add(doctor.getString("hospital_affiliation"));
                                 ratings.add((float) doctor.getDouble("rating"));
                                 imageUrls.add(doctor.getString("profile_picture"));
+                                // New: add experience duration from JSON response
+                                Duration.add(doctor.getString("experience_duration"));
                             }
 
-                            adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties, hospitals, ratings, imageUrls);
+                            // Pass the Duration list to the adapter (ensure DoctorAdapter's constructor is updated accordingly)
+                            adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties, hospitals, ratings, imageUrls, Duration);
                             recyclerView.setAdapter(adapter);
                         } catch (JSONException e) {
                             e.printStackTrace();

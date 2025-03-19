@@ -66,6 +66,16 @@
                     android:textColor="@color/black"
                     android:textSize="15sp" />
 
+                <!-- New Experience Duration TextView -->
+                <TextView
+                    android:id="@+id/doctor_experience_duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Experience: 5 years"
+                    android:textColor="@color/black"
+                    android:textSize="15sp" />
+
                 <!-- RatingBar -->
                 <RatingBar
                     android:id="@+id/doctor_rating"
@@ -81,7 +91,7 @@
             </LinearLayout>
         </LinearLayout>
 
-
+        <!-- Buttons Layout -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -90,9 +100,6 @@
             android:layout_marginHorizontal="10dp"
             android:layout_marginTop="6dp">
 
-
-
-
             <Button
                 android:id="@+id/Track_button"
                 android:layout_width="200dp"
@@ -100,9 +107,7 @@
                 android:text="track"
                 android:backgroundTint="@color/blue"
                 android:textColor="@android:color/white"
-                android:layout_marginEnd="10dp"
-                />
-
+                android:layout_marginEnd="10dp" />
 
             <Button
                 android:id="@+id/Cancel_button"
@@ -110,9 +115,7 @@
                 android:layout_height="50dp"
                 android:text="Cancel"
                 android:backgroundTint="@color/blue"
-                android:textColor="@android:color/white"
-                />
-
+                android:textColor="@android:color/white" />
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -11,13 +11,16 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.example.thedoctorathomeuser.R;
 import com.example.thedoctorathomeuser.cancle_appintment;
 import com.example.thedoctorathomeuser.track_doctor;
+
 import java.util.List;
 
 public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorViewHolder> {
@@ -28,13 +31,15 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
     private final List<Float> ratings;
     private final List<Integer> imageResIds;
     private final List<Integer> appointmentIds;
-    private final List<String> statuses; // List for appointment statuses
+    private final List<String> statuses; // Appointment statuses
+    private final List<String> durations;  // New list for experience duration
     private final Context context;
 
-    // Constructor including statuses
+    // Updated constructor including durations
     public OngoingAdapter(Context context, List<String> names, List<String> specialties,
                           List<String> hospitals, List<Float> ratings,
-                          List<Integer> imageResIds, List<Integer> appointmentIds, List<String> statuses) {
+                          List<Integer> imageResIds, List<Integer> appointmentIds,
+                          List<String> statuses, List<String> durations) {
         this.context = context;
         this.names = names;
         this.specialties = specialties;
@@ -43,6 +48,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
         this.imageResIds = imageResIds;
         this.appointmentIds = appointmentIds;
         this.statuses = statuses;
+        this.durations = durations;
     }
 
     @NonNull
@@ -61,6 +67,9 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
         holder.specialty.setText(specialties.get(position));
         holder.hospital.setText(hospitals.get(position));
         holder.ratingBar.setRating(ratings.get(position));
+
+        // Set the experience duration text (e.g., "Experience: 5 years")
+        holder.experienceDuration.setText("Experience: " + durations.get(position));
 
         // Load image using Glide
         Glide.with(context)
@@ -86,19 +95,16 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
             status = "";
         }
 
-        // Log the status value to check if it's being received correctly
         Log.d("OngoingAdapter", "Appointment ID " + appointmentIds.get(position) + " Status: " + status);
 
         // Modify the Track button based on the appointment status using contains() for flexible matching
         if (status.contains("requested")) {
             holder.track.setText("riqes is prosesing");
             holder.track.setEnabled(false);
-            // Set the disabled color (gray, for example)
             holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.gray));
         } else if (status.contains("pending")) {
             holder.track.setText("panding");
             holder.track.setEnabled(false);
-            // Set the disabled color (gray, for example)
             holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.gray));
         }
         // For any other status, the Track button remains "Track", enabled, and tinted blue.
@@ -128,7 +134,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
     }
 
     static class DoctorViewHolder extends RecyclerView.ViewHolder {
-        TextView name, specialty, hospital;
+        TextView name, specialty, hospital, experienceDuration;
         RatingBar ratingBar;
         ImageView image;
         Button track, cancel;
@@ -142,6 +148,8 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
             image = itemView.findViewById(R.id.civ_profile);
             track = itemView.findViewById(R.id.Track_button);
             cancel = itemView.findViewById(R.id.Cancel_button);
+            // New TextView for experience duration; ensure this ID exists in item_ongoing.xml
+            experienceDuration = itemView.findViewById(R.id.doctor_experience_duration);
         }
     }
 }

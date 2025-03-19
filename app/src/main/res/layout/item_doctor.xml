@@ -65,6 +65,16 @@
                     android:textColor="@color/black"
                     android:textSize="15sp" />
 
+                <!-- New Experience Duration TextView -->
+                <TextView
+                    android:id="@+id/doctor_experience_duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Experience: 5 years"
+                    android:textColor="@color/black"
+                    android:textSize="15sp" />
+
                 <TextView
                     android:id="@+id/request_count"
                     android:layout_width="wrap_content"
@@ -114,8 +124,6 @@
                 android:text="Book Appointment"
                 android:backgroundTint="@color/blue"
                 android:textColor="@android:color/white" />
-
         </LinearLayout>
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>

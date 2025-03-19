@@ -33,7 +33,7 @@ public class pending_bill extends AppCompatActivity {
     private static final String MERCHANT_UPI_ID = "abhitadhani98244-2@okicici";
     private static final String MERCHANT_NAME = " the doctor at home";
     private static final String TRANSACTION_NOTE = "Payment for appointment";
-    private static final String AMOUNT = "100.00";
+    private static final String AMOUNT = "500.00";
     private static final String CURRENCY = "INR";
 
     // Booking Data
@@ -41,16 +41,15 @@ public class pending_bill extends AppCompatActivity {
     private String patientId;  // Retrieved from SharedPreferences
     private Button payButton;
 
-    // New TextViews for dynamic bill info (ensure these IDs are defined in your XML layout)
+
     private TextView tvBillDate, tvBillTime, tvBillPatientName, tvBillDoctorName, tvAppointmentId;
 
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pending_bill);
 
-        // Retrieve data from intent
         Intent intent = getIntent();
         patientName = intent.getStringExtra("patient_name");
         age = String.valueOf(intent.getIntExtra("age", 0));

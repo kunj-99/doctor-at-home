@@ -46,7 +46,9 @@ public class OngoingAppointmentFragment extends Fragment {
     private List<Float> ratings = new ArrayList<>();
     private List<Integer> imageResIds = new ArrayList<>();
     private List<Integer> appointmentIds = new ArrayList<>();
-    private List<String> statuses = new ArrayList<>(); // List to store appointment statuses
+    private List<String> statuses = new ArrayList<>(); // Appointment statuses
+    // New list for experience duration
+    private List<String> durations = new ArrayList<>();
 
     private Handler handler = new Handler();
     private Runnable refreshRunnable;
@@ -75,8 +77,8 @@ public class OngoingAppointmentFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // Pass all lists including statuses to the adapter
-        adapter = new OngoingAdapter(requireContext(), doctorNames, specialties, hospitals, ratings, imageResIds, appointmentIds, statuses);
+        // Pass all lists including statuses and durations to the adapter
+        adapter = new OngoingAdapter(requireContext(), doctorNames, specialties, hospitals, ratings, imageResIds, appointmentIds, statuses, durations);
         recyclerView.setAdapter(adapter);
 
         fetchOngoingAppointments();
@@ -111,6 +113,7 @@ public class OngoingAppointmentFragment extends Fragment {
                             imageResIds.clear();
                             appointmentIds.clear();
                             statuses.clear();
+                            durations.clear();
 
                             for (int i = 0; i < appointmentsArray.length(); i++) {
                                 JSONObject appointment = appointmentsArray.getJSONObject(i);
@@ -119,10 +122,14 @@ public class OngoingAppointmentFragment extends Fragment {
                                 doctorNames.add(appointment.getString("doctor_name"));
                                 specialties.add(appointment.getString("specialty"));
                                 hospitals.add(appointment.getString("hospital_name"));
+                                // Note: For ratings, adjust as needed; here using "experience" field,
+                                // but you might want a separate rating field.
                                 ratings.add((float) appointment.getDouble("experience"));
                                 statuses.add(appointment.getString("status")); // Capture status
                                 imageResIds.add(R.drawable.main1);
                                 appointmentIds.add(appointment.getInt("appointment_id"));
+                                // New: add experience duration from JSON response
+                                durations.add(appointment.getString("experience_duration"));
                             }
 
                             if (isAdded()) {

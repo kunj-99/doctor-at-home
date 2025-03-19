@@ -28,7 +28,6 @@ import com.example.thedoctorathomeuser.doctor_details;
 import com.example.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.List;
 
@@ -41,9 +40,11 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
     private final List<String> hospitals;
     private final List<Float> ratings;
     private final List<String> imageUrls;
+    // New list for experience duration
+    private final List<String> durations;
 
     public DoctorAdapter(Context context, List<String> doctorIds, List<String> names, List<String> specialties,
-                         List<String> hospitals, List<Float> ratings, List<String> imageUrls) {
+                         List<String> hospitals, List<Float> ratings, List<String> imageUrls, List<String> durations) {
         this.context = context;
         this.doctorIds = doctorIds;
         this.names = names;
@@ -51,6 +52,7 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
         this.hospitals = hospitals;
         this.ratings = ratings;
         this.imageUrls = imageUrls;
+        this.durations = durations;
     }
 
     @NonNull
@@ -68,6 +70,9 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
         holder.specialty.setText(specialties.get(position));
         holder.hospital.setText(hospitals.get(position));
         holder.ratingBar.setRating(ratings.get(position));
+
+        // Set the experience duration text (e.g., "Experience: 5 years")
+        holder.experienceDuration.setText("Experience: " + durations.get(position));
 
         // Load doctor image
         Glide.with(context)
@@ -93,7 +98,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
             intent.putExtra("appointment_status", holder.bookButton.getText().toString()); // Pass status
             context.startActivity(intent);
         });
-
     }
 
     @Override
@@ -102,7 +106,7 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
     }
 
     static class DoctorViewHolder extends RecyclerView.ViewHolder {
-        TextView name, specialty, hospital, requestCount, pendingCount;
+        TextView name, specialty, hospital, requestCount, pendingCount, experienceDuration;
         RatingBar ratingBar;
         ImageView image;
         Button bookButton;
@@ -113,12 +117,15 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
             super(itemView);
             name = itemView.findViewById(R.id.doctor_name);
             specialty = itemView.findViewById(R.id.doctor_specialty);
+            // Assuming the doctor's availability TextView is used for hospital info as per original code
             hospital = itemView.findViewById(R.id.doctor_availability);
             ratingBar = itemView.findViewById(R.id.doctor_rating);
             image = itemView.findViewById(R.id.civ_profile);
             bookButton = itemView.findViewById(R.id.schedule_button);
             requestCount = itemView.findViewById(R.id.request_count);
             pendingCount = itemView.findViewById(R.id.pending_count);
+            // New TextView for experience duration
+            experienceDuration = itemView.findViewById(R.id.doctor_experience_duration);
         }
 
         public void startAutoRefresh(String doctorId) {
