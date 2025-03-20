@@ -28,14 +28,14 @@ public class available_doctor extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private DoctorAdapter adapter;
-    private ArrayList<String> doctorIds = new ArrayList<>();
-    private ArrayList<String> names = new ArrayList<>();
-    private ArrayList<String> specialties = new ArrayList<>();
-    private ArrayList<String> hospitals = new ArrayList<>();
-    private ArrayList<Float> ratings = new ArrayList<>();
-    private ArrayList<String> imageUrls = new ArrayList<>();
+    private final ArrayList<String> doctorIds = new ArrayList<>();
+    private final ArrayList<String> names = new ArrayList<>();
+    private final ArrayList<String> specialties = new ArrayList<>();
+    private final ArrayList<String> hospitals = new ArrayList<>();
+    private final ArrayList<Float> ratings = new ArrayList<>();
+    private final ArrayList<String> imageUrls = new ArrayList<>();
     // New list for experience duration
-    private ArrayList<String> Duration = new ArrayList<>();
+    private final ArrayList<String> Duration = new ArrayList<>();
 
     private EditText edtPincode;
     private ImageButton btnSearch;
@@ -45,26 +45,25 @@ public class available_doctor extends AppCompatActivity {
     private String categoryId, categoryName;
     private static final String DEFAULT_PINCODE = "110001";
 
-    private Handler handler = new Handler(); // Auto-refresh handler
-    private Runnable autoRefreshRunnable;   // Auto-refresh runnable
-    private static final int REFRESH_INTERVAL = 10000; // 10 seconds
+    private final Handler handler = new Handler();
+    private Runnable autoRefreshRunnable;
+    private static final int REFRESH_INTERVAL = 10000;
+
+    // Flag to track if this activity is visible
+    private boolean isActivityVisible = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_available_doctor);
 
-        // Initialize the Back Button and set its click listener
         btnBack = findViewById(R.id.btn_back);
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Redirect to the host activity with the Book appointment fragment
-                Intent intent = new Intent(available_doctor.this, MainActivity.class);
-                intent.putExtra("open_fragment", 1); // Assuming 1 corresponds to Book appointment fragment
-                startActivity(intent);
-                finish();
-            }
+        btnBack.setOnClickListener(v -> {
+            // Redirect to the host activity with the Book appointment fragment
+            Intent intent = new Intent(available_doctor.this, MainActivity.class);
+            intent.putExtra("open_fragment", 1);
+            startActivity(intent);
+            finish();
         });
 
         recyclerView = findViewById(R.id.recyclerView);
@@ -77,36 +76,52 @@ public class available_doctor extends AppCompatActivity {
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
-        // Fetch doctors for default pincode
+        // Fetch doctors for default pincode initially
         fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
 
-        // Auto-refresh logic
+        // Define auto-refresh runnable
         autoRefreshRunnable = new Runnable() {
             @Override
             public void run() {
-                fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
-                handler.postDelayed(this, REFRESH_INTERVAL); // Re-run after 10 seconds
+                // Only auto-refresh if the activity is visible.
+                if (isActivityVisible) {
+                    fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
+                    handler.postDelayed(this, REFRESH_INTERVAL);
+                }
             }
         };
 
-        // Start auto-refresh
-        handler.postDelayed(autoRefreshRunnable, REFRESH_INTERVAL);
-
-        btnSearch.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String pincode = edtPincode.getText().toString().trim();
-                if (!pincode.isEmpty() && categoryId != null) {
-                    fetchDoctorsByPincodeAndCategory(pincode, categoryId, true);
-                } else {
+        btnSearch.setOnClickListener(v -> {
+            String pincode = edtPincode.getText().toString().trim();
+            if (!pincode.isEmpty() && categoryId != null) {
+                fetchDoctorsByPincodeAndCategory(pincode, categoryId, true);
+            } else {
+                if (isActivityVisible) {
                     Toast.makeText(available_doctor.this, "Please enter a valid pincode", Toast.LENGTH_SHORT).show();
                 }
             }
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isActivityVisible = true;
+        // Start auto-refresh when this activity is visible
+        handler.postDelayed(autoRefreshRunnable, REFRESH_INTERVAL);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isActivityVisible = false;
+        // Stop auto-refresh when this activity is not visible
+        handler.removeCallbacks(autoRefreshRunnable);
+    }
+
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
-        String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode=" + pincode + "&category_id=" + categoryId;
+        String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode="
+                + pincode + "&category_id=" + categoryId;
 
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 new Response.Listener<JSONArray>() {
@@ -124,11 +139,17 @@ public class available_doctor extends AppCompatActivity {
                         if (response.length() == 0) {
                             tvNoDoctors.setVisibility(View.VISIBLE);
                             recyclerView.setVisibility(View.GONE);
-
-                            if (!userSearch) {
-                                Toast.makeText(available_doctor.this, "No doctors found in default location. Try another pincode.", Toast.LENGTH_LONG).show();
-                            } else {
-                                Toast.makeText(available_doctor.this, "No doctors found for this pincode", Toast.LENGTH_SHORT).show();
+                            // Only show toast if activity is visible
+                            if (isActivityVisible) {
+                                if (!userSearch) {
+                                    Toast.makeText(available_doctor.this,
+                                            "No doctors found in default location. Try another pincode.",
+                                            Toast.LENGTH_LONG).show();
+                                } else {
+                                    Toast.makeText(available_doctor.this,
+                                            "No doctors found for this pincode",
+                                            Toast.LENGTH_SHORT).show();
+                                }
                             }
                             return;
                         } else {
@@ -149,12 +170,13 @@ public class available_doctor extends AppCompatActivity {
                                 Duration.add(doctor.getString("experience_duration"));
                             }
 
-                            // Pass the Duration list to the adapter (ensure DoctorAdapter's constructor is updated accordingly)
                             adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties, hospitals, ratings, imageUrls, Duration);
                             recyclerView.setAdapter(adapter);
-                        } catch (JSONException e) {
+                        } catch (Exception e) {
                             e.printStackTrace();
-                            Toast.makeText(available_doctor.this, "Data parsing error", Toast.LENGTH_SHORT).show();
+                            if (isActivityVisible) {
+                                Toast.makeText(available_doctor.this, "Data parsing error", Toast.LENGTH_SHORT).show();
+                            }
                         }
                     }
                 }, new Response.ErrorListener() {
@@ -162,8 +184,9 @@ public class available_doctor extends AppCompatActivity {
             public void onErrorResponse(VolleyError error) {
                 tvNoDoctors.setVisibility(View.VISIBLE);
                 recyclerView.setVisibility(View.GONE);
-
-                Toast.makeText(available_doctor.this, "No Doctor available, try another pincode", Toast.LENGTH_SHORT).show();
+                if (isActivityVisible) {
+                    Toast.makeText(available_doctor.this, "No Doctor available, try another pincode", Toast.LENGTH_SHORT).show();
+                }
                 Log.e("VolleyError", error.toString());
             }
         });
@@ -175,7 +198,6 @@ public class available_doctor extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Stop auto-refresh when activity is destroyed to prevent memory leaks
         handler.removeCallbacks(autoRefreshRunnable);
     }
 }

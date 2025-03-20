@@ -1,9 +1,11 @@
 package com.example.thedoctorathomeuser;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -40,6 +43,7 @@ public class pending_bill extends AppCompatActivity {
 
     private static final int UPI_PAYMENT_REQUEST_CODE = 123;
     private static final int REQUEST_CHECK_SETTINGS = 101;
+    private static final int REQUEST_LOCATION_PERMISSION = 102;
     private static final String TAG = "PendingBill";
 
     // Merchant UPI details (ideally, store these securely)
@@ -104,7 +108,6 @@ public class pending_bill extends AppCompatActivity {
         tvBillDate = findViewById(R.id.tv_bill_date);
         tvBillTime = findViewById(R.id.tv_bill_time);
 
-
         // Set dynamic values:
         if (patientName != null) {
             tvBillPatientName.setText(patientName);
@@ -149,8 +152,12 @@ public class pending_bill extends AppCompatActivity {
             } else if (selectedId == R.id.payment_offline) {
                 selectedPaymentMethod = "Offline";
                 Log.d(TAG, "Selected payment method: Offline");
-                // Check location settings before fetching location
-                checkLocationSettingsAndFetchLocation();
+                // Before checking location settings, check if we have location permission.
+                if (hasLocationPermissions()) {
+                    checkLocationSettingsAndFetchLocation();
+                } else {
+                    requestLocationPermissions();
+                }
             } else {
                 Log.e(TAG, "No payment method selected.");
                 Toast.makeText(this, "Please select a payment method", Toast.LENGTH_SHORT).show();
@@ -158,6 +165,9 @@ public class pending_bill extends AppCompatActivity {
         });
     }
 
+    /**
+     * Checks whether all required parameters are present.
+     */
     private boolean areRequiredParametersPresent() {
         return (patientName != null && !patientName.trim().isEmpty() &&
                 age != null && !age.trim().isEmpty() &&
@@ -196,6 +206,37 @@ public class pending_bill extends AppCompatActivity {
         }
     }
 
+    // Check if the location permissions are granted.
+    private boolean hasLocationPermissions() {
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    // Request location permissions at runtime.
+    private void requestLocationPermissions() {
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},
+                REQUEST_LOCATION_PERMISSION);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Log.d(TAG, "onRequestPermissionsResult: requestCode=" + requestCode);
+        if (requestCode == REQUEST_LOCATION_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "onRequestPermissionsResult: Location permissions granted.");
+                checkLocationSettingsAndFetchLocation();
+            } else {
+                Log.e(TAG, "onRequestPermissionsResult: Location permissions denied.");
+                Toast.makeText(this, "Location permission is required to fetch your location.", Toast.LENGTH_SHORT).show();
+                // Optionally, save booking data without location.
+                saveBookingData("");
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(TAG, "onActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
@@ -204,7 +245,6 @@ public class pending_bill extends AppCompatActivity {
             Log.d(TAG, "UPI Payment Response: " + response);
             processUpiPaymentResponse(response);
         } else if (requestCode == REQUEST_CHECK_SETTINGS) {
-            // Handle result from location settings dialog
             Log.d(TAG, "onActivityResult: Handling location settings result.");
             if (resultCode == RESULT_OK) {
                 Log.d(TAG, "onActivityResult: User enabled location settings.");
@@ -212,7 +252,6 @@ public class pending_bill extends AppCompatActivity {
             } else {
                 Log.e(TAG, "onActivityResult: User did not enable location settings. Result code: " + resultCode);
                 Toast.makeText(this, "Location is required to proceed.", Toast.LENGTH_SHORT).show();
-                // Optionally, save data without location.
                 saveBookingData("");
             }
         } else {
@@ -248,7 +287,11 @@ public class pending_bill extends AppCompatActivity {
         if ("success".equals(status)) {
             Toast.makeText(this, "Payment successful!", Toast.LENGTH_SHORT).show();
             // After a successful UPI payment, check location settings
-            checkLocationSettingsAndFetchLocation();
+            if (hasLocationPermissions()) {
+                checkLocationSettingsAndFetchLocation();
+            } else {
+                requestLocationPermissions();
+            }
         } else {
             Log.e(TAG, "Payment failed or cancelled. Status: " + status);
             Toast.makeText(this, "Payment failed or cancelled.", Toast.LENGTH_SHORT).show();
@@ -294,7 +337,6 @@ public class pending_bill extends AppCompatActivity {
                 } else {
                     Log.e(TAG, "checkLocationSettingsAndFetchLocation: Non-resolvable location settings failure: " + e.getMessage());
                     Toast.makeText(pending_bill.this, "Location settings are inadequate and cannot be fixed here.", Toast.LENGTH_LONG).show();
-                    // Optionally, proceed without location.
                     saveBookingData("");
                 }
             }
