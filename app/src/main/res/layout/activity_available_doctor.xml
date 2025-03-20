@@ -6,20 +6,36 @@
     android:orientation="vertical"
     android:background="#F0F4FF">
 
-    <!-- Search Bar Container -->
-
-    <TextView
+    <!-- Header with Back Button -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
+        android:orientation="horizontal"
         android:background="@drawable/bottom_curve"
-        android:gravity="center"
+        android:gravity="center_vertical"
         android:padding="16dp"
-        android:text="Available Doctor"
-        android:textColor="#FFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+        android:layout_marginBottom="16dp">
 
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/left_arrow"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="back_button" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="center"
+            android:text="Available Doctor"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Search Bar Container -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -27,7 +43,7 @@
         android:background="@drawable/bg_search_bar"
         android:padding="4dp"
         android:gravity="center_vertical"
-        android:layout_marginBottom="10dp"> <!-- Added margin below search bar -->
+        android:layout_marginBottom="10dp">
 
         <EditText
             android:id="@+id/edt_pincode"
@@ -70,6 +86,5 @@
         android:visibility="gone"
         android:padding="20dp"
         android:layout_marginTop="16dp"/>
-
 
 </LinearLayout>

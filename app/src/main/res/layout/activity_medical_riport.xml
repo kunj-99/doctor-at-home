@@ -12,26 +12,46 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Hospital Header -->
-        <TextView
-            android:id="@+id/tv_hospital_name"
+        <!-- Header with Back Button -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="VRAJ HOSPITAL"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="@color/black"
-            android:gravity="center"
-            android:paddingBottom="8dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
 
-        <TextView
-            android:id="@+id/tv_hospital_address"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="150 Feet Ring Road, Rajkot - 360 004"
-            android:textSize="14sp"
-            android:gravity="center"
-            android:paddingBottom="16dp" />
+            <ImageButton
+                android:id="@+id/btn_back"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/left_arrow"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="back" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/tv_hospital_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="VRAJ HOSPITAL"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
+
+                <TextView
+                    android:id="@+id/tv_hospital_address"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="150 Feet Ring Road, Rajkot - 360 004"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
 
         <!-- Patient Details Section -->
         <androidx.cardview.widget.CardView
@@ -326,12 +346,6 @@
                     android:layout_height="wrap_content"
                     android:text="Dr. Bhavesh Virani"
                     android:textSize="16sp" />
-<!--                <TextView-->
-<!--                    android:id="@+id/tv_doctor_details"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="MD Medicine, Reg No: 615543"-->
-<!--                    android:textSize="16sp" />-->
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -368,7 +382,6 @@
                     android:text="Report Type: Initial"
                     android:textSize="16sp"
                     android:paddingBottom="8dp" />
-
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

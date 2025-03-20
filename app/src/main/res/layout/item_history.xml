@@ -95,6 +95,7 @@
                 android:backgroundTint="@color/blue"
                 android:textColor="@android:color/white"/>
         </LinearLayout>
+
         <!-- Hidden Buttons (Initially GONE) -->
         <LinearLayout
             android:id="@+id/detailsLayout"
@@ -102,7 +103,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:visibility="gone">
-
 
             <Button
                 android:id="@+id/btnViewBill"
@@ -112,8 +112,6 @@
                 android:backgroundTint="@color/blue"
                 android:textColor="@android:color/white"/>
 
-
-
             <Button
                 android:id="@+id/btnViewReport"
                 android:layout_width="350dp"
@@ -122,7 +120,6 @@
                 android:backgroundTint="@color/blue"
                 android:textColor="@android:color/white"/>
 
-
             <Button
                 android:id="@+id/btnViewProfile"
                 android:layout_width="350dp"
@@ -130,12 +127,19 @@
                 android:text="View Doctor Profile"
                 android:backgroundTint="@color/blue"
                 android:textColor="@android:color/white"/>
-
-
-
-
-
         </LinearLayout>
+
+        <!-- Cancellation Status Message -->
+        <TextView
+            android:id="@+id/statusMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:text="Appointment is cancelled by user"
+            android:textColor="@android:color/holo_red_dark"
+            android:gravity="center"
+            android:padding="8dp"
+            android:textSize="16sp" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -39,6 +41,7 @@ public class medical_riport extends AppCompatActivity {
     private TextView tvTemperature, tvPulse, tvSpo2, tvBloodPressure, tvRespiratory;
     private TextView tvSymptoms, tvInvestigations;
     private TextView tvDoctorName;
+    private ImageButton btnBack;
 
     private RequestQueue requestQueue;
     private static final String TAG = "MedicalReport";
@@ -77,6 +80,17 @@ public class medical_riport extends AppCompatActivity {
         tvSymptoms = findViewById(R.id.tv_symptoms);
         tvInvestigations = findViewById(R.id.tv_investigations_content);
         tvDoctorName = findViewById(R.id.tv_doctor_name);
+
+        // Initialize the Back Button and set its click listener
+        btnBack = findViewById(R.id.btn_back);
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Option 1: Simply finish the activity
+                finish();
+                
+            }
+        });
 
         // Optionally, set static header texts
         tvHospitalName.setText("VRAJ HOSPITAL");
@@ -229,7 +243,7 @@ public class medical_riport extends AppCompatActivity {
         Intent intent = new Intent(medical_riport.this, MainActivity.class);
         intent.putExtra("open_fragment", 3);
         startActivity(intent);
-        overridePendingTransition(0, 0); // Remove any transition animation
+        overridePendingTransition(1, 1); // Remove any transition animation
         finish();
     }
 }

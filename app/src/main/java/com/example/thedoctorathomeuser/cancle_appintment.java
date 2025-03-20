@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class cancle_appintment extends AppCompatActivity {
 
-    private TextInputEditText reasonInput;
+    private TextInputEditText reasonInput, upiIdInput;
     private MaterialCheckBox confirmationCheckbox;
     private MaterialButton btnBack, btnConfirm;
     private TextView doctorName, doctorQualification, patientName, appointmentDate;
@@ -53,6 +53,7 @@ public class cancle_appintment extends AppCompatActivity {
         patientName = findViewById(R.id.patientName1);
         appointmentDate = findViewById(R.id.appointment_date1);
         reasonInput = findViewById(R.id.reasonInput);
+        upiIdInput = findViewById(R.id.upi_id_input); // New UPI ID field
         confirmationCheckbox = findViewById(R.id.confirmationCheckbox);
         btnBack = findViewById(R.id.btn_back);
         btnConfirm = findViewById(R.id.btn_confirm);
@@ -76,8 +77,25 @@ public class cancle_appintment extends AppCompatActivity {
                 return;
             }
 
-            cancelAppointment(reason);
+            String upi = upiIdInput.getText().toString().trim();
+            if (upi.isEmpty()) {
+                showToast("Please enter your UPI ID");
+                return;
+            }
+            if (!isValidUpi(upi)) {
+                showToast("Invalid UPI ID format");
+                return;
+            }
+
+            // First update the UPI ID then cancel the appointment
+            updateUpi(upi, () -> cancelAppointment(reason));
         });
+    }
+
+    // Validate UPI ID using regex (e.g., format: username@bank)
+    private boolean isValidUpi(String upi) {
+
+        return upi.matches("^[a-zA-Z0-9._-]+@[a-zA-Z]{2,}$");
     }
 
     // Fetch appointment details
@@ -108,6 +126,36 @@ public class cancle_appintment extends AppCompatActivity {
                 Map<String, String> params = new HashMap<>();
                 params.put("appointment_id", appointmentId);
                 params.put("action", "fetch");
+                return params;
+            }
+        };
+
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(stringRequest);
+    }
+
+    // Update UPI ID for the appointment
+    private void updateUpi(String upi, final Runnable onSuccess) {
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL,
+                response -> {
+                    try {
+                        JSONObject jsonObject = new JSONObject(response);
+                        if (jsonObject.getBoolean("success")) {
+                            onSuccess.run();
+                        } else {
+                            showToast("UPI update failed: " + jsonObject.getString("error"));
+                        }
+                    } catch (JSONException e) {
+                        showToast("Error processing UPI update response.");
+                    }
+                },
+                error -> showToast("Network Error during UPI update! Please try again.")) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("appointment_id", appointmentId);
+                params.put("action", "update_upi");
+                params.put("upi_id", upi);
                 return params;
             }
         };
@@ -147,7 +195,7 @@ public class cancle_appintment extends AppCompatActivity {
         requestQueue.add(stringRequest);
     }
 
-    // Utility method for showing toast messages
+
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }

@@ -127,5 +127,7 @@
 
     <string name="cancellation_policy">By proceeding, you agree to our cancellation policy:\n• Cancellations within 24 hours may incur charges\n• No refunds for same-day cancellations\n• Rescheduling subject to availability</string>
     <string name="view_medicine_medical_report"><![CDATA[View medicine & Medical Report]]></string>
+    <string name="google_maps_key">AIzaSyCiSh4VnnI1jemtZTytDoj2X7Wl6evey30</string>
+
 
 </resources>

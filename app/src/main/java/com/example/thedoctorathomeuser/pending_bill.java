@@ -2,6 +2,7 @@ package com.example.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
@@ -11,12 +12,23 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -27,6 +39,7 @@ import java.util.Map;
 public class pending_bill extends AppCompatActivity {
 
     private static final int UPI_PAYMENT_REQUEST_CODE = 123;
+    private static final int REQUEST_CHECK_SETTINGS = 101;
     private static final String TAG = "PendingBill";
 
     // Merchant UPI details (ideally, store these securely)
@@ -41,8 +54,10 @@ public class pending_bill extends AppCompatActivity {
     private String patientId;  // Retrieved from SharedPreferences
     private Button payButton;
 
-
     private TextView tvBillDate, tvBillTime, tvBillPatientName, tvBillDoctorName, tvAppointmentId;
+
+    // FusedLocationProviderClient to get user's current location
+    private FusedLocationProviderClient fusedLocationClient;
 
     @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
@@ -50,6 +65,10 @@ public class pending_bill extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pending_bill);
 
+        // Initialize the fused location client
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        // Retrieve data from Intent extras
         Intent intent = getIntent();
         patientName = intent.getStringExtra("patient_name");
         age = String.valueOf(intent.getIntExtra("age", 0));
@@ -80,11 +99,11 @@ public class pending_bill extends AppCompatActivity {
         Log.d(TAG, "Patient ID: " + patientId);
 
         // Retrieve dynamic bill info TextViews from the layout
-        // (Make sure these IDs exist in your layout file)
         tvBillPatientName = findViewById(R.id.tv_bill_patient_name);
         tvBillDoctorName = findViewById(R.id.tv_bill_doctor_name);
         tvBillDate = findViewById(R.id.tv_bill_date);
         tvBillTime = findViewById(R.id.tv_bill_time);
+
 
         // Set dynamic values:
         if (patientName != null) {
@@ -113,6 +132,14 @@ public class pending_bill extends AppCompatActivity {
         RadioGroup paymentMethodGroup = findViewById(R.id.payment_method_group);
         payButton = findViewById(R.id.pay_button);
 
+        // Validate if all required parameters are available; if not, disable the booking button.
+        if (!areRequiredParametersPresent()) {
+            payButton.setEnabled(false);
+            payButton.setAlpha(0.5f); // Visual indication of disabled state.
+            Toast.makeText(this, "Some booking details are missing. Please check your inputs.", Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Required booking parameters are missing.");
+        }
+
         payButton.setOnClickListener(v -> {
             int selectedId = paymentMethodGroup.getCheckedRadioButtonId();
             if (selectedId == R.id.payment_online) {
@@ -122,12 +149,24 @@ public class pending_bill extends AppCompatActivity {
             } else if (selectedId == R.id.payment_offline) {
                 selectedPaymentMethod = "Offline";
                 Log.d(TAG, "Selected payment method: Offline");
-                saveBookingData();
+                // Check location settings before fetching location
+                checkLocationSettingsAndFetchLocation();
             } else {
                 Log.e(TAG, "No payment method selected.");
                 Toast.makeText(this, "Please select a payment method", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private boolean areRequiredParametersPresent() {
+        return (patientName != null && !patientName.trim().isEmpty() &&
+                age != null && !age.trim().isEmpty() &&
+                gender != null && !gender.trim().isEmpty() &&
+                problem != null && !problem.trim().isEmpty() &&
+                address != null && !address.trim().isEmpty() &&
+                doctorId != null && !doctorId.trim().isEmpty() &&
+                doctorName != null && !doctorName.trim().isEmpty() &&
+                Status != null && !Status.trim().isEmpty());
     }
 
     private void startUpiPayment() {
@@ -164,6 +203,18 @@ public class pending_bill extends AppCompatActivity {
             String response = (data != null) ? data.getStringExtra("response") : null;
             Log.d(TAG, "UPI Payment Response: " + response);
             processUpiPaymentResponse(response);
+        } else if (requestCode == REQUEST_CHECK_SETTINGS) {
+            // Handle result from location settings dialog
+            Log.d(TAG, "onActivityResult: Handling location settings result.");
+            if (resultCode == RESULT_OK) {
+                Log.d(TAG, "onActivityResult: User enabled location settings.");
+                fetchLocationAndSaveBookingData();
+            } else {
+                Log.e(TAG, "onActivityResult: User did not enable location settings. Result code: " + resultCode);
+                Toast.makeText(this, "Location is required to proceed.", Toast.LENGTH_SHORT).show();
+                // Optionally, save data without location.
+                saveBookingData("");
+            }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
@@ -196,30 +247,92 @@ public class pending_bill extends AppCompatActivity {
         Log.d(TAG, "Processed UPI Payment Status: " + status + ", ApprovalRefNo: " + approvalRefNo);
         if ("success".equals(status)) {
             Toast.makeText(this, "Payment successful!", Toast.LENGTH_SHORT).show();
-            saveBookingData();
+            // After a successful UPI payment, check location settings
+            checkLocationSettingsAndFetchLocation();
         } else {
             Log.e(TAG, "Payment failed or cancelled. Status: " + status);
             Toast.makeText(this, "Payment failed or cancelled.", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // Redirects to MainActivity with ongoing appointment fragment
-    public void onBookingSuccess() {
-        Intent intent = new Intent(pending_bill.this, MainActivity.class);
-        // Set the extra to open the ongoing appointments fragment (index 2)
-        intent.putExtra("open_fragment", 2);
-        startActivity(intent);
-        finish();  // Clear this activity from the back stack
+    // Check device location settings and prompt user if necessary.
+    private void checkLocationSettingsAndFetchLocation() {
+        Log.d(TAG, "checkLocationSettingsAndFetchLocation: Initiating location settings check.");
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(5000);
+
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest);
+        Log.d(TAG, "checkLocationSettingsAndFetchLocation: Built LocationSettingsRequest: " + builder.build().toString());
+
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        Task<LocationSettingsResponse> task = settingsClient.checkLocationSettings(builder.build());
+
+        task.addOnSuccessListener(new OnSuccessListener<LocationSettingsResponse>() {
+            @Override
+            public void onSuccess(LocationSettingsResponse locationSettingsResponse) {
+                Log.d(TAG, "checkLocationSettingsAndFetchLocation: Location settings are satisfied: " + locationSettingsResponse.toString());
+                fetchLocationAndSaveBookingData();
+            }
+        });
+
+        task.addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.e(TAG, "checkLocationSettingsAndFetchLocation: Failed to meet location settings requirements. Exception: " + e.getMessage());
+                if (e instanceof ResolvableApiException) {
+                    try {
+                        Log.d(TAG, "checkLocationSettingsAndFetchLocation: Attempting to resolve location settings.");
+                        ResolvableApiException resolvable = (ResolvableApiException) e;
+                        resolvable.startResolutionForResult(pending_bill.this, REQUEST_CHECK_SETTINGS);
+                    } catch (IntentSender.SendIntentException sendEx) {
+                        Log.e(TAG, "checkLocationSettingsAndFetchLocation: Error during resolution: " + sendEx.getMessage());
+                        Toast.makeText(pending_bill.this, "Error checking location settings.", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Log.e(TAG, "checkLocationSettingsAndFetchLocation: Non-resolvable location settings failure: " + e.getMessage());
+                    Toast.makeText(pending_bill.this, "Location settings are inadequate and cannot be fixed here.", Toast.LENGTH_LONG).show();
+                    // Optionally, proceed without location.
+                    saveBookingData("");
+                }
+            }
+        });
     }
 
-    private void saveBookingData() {
+    // Fetch the user's current location and then save booking data with the Google Maps link.
+    @SuppressLint("MissingPermission")
+    private void fetchLocationAndSaveBookingData() {
+        Log.d(TAG, "fetchLocationAndSaveBookingData: Attempting to fetch last known location.");
+        fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+            if (location != null) {
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                Log.d(TAG, "fetchLocationAndSaveBookingData: Location fetched successfully. Latitude: " + latitude + ", Longitude: " + longitude);
+                String googleMapsLink = "https://www.google.com/maps/search/?api=1&query=" + latitude + "," + longitude;
+                Log.d(TAG, "fetchLocationAndSaveBookingData: Constructed Google Maps link: " + googleMapsLink);
+                saveBookingData(googleMapsLink);
+            } else {
+                Log.e(TAG, "fetchLocationAndSaveBookingData: Location is null.");
+                Toast.makeText(this, "Unable to fetch location", Toast.LENGTH_SHORT).show();
+                saveBookingData("");
+            }
+        }).addOnFailureListener(e -> {
+            Log.e(TAG, "fetchLocationAndSaveBookingData: Failed to fetch location: " + e.getMessage());
+            Toast.makeText(this, "Failed to fetch location", Toast.LENGTH_SHORT).show();
+            saveBookingData("");
+        });
+    }
+
+    // Save booking data and include the Google Maps link as one of the parameters.
+    private void saveBookingData(String googleMapsLink) {
         String url = "http://sxm.a58.mytemp.website/save_appointment.php"; // Use HTTPS in production
         Log.d(TAG, "Saving booking data to: " + url);
         StringRequest request = new StringRequest(Request.Method.POST, url,
                 response -> {
                     Log.d(TAG, "Booking data saved successfully. Server response: " + response);
                     Toast.makeText(this, "Appointment saved successfully!", Toast.LENGTH_SHORT).show();
-                    // Redirect to ongoing appointments after saving booking data
                     onBookingSuccess();
                 },
                 error -> {
@@ -228,7 +341,7 @@ public class pending_bill extends AppCompatActivity {
                 }
         ) {
             @Override
-            protected Map<String, String> getParams() {
+            public Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
                 params.put("patient_id", patientId);
                 params.put("patient_name", patientName);
@@ -244,6 +357,8 @@ public class pending_bill extends AppCompatActivity {
                 params.put("appointment_mode", "Online");
                 params.put("payment_method", selectedPaymentMethod);
                 params.put("status", Status);
+                // Send the Google Maps link (or empty string if not available) to the database.
+                params.put("location", googleMapsLink);
                 Log.d(TAG, "Booking data params: " + params.toString());
                 return params;
             }
@@ -258,5 +373,13 @@ public class pending_bill extends AppCompatActivity {
 
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(request);
+    }
+
+    // Redirects to MainActivity with ongoing appointment fragment.
+    public void onBookingSuccess() {
+        Intent intent = new Intent(pending_bill.this, MainActivity.class);
+        intent.putExtra("open_fragment", 2);
+        startActivity(intent);
+        finish();
     }
 }

@@ -167,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (item.getItemId() == R.id.notification) {
                 intent = new Intent(MainActivity.this, HomeFragment.class);
             } else if (item.getItemId() == R.id.support1) {
-                intent = new Intent(MainActivity.this, HomeFragment.class);
+                intent = new Intent(MainActivity.this, suppor.class);
             } else if (item.getItemId() == R.id.shareapp1) {
                 intent = new Intent(MainActivity.this, share_app.class);
             } else if (item.getItemId() == R.id.aboutus1) {

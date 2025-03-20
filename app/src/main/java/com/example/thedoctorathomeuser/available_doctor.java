@@ -1,5 +1,6 @@
 package com.example.thedoctorathomeuser;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -39,6 +40,8 @@ public class available_doctor extends AppCompatActivity {
     private EditText edtPincode;
     private ImageButton btnSearch;
     private TextView tvNoDoctors;
+    private ImageButton btnBack;
+
     private String categoryId, categoryName;
     private static final String DEFAULT_PINCODE = "110001";
 
@@ -50,6 +53,19 @@ public class available_doctor extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_available_doctor);
+
+        // Initialize the Back Button and set its click listener
+        btnBack = findViewById(R.id.btn_back);
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Redirect to the host activity with the Book appointment fragment
+                Intent intent = new Intent(available_doctor.this, MainActivity.class);
+                intent.putExtra("open_fragment", 1); // Assuming 1 corresponds to Book appointment fragment
+                startActivity(intent);
+                finish();
+            }
+        });
 
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));

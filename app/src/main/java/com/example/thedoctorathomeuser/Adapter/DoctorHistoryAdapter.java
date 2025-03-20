@@ -34,23 +34,23 @@ import java.util.Set;
 public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdapter.ViewHolder> {
 
     private static final String TAG = "DoctorHistoryAdapter";
-    private Context context;
-    private String patientId; // Passed from login or global context
-    private List<Integer> doctorIds;
-    private List<String> doctorNames;
-    private List<String> doctorSpecialties;
-    private List<String> appointmentDates;
-    private List<String> appointmentPrices;
-    private List<Integer> doctorImages;
-    private List<Integer> appointmentIds;
-    private List<String> appointmentStatuses; // e.g., "Completed", etc.
+    private final Context context;
+    private final String patientId; // Passed from login or global context
+    private final List<Integer> doctorIds;
+    private final List<String> doctorNames;
+    private final List<String> doctorSpecialties;
+    private final List<String> appointmentDates;
+    private final List<String> appointmentPrices;
+    private final List<Integer> doctorImages;
+    private final List<Integer> appointmentIds;
+    private final List<String> appointmentStatuses; // e.g., "Completed", "Cancelled", etc.
 
     // API endpoints for review submission and checking review status
     private static final String REVIEW_API_URL = "http://sxm.a58.mytemp.website/submit_review.php";
     private static final String CHECK_REVIEW_API_URL = "http://sxm.a58.mytemp.website/check_review_status.php";
 
     // Local flag to prevent multiple pop-ups per doctor during auto-refresh in this session
-    private Set<Integer> reviewPopupShown = new HashSet<>();
+    private final Set<Integer> reviewPopupShown = new HashSet<>();
 
     public DoctorHistoryAdapter(Context context, String patientId, List<Integer> doctorIds, List<String> doctorNames,
                                 List<String> doctorSpecialties, List<String> appointmentDates,
@@ -85,6 +85,25 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         holder.appointmentPrice.setText(appointmentPrices.get(position));
         holder.doctorImage.setImageResource(doctorImages.get(position));
 
+        // Check appointment status and adjust UI accordingly
+        if (appointmentStatuses.get(position).equalsIgnoreCase("cancelled")) {
+            // Show cancellation message
+            holder.statusMessage.setVisibility(View.VISIBLE);
+            holder.statusMessage.setText("Appointment is cancelled by user");
+            // Hide all action buttons and details layout
+            holder.viewDetailsButton.setVisibility(View.GONE);
+            holder.btnViewBill.setVisibility(View.GONE);
+            holder.btnViewReport.setVisibility(View.GONE);
+            holder.btnViewProfile.setVisibility(View.GONE);
+            holder.detailsLayout.setVisibility(View.GONE);
+        } else {
+            // Hide cancellation message
+            holder.statusMessage.setVisibility(View.GONE);
+            // Ensure action buttons are visible for non-cancelled appointments
+            holder.viewDetailsButton.setVisibility(View.VISIBLE);
+            // The inner buttons will be shown when detailsLayout is toggled
+        }
+
         // If appointment status is "Completed", check with the server if a review exists.
         if (appointmentStatuses.get(position).equalsIgnoreCase("Completed")) {
             int docId = doctorIds.get(position);
@@ -98,7 +117,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             }
         }
 
-        // Toggle details visibility
+        // Toggle details visibility if not cancelled
         holder.viewDetailsButton.setOnClickListener(v -> {
             if (holder.detailsLayout.getVisibility() == View.GONE) {
                 holder.detailsLayout.setVisibility(View.VISIBLE);
@@ -109,7 +128,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             }
         });
 
-        // Launch activities for bill, report, and doctor profile
+        // Launch activities for bill, report, and doctor profile if not cancelled
         holder.btnViewBill.setOnClickListener(v -> {
             Intent in = new Intent(context, complet_bill.class);
             context.startActivity(in);
@@ -231,7 +250,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
                     params.put("rating", String.valueOf(rating));
                     params.put("review_comment", comment);
                 }
-                Log.d(TAG, "submitReview params: " + params.toString());
+                Log.d(TAG, "submitReview params: " + params);
                 return params;
             }
         };
@@ -247,7 +266,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView doctorImage;
-        TextView doctorName, doctorSpecialty, appointmentDate, appointmentPrice;
+        TextView doctorName, doctorSpecialty, appointmentDate, appointmentPrice, statusMessage;
         Button viewDetailsButton, btnViewBill, btnViewReport, btnViewProfile;
         LinearLayout detailsLayout;
 
@@ -263,6 +282,8 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             btnViewBill = itemView.findViewById(R.id.btnViewBill);
             btnViewReport = itemView.findViewById(R.id.btnViewReport);
             btnViewProfile = itemView.findViewById(R.id.btnViewProfile);
+            // New cancellation status message
+            statusMessage = itemView.findViewById(R.id.statusMessage);
         }
     }
 }
