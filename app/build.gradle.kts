@@ -44,22 +44,24 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
     implementation ("de.hdodenhof:circleimageview:3.1.0")
 //    implementation ("com.google.android.gms:play-services-maps:18.1.0")
 
 
     implementation ("com.google.firebase:firebase-auth:23.2.0")
+
     implementation ("com.google.firebase:firebase-core:21.1.1")
+
     implementation(platform("com.google.firebase:firebase-bom:33.9.0"))
 
     implementation ("com.github.bumptech.glide:glide:4.12.0")
+
     annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")
-
-
 
     implementation ("com.android.volley:volley:1.2.1")
 
-  implementation ("com.razorpay:checkout:1.6.26")
+    implementation ("com.razorpay:checkout:1.6.26")
 
     implementation ("com.cashfree.pg:api:2.1.25")
 
@@ -70,11 +72,4 @@ dependencies {
     implementation ("com.google.android.gms:play-services-location:21.0.1")
 
 
-
-
-
-
-
 }
-
-

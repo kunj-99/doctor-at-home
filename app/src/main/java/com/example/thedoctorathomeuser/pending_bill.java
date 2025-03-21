@@ -417,7 +417,7 @@ public class pending_bill extends AppCompatActivity {
         queue.add(request);
     }
 
-    // Redirects to MainActivity with ongoing appointment fragment.
+
     public void onBookingSuccess() {
         Intent intent = new Intent(pending_bill.this, MainActivity.class);
         intent.putExtra("open_fragment", 2);

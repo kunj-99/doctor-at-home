@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -85,24 +86,51 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         holder.appointmentPrice.setText(appointmentPrices.get(position));
         holder.doctorImage.setImageResource(doctorImages.get(position));
 
-        // Check appointment status and adjust UI accordingly
-        if (appointmentStatuses.get(position).equalsIgnoreCase("cancelled")) {
-            // Show cancellation message
-            holder.statusMessage.setVisibility(View.VISIBLE);
-            holder.statusMessage.setText("Appointment is cancelled by user");
-            // Hide all action buttons and details layout
-            holder.viewDetailsButton.setVisibility(View.GONE);
-            holder.btnViewBill.setVisibility(View.GONE);
-            holder.btnViewReport.setVisibility(View.GONE);
-            holder.btnViewProfile.setVisibility(View.GONE);
+        String status = appointmentStatuses.get(position);
+        if (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("cancelled_by_doctor")) {
+            String cancelText;
+            if (status.equalsIgnoreCase("cancelled_by_doctor")) {
+                cancelText = "Cancelled By Doctor";
+            } else {
+                cancelText = "Cancelled By User";
+            }
+
+            // Disable action buttons and change their text to indicate cancellation
+            holder.viewDetailsButton.setEnabled(false);
+            holder.viewDetailsButton.setText(cancelText);
+            holder.viewDetailsButton.setBackgroundColor(Color.RED);
+
+            holder.btnViewBill.setEnabled(false);
+            holder.btnViewBill.setText("Cancelled");
+
+            holder.btnViewReport.setEnabled(false);
+            holder.btnViewReport.setText("Cancelled");
+
+            holder.btnViewProfile.setEnabled(false);
+            holder.btnViewProfile.setText("Cancelled");
+
+            // Optionally, hide the details layout and any status message view if present
             holder.detailsLayout.setVisibility(View.GONE);
-        } else {
-            // Hide cancellation message
             holder.statusMessage.setVisibility(View.GONE);
-            // Ensure action buttons are visible for non-cancelled appointments
+        } else {
+            // For non-cancelled appointments, ensure buttons are enabled and show default text.
+            holder.viewDetailsButton.setEnabled(true);
+            holder.viewDetailsButton.setText("View Details");
+
+            holder.btnViewBill.setEnabled(true);
+            holder.btnViewBill.setText("View Bill");
+
+            holder.btnViewReport.setEnabled(true);
+            holder.btnViewReport.setText("View Report");
+
+            holder.btnViewProfile.setEnabled(true);
+            holder.btnViewProfile.setText("View Profile");
+
+            // Make sure details layout is visible if needed
             holder.viewDetailsButton.setVisibility(View.VISIBLE);
-            // The inner buttons will be shown when detailsLayout is toggled
         }
+
+
 
         // If appointment status is "Completed", check with the server if a review exists.
         if (appointmentStatuses.get(position).equalsIgnoreCase("Completed")) {
