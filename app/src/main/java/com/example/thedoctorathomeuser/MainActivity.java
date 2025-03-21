@@ -159,21 +159,21 @@ public class MainActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             Intent intent = null;
             if (item.getItemId() == R.id.payments1) {
-                intent = new Intent(MainActivity.this, HomeFragment.class);
+                intent = new Intent(MainActivity.this, payments.class);
             } else if (item.getItemId() == R.id.records1) {
-                intent = new Intent(MainActivity.this, HomeFragment.class);
+                intent = new Intent(MainActivity.this, pathology_test.class);
             } else if (item.getItemId() == R.id.policy) {
-                intent = new Intent(MainActivity.this, HomeFragment.class);
+                intent = new Intent(MainActivity.this, policy.class);
             } else if (item.getItemId() == R.id.notification) {
-                intent = new Intent(MainActivity.this, HomeFragment.class);
+                intent = new Intent(MainActivity.this, tarmsandcondition.class);
             } else if (item.getItemId() == R.id.support1) {
                 intent = new Intent(MainActivity.this, suppor.class);
             } else if (item.getItemId() == R.id.shareapp1) {
                 intent = new Intent(MainActivity.this, share_app.class);
             } else if (item.getItemId() == R.id.aboutus1) {
-                intent = new Intent(MainActivity.this, HomeFragment.class);
+                intent = new Intent(MainActivity.this, aboutus.class);
             } else if (item.getItemId() == R.id.settings1) {
-                intent = new Intent(MainActivity.this, HomeFragment.class);
+                intent = new Intent(MainActivity.this, settings.class);
             } else if (item.getItemId() == R.id.rateapp) {
                 intent = new Intent(MainActivity.this, Rate_app.class);
             } else if (item.getItemId() == R.id.logout) {
