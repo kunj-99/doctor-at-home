@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
@@ -11,15 +11,13 @@
         android:maxSdkVersion="32"
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+    <uses-permission
+        android:name="android.permission.ACCESS_FINE_LOCATION"
         tools:ignore="CoarseFineLocation" />
-    
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
-    <application
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
+    <application
         android:name=".MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -32,7 +30,22 @@
         android:theme="@style/Theme.TheDoctorAtHomeUser"
         android:usesCleartextTraffic="true"
         tools:ignore="WrongManifestParent"
-        tools:targetApi="n" >
+        tools:targetApi="n">
+        <activity
+            android:name=".aboutus"
+            android:exported="false" />
+        <activity
+            android:name=".policy"
+            android:exported="false" />
+        <activity
+            android:name=".tarmsandcondition"
+            android:exported="false" />
+        <activity
+            android:name=".settings"
+            android:exported="false" />
+        <activity
+            android:name=".pathology_test"
+            android:exported="false" />
         <activity
             android:name=".medical_riport"
             android:exported="false" />
@@ -47,14 +60,13 @@
             android:exported="false" />
         <activity
             android:name=".splash"
-            android:exported="true" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".complet_bill"
             android:exported="false" />
@@ -96,7 +108,7 @@
             android:exported="false" />
         <activity
             android:name=".login"
-            android:exported="true" >
+            android:exported="true">
 
             <!-- <intent-filter> -->
             <!-- <action android:name="android.intent.action.MAIN" /> -->
@@ -107,21 +119,16 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="true" />
-
-<!--        <meta-data-->
-<!--            android:name="com.google.android.maps.v2.API_KEY"-->
-<!--            android:value="AlzaSy01q7enExdYHYWRV4DgMWbGr8i-CTQss3z" />-->
-
+            android:exported="true" /> <!-- <meta-data -->
+        <!-- android:name="com.google.android.maps.v2.API_KEY" -->
+        <!-- android:value="AlzaSy01q7enExdYHYWRV4DgMWbGr8i-CTQss3z" /> -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
-
         <uses-library
             android:name="org.apache.http.legacy"
             android:required="false" />
-
     </application>
 
 </manifest>
