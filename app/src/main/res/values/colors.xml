@@ -28,4 +28,10 @@
     <color name="primary_color">#2196F3</color>
     <color name="text_gray">#757575</color>
     <color name="divider_gray">#EEEEEE</color>
+
+    <color name="dgreen">#3D8D7A</color>
+    <color name="lgreen">#B3D8A8</color>
+    <color name="cream">#FBFFE4</color>
+    <color name="vlgreen">#A3D1C6</color>
+    
 </resources>

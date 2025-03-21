@@ -3,7 +3,7 @@
     android:color="#80FFFFFF"> <!-- Ripple color -->
     <item>
         <shape>
-            <solid android:color="#003399" /> <!-- Default background -->
+            <solid android:color="@color/dgreen" /> <!-- Default background -->
             <corners android:radius="12dp" /> <!-- Rounded corners -->
         </shape>
     </item>

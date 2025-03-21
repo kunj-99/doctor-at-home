@@ -81,7 +81,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
         holder.track.setVisibility(View.VISIBLE);
         holder.track.setEnabled(true);
         holder.track.setText("Track");
-        holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.blue));
+        holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.dgreen));
 
         // Cancel button remains unchanged (always visible and enabled)
         holder.cancel.setVisibility(View.VISIBLE);

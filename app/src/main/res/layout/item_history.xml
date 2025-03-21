@@ -1,145 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="10dp"
-    app:cardElevation="4dp"
-    app:cardCornerRadius="12dp"
+    android:layout_margin="12dp"
+    app:cardElevation="6dp"
+    app:cardCornerRadius="16dp"
     app:cardBackgroundColor="@android:color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="16dp">
 
-        <!-- Doctor's Details Layout -->
+        <!-- Doctor Info Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <!-- Doctor Image -->
             <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/doctorImage"
-                android:layout_width="110dp"
-                android:layout_height="110dp"
-                android:layout_marginStart="20dp"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
                 android:src="@drawable/main1"
-                app:civ_border_color="@color/blue"
+                app:civ_border_color="@color/dgreen"
                 app:civ_border_width="2dp" />
 
-            <!-- Doctor Info -->
+            <!-- Doctor Details -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginHorizontal="25dp"
                 android:orientation="vertical"
-                android:padding="10dp">
+                android:layout_marginStart="16dp">
 
                 <TextView
                     android:id="@+id/doctorName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Dr. Tranquilli"
-                    android:textColor="@color/black"
                     android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:textColor="@color/black" />
 
                 <TextView
                     android:id="@+id/doctorSpecialty"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
                     android:text="Specialist Medicine"
+                    android:textSize="14sp"
                     android:textColor="@color/black"
-                    android:textSize="15sp" />
+                    android:layout_marginTop="4dp" />
 
                 <TextView
                     android:id="@+id/appointmentDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
                     android:text="22 June 2024"
+                    android:textSize="14sp"
                     android:textColor="@color/black"
-                    android:textSize="15sp" />
+                    android:layout_marginTop="2dp" />
 
                 <TextView
                     android:id="@+id/appointmentPrice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="₹ 540 /-"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textStyle="bold"
-                    android:textColor="@color/black" />
-
+                    android:textColor="@color/black"
+                    android:layout_marginTop="6dp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Button Layout -->
-        <LinearLayout
+        <!-- View Details Button -->
+        <Button
+            android:id="@+id/viewDetailsButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:layout_marginHorizontal="10dp"
-            android:layout_marginTop="6dp">
+            android:layout_height="48dp"
+            android:text="View Details"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:backgroundTint="@color/dgreen"
+            android:layout_marginTop="16dp"
+            android:elevation="2dp" />
 
-            <Button
-                android:id="@+id/viewDetailsButton"
-                android:layout_width="400dp"
-                android:layout_height="50dp"
-                android:text="View Details"
-                android:backgroundTint="@color/blue"
-                android:textColor="@android:color/white"/>
-        </LinearLayout>
-
-        <!-- Hidden Buttons (Initially GONE) -->
+        <!-- Hidden Buttons -->
         <LinearLayout
             android:id="@+id/detailsLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="gone"
+            android:layout_marginTop="12dp">
 
             <Button
                 android:id="@+id/btnViewBill"
-                android:layout_width="350dp"
-                android:layout_height="50dp"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
                 android:text="View Bill"
-                android:backgroundTint="@color/blue"
-                android:textColor="@android:color/white"/>
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="@color/dgreen" />
 
             <Button
                 android:id="@+id/btnViewReport"
-                android:layout_width="350dp"
-                android:layout_height="50dp"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
                 android:text="@string/view_medicine_medical_report"
-                android:backgroundTint="@color/blue"
-                android:textColor="@android:color/white"/>
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                android:layout_marginBottom="8dp"
+                android:backgroundTint="@color/dgreen" />
 
             <Button
                 android:id="@+id/btnViewProfile"
-                android:layout_width="350dp"
-                android:layout_height="50dp"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
                 android:text="View Doctor Profile"
-                android:backgroundTint="@color/blue"
-                android:textColor="@android:color/white"/>
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="15sp"
+                android:backgroundTint="@color/dgreen" />
         </LinearLayout>
 
-        <!-- Cancellation Status Message -->
+        <!-- Status Message -->
         <TextView
             android:id="@+id/statusMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
             android:text="Appointment is cancelled by user"
             android:textColor="@android:color/holo_red_dark"
+            android:textSize="14sp"
             android:gravity="center"
-            android:padding="8dp"
-            android:textSize="16sp" />
+            android:padding="12dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

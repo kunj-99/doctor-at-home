@@ -315,20 +315,21 @@
             </androidx.cardview.widget.CardView>
 
             <!-- Pay Button -->
-
+            <Button
+                android:id="@+id/download_button1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="20dp"
+                android:layout_marginTop="20dp"
+                android:backgroundTint="@color/dgreen"
+                android:text="Download"
+                android:textColor="#FFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
         </LinearLayout>
+
     </ScrollView>
 
-    <Button
-        android:id="@+id/download_button1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="140dp"
-        android:backgroundTint="@color/blue"
-        android:text="Download"
-        android:textColor="#FFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+
 
 </LinearLayout>

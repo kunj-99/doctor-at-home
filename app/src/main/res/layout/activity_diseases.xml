@@ -33,10 +33,10 @@
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_marginTop="24dp"
-        android:backgroundTint="#003399"
+        android:backgroundTint="@color/dgreen"
         android:elevation="4dp"
         android:gravity="center"
-        android:text="conform"
+        android:text="confirm"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:textStyle="bold" />

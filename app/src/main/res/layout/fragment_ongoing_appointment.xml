@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:text="Book Appointment"
-        android:backgroundTint="@color/blue"
+        android:backgroundTint="@color/dgreen"
         android:textColor="@android:color/white"
         android:layout_margin="16dp" />
 

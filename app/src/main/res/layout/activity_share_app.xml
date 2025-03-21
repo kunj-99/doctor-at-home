@@ -8,6 +8,7 @@
     <Button
         android:id="@+id/share_button"
         android:layout_width="wrap_content"
+        android:backgroundTint="@color/dgreen"
         android:layout_height="wrap_content"
         android:text="Share This App" />
 </LinearLayout>

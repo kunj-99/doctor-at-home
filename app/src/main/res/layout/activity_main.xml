@@ -20,7 +20,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:navigationIconTint="@color/black"
-            android:background="@color/blue">
+            android:background="@color/dgreen">
 
             <!-- Centered Title -->
             <TextView
@@ -50,10 +50,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:menu="@menu/bottom_nav_menu"
-            android:background="@color/blue"
-            app:itemBackground="@color/blue"
-            app:itemIconTint="@color/nav_item_color"
-            app:itemTextColor="@color/nav_item_color"/>
+            android:background="@color/dgreen"
+            app:itemBackground="@color/dgreen"
+            app:itemIconTint="@color/white"
+            app:itemTextColor="@color/white"/>
     </LinearLayout>
 
     <!-- Navigation Drawer -->
