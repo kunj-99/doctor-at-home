@@ -131,8 +131,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         }
 
 
-
-        // If appointment status is "Completed", check with the server if a review exists.
         if (appointmentStatuses.get(position).equalsIgnoreCase("Completed")) {
             int docId = doctorIds.get(position);
             int appId = appointmentIds.get(position);
@@ -156,7 +154,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             }
         });
 
-        // Launch activities for bill, report, and doctor profile if not cancelled
+
         holder.btnViewBill.setOnClickListener(v -> {
             Intent in = new Intent(context, complet_bill.class);
             context.startActivity(in);
@@ -186,8 +184,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
                         Log.d(TAG, "checkAndPromptForReview API response for doctorId " + doctorId +
                                 ": alreadyReviewed=" + alreadyReviewed + ", reviewCanceled=" + reviewCanceled);
                         if (!alreadyReviewed && !reviewCanceled) {
-                            // Mark the popup as shown to prevent re-triggering during auto-refresh.
-                            reviewPopupShown.add(doctorId);
+                            // Mark the popup as shown to prevent re-triggering during auto-refresh.                 reviewPopupShown.add(doctorId);
                             showReviewPopup(doctorId, appointmentId);
                         }
                     } catch (JSONException e) {

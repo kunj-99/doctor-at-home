@@ -17,6 +17,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.Adapter.DoctorAdapter;
 import org.json.JSONArray;
@@ -46,11 +47,36 @@ public class available_doctor extends AppCompatActivity {
     private static final String DEFAULT_PINCODE = "110001";
 
     private final Handler handler = new Handler();
-    private Runnable autoRefreshRunnable;
-    private static final int REFRESH_INTERVAL = 10000;
+    // Set refresh intervals:
+    // 2000ms (2 seconds) for updating doctor status
+    private static final int DOCTOR_STATUS_REFRESH_INTERVAL = 2000;
+    // 15000ms (15 seconds) for refreshing the doctor list
+    private static final int DOCTOR_LIST_REFRESH_INTERVAL = 15000;
 
     // Flag to track if this activity is visible
     private boolean isActivityVisible = false;
+
+    // Runnable to update doctor status every 2 seconds
+    private Runnable autoUpdateStatusRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isActivityVisible) {
+                updateDoctorAutoStatus();
+                handler.postDelayed(this, DOCTOR_STATUS_REFRESH_INTERVAL);
+            }
+        }
+    };
+
+    // Runnable to refresh doctor list every 15 seconds
+    private Runnable autoRefreshDoctorsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isActivityVisible) {
+                fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
+                handler.postDelayed(this, DOCTOR_LIST_REFRESH_INTERVAL);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,20 +102,8 @@ public class available_doctor extends AppCompatActivity {
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
-        // Fetch doctors for default pincode initially
+        // Initially fetch the doctor list
         fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
-
-        // Define auto-refresh runnable
-        autoRefreshRunnable = new Runnable() {
-            @Override
-            public void run() {
-                // Only auto-refresh if the activity is visible.
-                if (isActivityVisible) {
-                    fetchDoctorsByPincodeAndCategory(DEFAULT_PINCODE, categoryId, false);
-                    handler.postDelayed(this, REFRESH_INTERVAL);
-                }
-            }
-        };
 
         btnSearch.setOnClickListener(v -> {
             String pincode = edtPincode.getText().toString().trim();
@@ -107,16 +121,18 @@ public class available_doctor extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         isActivityVisible = true;
-        // Start auto-refresh when this activity is visible
-        handler.postDelayed(autoRefreshRunnable, REFRESH_INTERVAL);
+        // Start both runnables when the activity is visible
+        handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
+        handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         isActivityVisible = false;
-        // Stop auto-refresh when this activity is not visible
-        handler.removeCallbacks(autoRefreshRunnable);
+        // Stop both runnables when the activity is not visible
+        handler.removeCallbacks(autoUpdateStatusRunnable);
+        handler.removeCallbacks(autoRefreshDoctorsRunnable);
     }
 
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
@@ -139,7 +155,6 @@ public class available_doctor extends AppCompatActivity {
                         if (response.length() == 0) {
                             tvNoDoctors.setVisibility(View.VISIBLE);
                             recyclerView.setVisibility(View.GONE);
-                            // Only show toast if activity is visible
                             if (isActivityVisible) {
                                 if (!userSearch) {
                                     Toast.makeText(available_doctor.this,
@@ -166,13 +181,11 @@ public class available_doctor extends AppCompatActivity {
                                 hospitals.add(doctor.getString("hospital_affiliation"));
                                 ratings.add((float) doctor.getDouble("rating"));
                                 imageUrls.add(doctor.getString("profile_picture"));
-                                // New: add experience duration from JSON response
                                 Duration.add(doctor.getString("experience_duration"));
                             }
-
                             adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties, hospitals, ratings, imageUrls, Duration);
                             recyclerView.setAdapter(adapter);
-                        } catch (Exception e) {
+                        } catch (JSONException e) {
                             e.printStackTrace();
                             if (isActivityVisible) {
                                 Toast.makeText(available_doctor.this, "Data parsing error", Toast.LENGTH_SHORT).show();
@@ -189,15 +202,36 @@ public class available_doctor extends AppCompatActivity {
                 }
                 Log.e("VolleyError", error.toString());
             }
-        });
-
+        }
+        );
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(request);
+    }
+
+    // Method to trigger the auto-update PHP file using Volley
+    private void updateDoctorAutoStatus() {
+        String updateUrl = "http://sxm.a58.mytemp.website/update_doctor_status.php";
+        StringRequest updateRequest = new StringRequest(Request.Method.GET, updateUrl,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("updateDoctorAutoStatus", "Response: " + response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("updateDoctorAutoStatus", "Error: " + error.toString());
+            }
+        }
+        );
+        RequestQueue queue = Volley.newRequestQueue(this);
+        queue.add(updateRequest);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        handler.removeCallbacks(autoRefreshRunnable);
+        handler.removeCallbacks(autoUpdateStatusRunnable);
+        handler.removeCallbacks(autoRefreshDoctorsRunnable);
     }
 }
