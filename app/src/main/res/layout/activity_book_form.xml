@@ -5,6 +5,7 @@
     android:background="@color/white"
     android:orientation="vertical">
 
+    <!-- Header (Fixed) -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,11 +18,11 @@
         android:padding="16dp"
         android:layout_marginBottom="16dp" />
 
-    <!-- Form Section -->
+    <!-- Scrollable Content -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:padding="16dp">
 
         <LinearLayout
@@ -186,19 +187,64 @@
                 android:textColorHint="#9E9E9E"
                 android:textSize="14sp" />
 
+            <!-- New Pincode Field -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="4dp"
+                android:text="Pincode"
+                android:textColor="#000"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/edt_pincode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_edittext"
+                android:hint="Enter Pincode"
+                android:padding="12dp"
+                android:inputType="number"
+                android:maxLength="6"
+                android:textColor="#000"
+                android:textColorHint="#9E9E9E"
+                android:textSize="14sp" />
+
+            <!-- Instructional message for map interaction -->
+            <TextView
+                android:id="@+id/tv_pinpoint_instruction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tap on the map to pinpoint your location"
+                android:textColor="#555555"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:padding="8dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Map Fragment for Location Selection -->
+            <fragment
+                android:id="@+id/map_fragment"
+                android:name="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:layout_margin="16dp" />
+
         </LinearLayout>
     </ScrollView>
 
-    <!-- Book Button -->
+    <!-- Fixed Book Button -->
     <Button
         android:id="@+id/book_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="8dp"
         android:backgroundTint="@color/dgreen"
         android:text="Book"
         android:textColor="#FFF"
         android:textSize="16sp"
         android:textStyle="bold" />
+
 </LinearLayout>

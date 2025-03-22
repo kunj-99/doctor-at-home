@@ -1,5 +1,6 @@
 package com.example.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -15,8 +16,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Spinner;
 import android.widget.Toast;
+
+import android.widget.ImageView; // Import ImageView
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -78,6 +82,16 @@ public class Profile extends AppCompatActivity {
             finish();
             return;
         }
+
+
+// In your onCreate() method of Profile.java, add the following:
+        ImageView btnBack = findViewById(R.id.iv_back_arrow);
+        btnBack.setOnClickListener(v -> {
+            Intent intent = new Intent(Profile.this, MainActivity.class);
+            startActivity(intent);
+            finish();
+        });
+
         patientId = Integer.parseInt(patientIdStr);
 
         civProfile = findViewById(R.id.civ_profile);

@@ -12,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.view.GravityCompat;
+
 import com.bumptech.glide.Glide; // Using Glide for image loading
 import com.google.firebase.FirebaseApp;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -236,6 +238,7 @@ public class MainActivity extends AppCompatActivity {
             this.tvProfileEmail = tvProfileEmail;
         }
 
+
         @Override
         protected ProfileData doInBackground(String... params) {
             String patientId = params[0];
@@ -282,6 +285,9 @@ public class MainActivity extends AppCompatActivity {
             }
             return null;
         }
+
+
+
 
         @Override
         protected void onPostExecute(ProfileData profileData) {
