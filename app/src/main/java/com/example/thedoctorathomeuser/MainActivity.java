@@ -286,9 +286,6 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
 
-
-
-
         @Override
         protected void onPostExecute(ProfileData profileData) {
             if (profileData != null) {
