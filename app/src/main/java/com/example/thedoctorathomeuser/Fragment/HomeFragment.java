@@ -11,6 +11,13 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;  // Added missing import
+import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.Adapter.AppointmentStatAdapter;
 import com.example.thedoctorathomeuser.Adapter.ArticleAdapter;
 import com.example.thedoctorathomeuser.Adapter.HealthTipAdapter;
@@ -23,6 +30,10 @@ import com.example.thedoctorathomeuser.HealthTip;
 import com.example.thedoctorathomeuser.ServiceItem;
 import com.example.thedoctorathomeuser.TopDoctor;
 import com.example.thedoctorathomeuser.R;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,37 +87,158 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupHealthTips() {
-        List<HealthTip> tipList = new ArrayList<>();
-        tipList.add(new HealthTip("Stay Hydrated", "Drink 8 glasses of water daily", R.drawable.food));
-        tipList.add(new HealthTip("Eat Fruits", "Boost your immune system with vitamin C", R.drawable.food));
-        tipList.add(new HealthTip("Take Breaks", "Short walks improve blood circulation", R.drawable.food));
+        // Create a Volley request queue using the fragment's context.
+        RequestQueue requestQueue = Volley.newRequestQueue(getContext());
 
-        HealthTipAdapter tipAdapter = new HealthTipAdapter(getContext(), tipList);
-        tipRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-        tipRecyclerView.setAdapter(tipAdapter);
+        // Replace with your API endpoint URL.
+        String url = "http://sxm.a58.mytemp.website/healthtip.php";
+
+        // Create a JsonArrayRequest (assuming the API returns a JSON array)
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
+                Request.Method.GET,
+                url,
+                null,
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        List<HealthTip> tipList = new ArrayList<>();
+
+                        try {
+                            // Loop through the JSON array and parse each object.
+                            for (int i = 0; i < response.length(); i++) {
+                                JSONObject jsonObject = response.getJSONObject(i);
+                                String title = jsonObject.getString("title");
+                                String description = jsonObject.getString("description");
+
+                                // Use a static image resource for now.
+                                int imageResId = R.drawable.food;
+
+                                tipList.add(new HealthTip(title, description, imageResId));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        // Create and set the adapter with the fetched data.
+                        HealthTipAdapter tipAdapter = new HealthTipAdapter(getContext(), tipList);
+                        tipRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+                        tipRecyclerView.setAdapter(tipAdapter);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                    }
+                }
+        );
+
+        // Add the request to the Volley queue.
+        requestQueue.add(jsonArrayRequest);
     }
 
     private void setupTopDoctors() {
-        List<TopDoctor> doctors = new ArrayList<>();
-        doctors.add(new TopDoctor("Dr. Priya Mehta", "Cardiologist", R.drawable.doctor_avatar));
-        doctors.add(new TopDoctor("Dr. Arjun Rao", "Dermatologist", R.drawable.doctor_avatar));
-        doctors.add(new TopDoctor("Dr. Aisha Khan", "Neurologist", R.drawable.doctor_avatar));
-        doctors.add(new TopDoctor("Dr. Rahul Verma", "Orthopedic", R.drawable.doctor_avatar));
-        doctors.add(new TopDoctor("Dr. Neha Singh", "Pediatrician", R.drawable.doctor_avatar));
+        // Create a Volley request queue using the fragment's context.
+        RequestQueue requestQueue = Volley.newRequestQueue(getContext());
 
-        TopDoctorAdapter doctorAdapter = new TopDoctorAdapter(getContext(), doctors);
-        doctorRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
-        doctorRecyclerView.setAdapter(doctorAdapter);
+        // Replace with your actual API endpoint URL that returns top doctor data.
+        String url = "http://sxm.a58.mytemp.website/topdoctor.php";
+
+        // Create a JsonArrayRequest assuming the API returns a JSON array.
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
+                Request.Method.GET,
+                url,
+                null,
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        List<TopDoctor> doctors = new ArrayList<>();
+
+                        try {
+                            // Loop through the JSON array and parse each object.
+                            for (int i = 0; i < response.length(); i++) {
+                                JSONObject jsonObject = response.getJSONObject(i);
+                                String fullName = jsonObject.getString("full_name");
+                                String specialty = jsonObject.getString("category_name"); // assuming API returns category_name as specialty
+
+                                // Use a static image resource for now.
+                                int imageResId = R.drawable.doctor_avatar;
+
+                                doctors.add(new TopDoctor(fullName, specialty, imageResId));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        // Create and set the adapter with the fetched data.
+                        TopDoctorAdapter doctorAdapter = new TopDoctorAdapter(getContext(), doctors);
+                        doctorRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
+                        doctorRecyclerView.setAdapter(doctorAdapter);
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                    }
+                }
+        );
+
+        // Add the request to the Volley request queue.
+        requestQueue.add(jsonArrayRequest);
     }
 
     private void setupAppointmentStats() {
-        List<AppointmentStat> stats = new ArrayList<>();
-        stats.add(new AppointmentStat("Appointments Completed", 12, R.drawable.ic_check_circle));
+        // Create a Volley request queue using the fragment's context.
+        RequestQueue requestQueue = Volley.newRequestQueue(getContext());
 
-        AppointmentStatAdapter statAdapter = new AppointmentStatAdapter(getContext(), stats);
-        appointmentStatRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        appointmentStatRecyclerView.setAdapter(statAdapter);
+        // Replace with your API endpoint URL for completed appointment count.
+        String url = "http://sxm.a58.mytemp.website/completed_appointment.php";
+        // Log the URL being used
+        android.util.Log.d("AppointmentStats", "Requesting completed appointment count from: " + url);
+
+        // Create a JsonObjectRequest since the API returns a JSON object.
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        // Log the received response
+                        android.util.Log.d("AppointmentStats", "Response received: " + response.toString());
+                        try {
+                            int count = response.getInt("completed_count");
+                            // Log the count value
+                            android.util.Log.d("AppointmentStats", "Completed count: " + count);
+
+                            List<AppointmentStat> stats = new ArrayList<>();
+                            stats.add(new AppointmentStat("Appointments Completed", count, R.drawable.ic_check_circle));
+
+                            AppointmentStatAdapter statAdapter = new AppointmentStatAdapter(getContext(), stats);
+                            appointmentStatRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+                            appointmentStatRecyclerView.setAdapter(statAdapter);
+                        } catch (JSONException e) {
+                            // Log the JSON parsing error
+                            android.util.Log.e("AppointmentStats", "JSON parsing error: " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // Log the Volley error
+                        android.util.Log.e("AppointmentStats", "Volley error: " + error.toString());
+                        error.printStackTrace();
+                    }
+                }
+        );
+
+        // Add the request to the Volley queue.
+        requestQueue.add(jsonObjectRequest);
     }
+
 
     private void setupServices() {
         List<ServiceItem> services = new ArrayList<>();

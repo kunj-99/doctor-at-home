@@ -37,6 +37,7 @@ public class HealthTipAdapter extends RecyclerView.Adapter<HealthTipAdapter.TipV
         HealthTip tip = tips.get(position);
         holder.tvTitle.setText(tip.getTitle());
         holder.tvDesc.setText(tip.getDescription());
+        // Here we use a static image resource that was passed from the API.
         holder.image.setImageResource(tip.getImageResId());
     }
 

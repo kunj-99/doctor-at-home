@@ -35,24 +35,24 @@ public class pending_bill extends AppCompatActivity {
 
     // UPI Payment
     private static final int UPI_PAYMENT_REQUEST_CODE = 123;
-    private static final String MERCHANT_UPI_ID   = "abhitadhani98244-2@okicici";
+    private static final String MERCHANT_UPI_ID   = "mohitvatiya3333@oksbi";
     private static final String MERCHANT_NAME     = "the doctor at home";
     private static final String TRANSACTION_NOTE  = "Payment for appointment";
     private static final String CURRENCY          = "INR";
 
     // Base Payment + Fees
-    private final double baseCost      = 500.0;     // Payment Amount
-    private final double consultingFee = 40.0;      // Consulting Fee
-    private final double gst           = 20.0;      // GST
+    private final double baseCost      = 1.0;     // Payment Amount
+    private final double consultingFee = 0.0;     // Consulting Fee
+    private final double gst           = 0.0;     // GST
     private double distanceCharge      = 0.0;
-    private double distanceKm          = 0.0;       // We want ~25 km if route is 25
+    private double distanceKm          = 0.0;     // Driving distance in km
     private double finalCost           = 0.0;
 
     // If the route is > 3 km, each extra km is 7 Rs
     private static final double BASE_DISTANCE      = 3.0;
     private static final double EXTRA_COST_PER_KM  = 7.0;
 
-    // Google Distance Matrix API Key
+    // Google Routes API Key (use your valid API key here)
     private static final String GOOGLE_API_KEY = "AIzaSyCiSh4VnnI1jemtZTytDoj2X7Wl6evey30";
 
     // Booking Data
@@ -75,9 +75,8 @@ public class pending_bill extends AppCompatActivity {
     // Coordinates
     private double userLat;
     private double userLng;
-    private double docLat;  // from doc location
-    private double docLng;  // from doc location
-
+    private double docLat;  // from doctor's location
+    private double docLng;  // from doctor's location
 
     private String googleMapsLink = "";
 
@@ -149,7 +148,7 @@ public class pending_bill extends AppCompatActivity {
         tvGstValue             = findViewById(R.id.tv_gst_value);
         tvTotalPaidValue       = findViewById(R.id.tv_total_paid_value);
 
-        // initial finalCost = 500 + 40 + 20 => 560
+        // initial finalCost calculation
         distanceCharge = 0.0;
         distanceKm     = 0.0;
         finalCost      = baseCost + consultingFee + gst + distanceCharge;
@@ -164,7 +163,7 @@ public class pending_bill extends AppCompatActivity {
             Toast.makeText(this, "Some booking details are missing.", Toast.LENGTH_LONG).show();
         }
 
-        // Step: fetch doc location => parse lat/lng => fetch driving distance => update cost => update UI
+        // Step: fetch doctor location, parse lat/lng, then fetch driving distance via the Routes API
         fetchDoctorLocation(doctorId);
 
         payButton.setOnClickListener(v -> {
@@ -226,9 +225,6 @@ public class pending_bill extends AppCompatActivity {
         queue.add(request);
     }
 
-    /**
-     * parse doc lat,lng from the google.com/maps URL
-     */
     private void parseDoctorLatLng(String docUrl) {
         Log.d(TAG, "Parsing doc lat,lng => " + docUrl);
         try {
@@ -240,7 +236,7 @@ public class pending_bill extends AppCompatActivity {
                 docLng = Double.parseDouble(parts[1]);
                 Log.d(TAG, "Doc lat,lng => " + docLat + "," + docLng);
 
-                // Step 2) fetch driving distance from google
+                // Step 2) Fetch driving distance via the new Routes API
                 fetchDrivingDistance(userLat, userLng, docLat, docLng);
             } else {
                 Log.e(TAG, "No valid lat,lng => " + qParam);
@@ -252,93 +248,105 @@ public class pending_bill extends AppCompatActivity {
         }
     }
 
-    /**
-     * Step 2) Use the Google Distance Matrix to get DRIVING distance
-     *
-     * https://maps.googleapis.com/maps/api/distancematrix/json?units=metric
-     *     &origins=lat1,lng1
-     *     &destinations=lat2,lng2
-     *     &key=YOUR_GOOGLE_API_KEY
-     */
     private void fetchDrivingDistance(double lat1, double lng1, double lat2, double lng2) {
-        // REPLACE with your real key
-        String DISTANCE_API_KEY = "AIzaSyCiSh4VnnI1jemtZTytDoj2X7Wl6evey30";
+        String url = "https://routes.googleapis.com/directions/v2:computeRoutes?key=" + GOOGLE_API_KEY;
+        JSONObject requestBody = new JSONObject();
+        try {
+            // Build origin object
+            JSONObject originObj = new JSONObject();
+            JSONObject originLocation = new JSONObject();
+            JSONObject originLatLng = new JSONObject();
+            originLatLng.put("latitude", lat1);
+            originLatLng.put("longitude", lng1);
+            originLocation.put("latLng", originLatLng);
+            originObj.put("location", originLocation);
+            requestBody.put("origin", originObj);
 
-        String url = "https://maps.googleapis.com/maps/api/distancematrix/json"
-                + "?units=metric"
-                + "&origins=" + lat1 + "," + lng1
-                + "&destinations=" + lat2 + "," + lng2
-                + "&key=" + DISTANCE_API_KEY;
+            // Build destination object
+            JSONObject destinationObj = new JSONObject();
+            JSONObject destinationLocation = new JSONObject();
+            JSONObject destinationLatLng = new JSONObject();
+            destinationLatLng.put("latitude", lat2);
+            destinationLatLng.put("longitude", lng2);
+            destinationLocation.put("latLng", destinationLatLng);
+            destinationObj.put("location", destinationLocation);
+            requestBody.put("destination", destinationObj);
 
-        Log.d(TAG, "fetchDrivingDistance => " + url);
+            // Set travel and routing parameters
+            requestBody.put("travelMode", "DRIVE");
+            requestBody.put("routingPreference", "TRAFFIC_AWARE");
+            requestBody.put("computeAlternativeRoutes", false);
+            requestBody.put("languageCode", "en-US");
+            requestBody.put("units", "METRIC");
+        } catch (JSONException e) {
+            Log.e(TAG, "Error building JSON request: " + e.getMessage());
+            updatePaymentUI();
+            return;
+        }
+
+        Log.d(TAG, "fetchDrivingDistance (Routes API) => " + url + " request: " + requestBody.toString());
 
         RequestQueue queue = Volley.newRequestQueue(this);
-        JsonObjectRequest distReq = new JsonObjectRequest(
-                Request.Method.GET,
+        JsonObjectRequest routeReq = new JsonObjectRequest(
+                Request.Method.POST,
                 url,
-                null,
+                requestBody,
                 response -> {
-                    Log.d(TAG, "DistanceMatrix => " + response);
-                    parseDistanceMatrixResponse(response);
+                    Log.d(TAG, "Routes API response => " + response);
+                    parseRoutesResponse(response);
                 },
                 error -> {
-                    Log.e(TAG, "DistanceMatrix error => " + error.getMessage());
-                    // fallback => distance=0 => updatePaymentUI
+                    String errorMessage = error.getMessage();
+                    if (error.networkResponse != null && error.networkResponse.data != null) {
+                        errorMessage = new String(error.networkResponse.data);
+                    }
+                    Log.e(TAG, "Routes API error => " + errorMessage);
                     updatePaymentUI();
                 }
         );
-        queue.add(distReq);
+        queue.add(routeReq);
     }
 
-    /**
-     * parseDistanceMatrixResponse => parse "rows[0].elements[0].distance.value" in meters
-     */
-    private void parseDistanceMatrixResponse(JSONObject response) {
+    private void parseRoutesResponse(JSONObject response) {
         try {
-            JSONArray rows = response.getJSONArray("rows");
-            if (rows.length() > 0) {
-                JSONObject row0 = rows.getJSONObject(0);
-                JSONArray elements = row0.getJSONArray("elements");
-                if (elements.length() > 0) {
-                    JSONObject elem0 = elements.getJSONObject(0);
-                    // "status": "OK" or "ZERO_RESULTS" etc
-                    String elemStatus = elem0.optString("status","");
-                    if ("OK".equals(elemStatus)) {
-                        JSONObject distObj = elem0.getJSONObject("distance");
-                        int meters = distObj.getInt("value");
-                        distanceKm = meters / 1000.0; // convert to km
-                        Log.d(TAG, "Driving distance => " + distanceKm + " km");
+            JSONArray routes = response.getJSONArray("routes");
+            if (routes.length() > 0) {
+                JSONObject firstRoute = routes.getJSONObject(0);
+                JSONArray legs = firstRoute.getJSONArray("legs");
+                if (legs.length() > 0) {
+                    JSONObject firstLeg = legs.getJSONObject(0);
+                    long distanceMeters = firstLeg.getLong("distanceMeters");
+                    distanceKm = distanceMeters / 1000.0; // Convert meters to km
+                    Log.d(TAG, "Driving distance (Routes API) => " + distanceKm + " km");
 
-                        distanceCharge = 0.0;
-                        if (distanceKm > BASE_DISTANCE) {
-                            double extraDist = distanceKm - BASE_DISTANCE;
-                            distanceCharge = extraDist * EXTRA_COST_PER_KM;
-                        }
-                        finalCost = baseCost + consultingFee + gst + distanceCharge;
-                    } else {
-                        Log.e(TAG, "elements[0].status => " + elemStatus);
+                    // Calculate distance charge based on extra km over BASE_DISTANCE
+                    distanceCharge = 0.0;
+                    if (distanceKm > BASE_DISTANCE) {
+                        double extraDist = distanceKm - BASE_DISTANCE;
+                        distanceCharge = extraDist * EXTRA_COST_PER_KM;
                     }
+                    finalCost = baseCost + consultingFee + gst + distanceCharge;
                 }
             }
-        } catch (Exception e) {
-            Log.e(TAG, "parseDistanceMatrix => " + e.getMessage());
+        } catch (JSONException e) {
+            Log.e(TAG, "parseRoutesResponse error => " + e.getMessage());
         }
-        // always update UI
+        // Always update the UI once distance is determined
         updatePaymentUI();
     }
 
     private void updatePaymentUI() {
         Log.d(TAG, "updateUI => distance=" + distanceKm + " km, distCharge=" + distanceCharge + ", finalCost=" + finalCost);
 
-        // Payment Amount => base(500)
+        // Payment Amount => baseCost
         String baseStr = "₹ " + String.format(Locale.getDefault(), "%.0f", baseCost);
         tvPaymentAmountValue.setText(baseStr);
 
-        // Consulting(40)
+        // Consulting Fee
         String consultStr = "₹ " + String.format(Locale.getDefault(), "%.0f", consultingFee);
         tvConsultingFeeValue.setText(consultStr);
 
-        // Distance
+        // Distance in km
         String distStr = String.format(Locale.getDefault(), "%.1f km", distanceKm);
         tvDistanceKmValue.setText(distStr);
 
@@ -346,11 +354,11 @@ public class pending_bill extends AppCompatActivity {
         String distChargeStr = "₹ " + String.format(Locale.getDefault(), "%.0f", distanceCharge);
         tvDistanceChargeValue.setText(distChargeStr);
 
-        // GST(20)
+        // GST
         String gstStr = "₹ " + String.format(Locale.getDefault(), "%.0f", gst);
         tvGstValue.setText(gstStr);
 
-        // final cost
+        // Final cost
         String finalStr = "₹ " + String.format(Locale.getDefault(), "%.0f", finalCost);
         tvTotalPaidValue.setText(finalStr);
     }

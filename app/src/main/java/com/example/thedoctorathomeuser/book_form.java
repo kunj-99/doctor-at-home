@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Looper;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -17,7 +18,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.SettingsClient;
@@ -219,12 +222,36 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     private void setCurrentLocation() {
         fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
             if (location != null) {
+                // Successfully retrieved last known location
                 selectedLocation = new LatLng(location.getLatitude(), location.getLongitude());
                 mMap.clear();
                 mMap.addMarker(new MarkerOptions().position(selectedLocation).title("Current Location"));
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(selectedLocation, 15));
             } else {
-                Toast.makeText(book_form.this, "Unable to fetch current location", Toast.LENGTH_SHORT).show();
+                // If last location is null, request a fresh location update
+                LocationRequest locationRequest = LocationRequest.create();
+                locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                locationRequest.setInterval(5000);
+                locationRequest.setFastestInterval(2000);
+                fusedLocationClient.requestLocationUpdates(locationRequest, new LocationCallback() {
+                    @Override
+                    public void onLocationResult(LocationResult locationResult) {
+                        if (locationResult == null) {
+                            Toast.makeText(book_form.this, "Unable to fetch current location", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        // Use the latest location from the update
+                        android.location.Location loc = locationResult.getLastLocation();
+                        if (loc != null) {
+                            selectedLocation = new LatLng(loc.getLatitude(), loc.getLongitude());
+                            mMap.clear();
+                            mMap.addMarker(new MarkerOptions().position(selectedLocation).title("Current Location"));
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(selectedLocation, 15));
+                            // Remove updates after a location is obtained
+                            fusedLocationClient.removeLocationUpdates(this);
+                        }
+                    }
+                }, Looper.getMainLooper());
             }
         }).addOnFailureListener(e ->
                 Toast.makeText(book_form.this, "Error fetching location", Toast.LENGTH_SHORT).show());

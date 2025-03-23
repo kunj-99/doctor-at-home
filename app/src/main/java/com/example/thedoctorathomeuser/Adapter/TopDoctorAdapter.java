@@ -37,7 +37,17 @@ public class TopDoctorAdapter extends RecyclerView.Adapter<TopDoctorAdapter.Doct
         TopDoctor doctor = doctorList.get(position);
         holder.name.setText(doctor.getName());
         holder.specialty.setText(doctor.getSpecialty());
+
+        // Use a static image resource for now.
         holder.image.setImageResource(doctor.getImageResId());
+
+        // If in the future you receive image URLs instead of a static resource,
+        // you can load images dynamically using Glide, like so:
+        // Glide.with(context)
+        //      .load(doctor.getImageUrl())
+        //      .placeholder(R.drawable.doctor_avatar)
+        //      .error(R.drawable.doctor_avatar)
+        //      .into(holder.image);
     }
 
     @Override
