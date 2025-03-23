@@ -32,7 +32,7 @@ public class diseases extends AppCompatActivity {
     private List<String> diseaseList = new ArrayList<>();
     private Button confirm;
     private String categoryId, categoryName;
-    private TextView title;  // Add title variable
+    private TextView title;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
