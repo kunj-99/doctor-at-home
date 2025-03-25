@@ -53,7 +53,7 @@ public class pending_bill extends AppCompatActivity {
     private static final double EXTRA_COST_PER_KM  = 7.0;
 
     // Google Routes API Key (use your valid API key here)
-    private static final String GOOGLE_API_KEY = "AIzaSyCiSh4VnnI1jemtZTytDoj2X7Wl6evey30";
+    private static final String GOOGLE_API_KEY = "AIzaSyCg79KiSpncjitTJDiOAmpc5SjjTHtcc24";
 
     // Booking Data
     private String patientName, age, gender, problem, address, doctorId, doctorName, Status, selectedPaymentMethod;
@@ -303,30 +303,38 @@ public class pending_bill extends AppCompatActivity {
                     Log.e(TAG, "Routes API error => " + errorMessage);
                     updatePaymentUI();
                 }
-        );
+        ) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/json");
+                // Required header: specify which fields you need in the response.
+                headers.put("X-Goog-FieldMask", "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline");
+                return headers;
+            }
+        };
         queue.add(routeReq);
     }
+
 
     private void parseRoutesResponse(JSONObject response) {
         try {
             JSONArray routes = response.getJSONArray("routes");
             if (routes.length() > 0) {
                 JSONObject firstRoute = routes.getJSONObject(0);
-                JSONArray legs = firstRoute.getJSONArray("legs");
-                if (legs.length() > 0) {
-                    JSONObject firstLeg = legs.getJSONObject(0);
-                    long distanceMeters = firstLeg.getLong("distanceMeters");
-                    distanceKm = distanceMeters / 1000.0; // Convert meters to km
-                    Log.d(TAG, "Driving distance (Routes API) => " + distanceKm + " km");
+                // Get the distance directly from the route object instead of looking for legs.
+                long distanceMeters = firstRoute.getLong("distanceMeters");
+                distanceKm = distanceMeters / 1000.0; // Convert meters to km
+                Log.d(TAG, "Driving distance (Routes API) => " + distanceKm + " km");
 
-                    // Calculate distance charge based on extra km over BASE_DISTANCE
+                // Calculate distance charge based on extra km over BASE_DISTANCE
+                if (distanceKm > BASE_DISTANCE) {
+                    double extraDist = distanceKm - BASE_DISTANCE;
+                    distanceCharge = extraDist * EXTRA_COST_PER_KM;
+                } else {
                     distanceCharge = 0.0;
-                    if (distanceKm > BASE_DISTANCE) {
-                        double extraDist = distanceKm - BASE_DISTANCE;
-                        distanceCharge = extraDist * EXTRA_COST_PER_KM;
-                    }
-                    finalCost = baseCost + consultingFee + gst + distanceCharge;
                 }
+                finalCost = baseCost + consultingFee + gst + distanceCharge;
             }
         } catch (JSONException e) {
             Log.e(TAG, "parseRoutesResponse error => " + e.getMessage());
@@ -334,6 +342,7 @@ public class pending_bill extends AppCompatActivity {
         // Always update the UI once distance is determined
         updatePaymentUI();
     }
+
 
     private void updatePaymentUI() {
         Log.d(TAG, "updateUI => distance=" + distanceKm + " km, distCharge=" + distanceCharge + ", finalCost=" + finalCost);
