@@ -7,10 +7,27 @@
     android:padding="16dp"
     android:background="@color/white">
 
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/iv_report_photo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:visibility="gone"/>
+
+        <LinearLayout
+            android:id="@+id/content_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <!-- All cards & TextViews here -->
+
 
         <!-- Header with Back Button -->
         <LinearLayout
@@ -385,5 +402,6 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+    </LinearLayout>
     </LinearLayout>
 </ScrollView>

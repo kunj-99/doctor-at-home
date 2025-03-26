@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -19,6 +20,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.bumptech.glide.Glide;
 
 import org.json.JSONObject;
 
@@ -42,6 +44,7 @@ public class medical_riport extends AppCompatActivity {
     private TextView tvSymptoms, tvInvestigations;
     private TextView tvDoctorName;
     private ImageButton btnBack;
+    private ImageView ivReportPhoto;
 
     private RequestQueue requestQueue;
     private static final String TAG = "MedicalReport";
@@ -80,17 +83,10 @@ public class medical_riport extends AppCompatActivity {
         tvSymptoms = findViewById(R.id.tv_symptoms);
         tvInvestigations = findViewById(R.id.tv_investigations_content);
         tvDoctorName = findViewById(R.id.tv_doctor_name);
-
-        // Initialize the Back Button and set its click listener
+        ivReportPhoto = findViewById(R.id.iv_report_photo);
         btnBack = findViewById(R.id.btn_back);
-        btnBack.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Option 1: Simply finish the activity
-                finish();
-                
-            }
-        });
+
+        btnBack.setOnClickListener(v -> finish());
 
         // Optionally, set static header texts
         tvHospitalName.setText("VRAJ HOSPITAL");
@@ -121,7 +117,6 @@ public class medical_riport extends AppCompatActivity {
                             // If the response is not success, redirect immediately
                             if (!status.equalsIgnoreCase("success")) {
                                 Toast.makeText(medical_riport.this, "Report not found", Toast.LENGTH_SHORT).show();
-                                Log.e(TAG, "Report not found. Returned status: " + status);
                                 redirectToHistoryFragment();
                                 return;
                             }
@@ -129,12 +124,25 @@ public class medical_riport extends AppCompatActivity {
                             JSONObject data = response.optJSONObject("data");
                             if (data == null) {
                                 Toast.makeText(medical_riport.this, "Report not found", Toast.LENGTH_SHORT).show();
-                                Log.e(TAG, "Data object is null");
                                 redirectToHistoryFragment();
                                 return;
                             }
 
-                            // Update UI with fetched data
+                            String photoUrl = data.optString("report_photo", "");
+                            if (!photoUrl.isEmpty()) {
+                                ivReportPhoto.setVisibility(View.VISIBLE);
+
+                                // Hide everything else
+                                findViewById(R.id.content_container).setVisibility(View.GONE);
+
+                                Glide.with(medical_riport.this)
+                                        .load(photoUrl)
+                                        .error(R.drawable.error)
+                                        .into(ivReportPhoto);
+                                return;
+                            }
+
+
                             tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
                             tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
                             tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
@@ -150,7 +158,6 @@ public class medical_riport extends AppCompatActivity {
                             tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
                             tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
 
-                            // --- Parse and update the Medications table ---
                             String medicationsStr = data.optString("medications", "");
                             String dosageStr = data.optString("dosage", "");
 
@@ -161,9 +168,7 @@ public class medical_riport extends AppCompatActivity {
                             for (String med : medicationsArray) {
                                 med = med.trim();
                                 if (!med.isEmpty()) {
-                                    if (med.endsWith(",")) {
-                                        med = med.substring(0, med.length() - 1);
-                                    }
+                                    if (med.endsWith(",")) med = med.substring(0, med.length() - 1);
                                     medList.add(med);
                                 }
                             }
@@ -172,49 +177,37 @@ public class medical_riport extends AppCompatActivity {
                             for (String dos : dosageArray) {
                                 dos = dos.trim();
                                 if (!dos.isEmpty()) {
-                                    if (dos.endsWith(",")) {
-                                        dos = dos.substring(0, dos.length() - 1);
-                                    }
+                                    if (dos.endsWith(",")) dos = dos.substring(0, dos.length() - 1);
                                     dosageList.add(dos);
                                 }
                             }
 
                             int rowCount = Math.max(medList.size(), dosageList.size());
                             TableLayout tableMedications = findViewById(R.id.table_medications);
-                            int childCount = tableMedications.getChildCount();
-                            if (childCount > 1) {
-                                tableMedications.removeViews(1, childCount - 1);
+                            if (tableMedications.getChildCount() > 1) {
+                                tableMedications.removeViews(1, tableMedications.getChildCount() - 1);
                             }
 
                             for (int i = 0; i < rowCount; i++) {
-                                String medName = i < medList.size() ? medList.get(i) : "";
-                                String dosage = i < dosageList.size() ? dosageList.get(i) : "";
-
                                 TableRow row = new TableRow(medical_riport.this);
-                                TableRow.LayoutParams lp = new TableRow.LayoutParams(
-                                        TableRow.LayoutParams.WRAP_CONTENT,
-                                        TableRow.LayoutParams.WRAP_CONTENT);
-                                row.setLayoutParams(lp);
-
                                 TextView tvNo = new TextView(medical_riport.this);
                                 tvNo.setText(String.valueOf(i + 1));
                                 tvNo.setTextSize(16);
                                 tvNo.setPadding(4, 4, 4, 4);
 
                                 TextView tvMedName = new TextView(medical_riport.this);
-                                tvMedName.setText(medName);
+                                tvMedName.setText(i < medList.size() ? medList.get(i) : "");
                                 tvMedName.setTextSize(16);
                                 tvMedName.setPadding(4, 4, 4, 4);
 
                                 TextView tvDosage = new TextView(medical_riport.this);
-                                tvDosage.setText(dosage);
+                                tvDosage.setText(i < dosageList.size() ? dosageList.get(i) : "");
                                 tvDosage.setTextSize(16);
                                 tvDosage.setPadding(4, 4, 4, 4);
 
                                 row.addView(tvNo);
                                 row.addView(tvMedName);
                                 row.addView(tvDosage);
-
                                 tableMedications.addView(row);
                             }
                         } catch (Exception e) {
@@ -226,10 +219,6 @@ public class medical_riport extends AppCompatActivity {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        if (error.networkResponse != null) {
-                            Log.e(TAG, "Volley error. HTTP Status Code: " + error.networkResponse.statusCode);
-                            Log.e(TAG, "Volley error data: " + new String(error.networkResponse.data));
-                        }
                         Log.e(TAG, "Volley error: " + error.getMessage(), error);
                         Toast.makeText(medical_riport.this, "Error fetching report", Toast.LENGTH_SHORT).show();
                     }
@@ -243,7 +232,7 @@ public class medical_riport extends AppCompatActivity {
         Intent intent = new Intent(medical_riport.this, MainActivity.class);
         intent.putExtra("open_fragment", 3);
         startActivity(intent);
-        overridePendingTransition(1, 1); // Remove any transition animation
+        overridePendingTransition(1, 1);
         finish();
     }
 }
