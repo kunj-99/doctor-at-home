@@ -33,5 +33,16 @@
     <color name="lgreen">#A6C6D8</color>
     <color name="cream">#FBFFE4</color>
     <color name="vlgreen">#A3D1C6</color>
-    
+
+    <color name="primaryColor">#2196F3</color>
+    <color name="primaryLightColor">#BBDEFB</color>
+    <color name="primaryTextColor">#212121</color>
+    <color name="secondaryTextColor">#757575</color>
+
+
+<!--    <color name="primaryColor">#2196F3</color>-->
+    <color name="primaryLight">#BBDEFB</color>
+    <color name="primaryText">#212121</color>
+    <color name="secondaryText">#757575</color>
+<!--    <color name="white">#FFFFFF</color>-->
 </resources>
