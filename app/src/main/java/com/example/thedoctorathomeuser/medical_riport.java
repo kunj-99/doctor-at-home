@@ -35,8 +35,6 @@ public class medical_riport extends AppCompatActivity {
 
     // Appointment ID retrieved from the Intent extra
     private String appointmentId;
-
-    // UI elements (make sure these IDs match those in your layout file activity_medical_riport.xml)
     private TextView tvHospitalName, tvHospitalAddress;
     private TextView tvPatientName, tvPatientAddress, tvVisitDate;
     private TextView tvPatientAge, tvPatientWeight, tvPatientSex;

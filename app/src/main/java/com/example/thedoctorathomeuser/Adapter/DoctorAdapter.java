@@ -18,8 +18,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.bumptech.glide.Glide;
 import com.example.thedoctorathomeuser.R;
@@ -39,8 +37,9 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
     private final List<String> specialties;
     private final List<String> hospitals;
     private final List<Float> ratings;
+    // List for profile picture URLs
     private final List<String> imageUrls;
-    // New list for experience duration
+    // List for experience duration
     private final List<String> durations;
 
     public DoctorAdapter(Context context, List<String> doctorIds, List<String> names, List<String> specialties,
@@ -70,20 +69,19 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
         holder.specialty.setText(specialties.get(position));
         holder.hospital.setText(hospitals.get(position));
         holder.ratingBar.setRating(ratings.get(position));
-
-        // Set the experience duration text (e.g., "Experience: 5 years")
         holder.experienceDuration.setText("Experience: " + durations.get(position));
 
-        // Load doctor image
+        // Load doctor profile image from URL using Glide
         Glide.with(context)
                 .load(imageUrls.get(position))
                 .placeholder(R.drawable.plasholder)
                 .error(R.drawable.plaseholder_error)
                 .into(holder.image);
 
-        // Start refreshing status every 5 seconds
+        // Start auto-refresh for appointment status every 5 seconds
         holder.startAutoRefresh(doctorId);
 
+        // Open doctor details when item is clicked
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, doctor_details.class);
             intent.putExtra("doctor_id", doctorId);
@@ -91,11 +89,12 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
             context.startActivity(intent);
         });
 
+        // Open book form when button is clicked
         holder.bookButton.setOnClickListener(v -> {
             Intent intent = new Intent(context, book_form.class);
             intent.putExtra("doctor_id", doctorId);
             intent.putExtra("doctorName", names.get(position));
-            intent.putExtra("appointment_status", holder.bookButton.getText().toString()); // Pass status
+            intent.putExtra("appointment_status", holder.bookButton.getText().toString());
             context.startActivity(intent);
         });
     }
@@ -117,28 +116,25 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
             super(itemView);
             name = itemView.findViewById(R.id.doctor_name);
             specialty = itemView.findViewById(R.id.doctor_specialty);
-            // Assuming the doctor's availability TextView is used for hospital info as per original code
             hospital = itemView.findViewById(R.id.doctor_availability);
             ratingBar = itemView.findViewById(R.id.doctor_rating);
             image = itemView.findViewById(R.id.civ_profile);
             bookButton = itemView.findViewById(R.id.schedule_button);
             requestCount = itemView.findViewById(R.id.request_count);
             pendingCount = itemView.findViewById(R.id.pending_count);
-            // New TextView for experience duration
             experienceDuration = itemView.findViewById(R.id.doctor_experience_duration);
         }
 
         public void startAutoRefresh(String doctorId) {
-            stopAutoRefresh(); // Ensure no duplicate handlers
+            stopAutoRefresh(); // Remove any existing refresh callbacks
 
             refreshRunnable = new Runnable() {
                 @Override
                 public void run() {
                     checkDoctorAppointmentStatus(doctorId);
-                    handler.postDelayed(this, 5000); // Refresh every 5 seconds
+                    handler.postDelayed(this, 5000);
                 }
             };
-
             handler.post(refreshRunnable);
         }
 
@@ -158,7 +154,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                             int requestNumber = response.getInt("request_count");
                             int pendingNumber = response.getInt("pending_count");
 
-                            // Show request count only if it's greater than 0
                             if (requestNumber > 0) {
                                 requestCount.setVisibility(View.VISIBLE);
                                 requestCount.setText("Requests: " + requestNumber);
@@ -166,7 +161,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                                 requestCount.setVisibility(View.GONE);
                             }
 
-                            // Show pending count only if it's greater than 0
                             if (pendingNumber > 0) {
                                 pendingCount.setVisibility(View.VISIBLE);
                                 pendingCount.setText("Pending: " + pendingNumber);
@@ -174,7 +168,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                                 pendingCount.setVisibility(View.GONE);
                             }
 
-                            // Update button text
                             if (hasActiveAppointment) {
                                 bookButton.setText("Request for visit");
                             } else {
@@ -202,6 +195,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
     @Override
     public void onViewRecycled(@NonNull DoctorViewHolder holder) {
         super.onViewRecycled(holder);
-        holder.stopAutoRefresh(); // Stop auto-refresh when the view is recycled
+        holder.stopAutoRefresh();
     }
 }

@@ -29,23 +29,24 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
     private final List<String> specialties;
     private final List<String> hospitals;
     private final List<Float> ratings;
-    private final List<Integer> imageResIds;
+    // Updated list for profile picture URLs
+    private final List<String> profilePictures;
     private final List<Integer> appointmentIds;
     private final List<String> statuses; // Appointment statuses
     private final List<String> durations;  // New list for experience duration
     private final Context context;
 
-    // Updated constructor including durations
+    // Updated constructor including profilePictures (as String URLs) and durations
     public OngoingAdapter(Context context, List<String> names, List<String> specialties,
                           List<String> hospitals, List<Float> ratings,
-                          List<Integer> imageResIds, List<Integer> appointmentIds,
+                          List<String> profilePictures, List<Integer> appointmentIds,
                           List<String> statuses, List<String> durations) {
         this.context = context;
         this.names = names;
         this.specialties = specialties;
         this.hospitals = hospitals;
         this.ratings = ratings;
-        this.imageResIds = imageResIds;
+        this.profilePictures = profilePictures;
         this.appointmentIds = appointmentIds;
         this.statuses = statuses;
         this.durations = durations;
@@ -71,13 +72,13 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
         // Set the experience duration text (e.g., "Experience: 5 years")
         holder.experienceDuration.setText("Experience: " + durations.get(position));
 
-        // Load image using Glide
+        // Load image using Glide from URL (profilePictures list)
         Glide.with(context)
-                .load(imageResIds.get(position))
+                .load(profilePictures.get(position))
                 .placeholder(R.drawable.plasholder)
                 .into(holder.image);
 
-        // Reset Track button to default state (visible, enabled, and with default blue tint)
+        // Reset Track button to default state (visible, enabled, and with default green tint)
         holder.track.setVisibility(View.VISIBLE);
         holder.track.setEnabled(true);
         holder.track.setText("Track");
@@ -107,7 +108,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
             holder.track.setEnabled(false);
             holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.gray));
         }
-        // For any other status, the Track button remains "Track", enabled, and tinted blue.
+        // For any other status, the Track button remains "Track", enabled, and tinted green.
 
         // Cancel button click listener
         holder.cancel.setOnClickListener(v -> {

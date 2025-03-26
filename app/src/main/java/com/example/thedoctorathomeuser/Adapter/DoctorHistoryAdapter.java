@@ -18,6 +18,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.bumptech.glide.Glide;
 import com.example.thedoctorathomeuser.R;
 import com.example.thedoctorathomeuser.complet_bill;
 import com.example.thedoctorathomeuser.doctor_details;
@@ -42,7 +43,8 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
     private final List<String> doctorSpecialties;
     private final List<String> appointmentDates;
     private final List<String> appointmentPrices;
-    private final List<Integer> doctorImages;
+    // Updated list for profile picture URLs
+    private final List<String> doctorProfilePictures;
     private final List<Integer> appointmentIds;
     private final List<String> appointmentStatuses; // e.g., "Completed", "Cancelled", etc.
 
@@ -55,7 +57,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
 
     public DoctorHistoryAdapter(Context context, String patientId, List<Integer> doctorIds, List<String> doctorNames,
                                 List<String> doctorSpecialties, List<String> appointmentDates,
-                                List<String> appointmentPrices, List<Integer> doctorImages,
+                                List<String> appointmentPrices, List<String> doctorProfilePictures,
                                 List<Integer> appointmentIds, List<String> appointmentStatuses) {
         this.context = context;
         this.patientId = patientId;
@@ -64,7 +66,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         this.doctorSpecialties = doctorSpecialties;
         this.appointmentDates = appointmentDates;
         this.appointmentPrices = appointmentPrices;
-        this.doctorImages = doctorImages;
+        this.doctorProfilePictures = doctorProfilePictures;
         this.appointmentIds = appointmentIds;
         this.appointmentStatuses = appointmentStatuses;
     }
@@ -84,7 +86,11 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         holder.doctorSpecialty.setText(doctorSpecialties.get(position));
         holder.appointmentDate.setText(appointmentDates.get(position));
         holder.appointmentPrice.setText(appointmentPrices.get(position));
-        holder.doctorImage.setImageResource(doctorImages.get(position));
+        // Load image using Glide from the URL
+        Glide.with(context)
+                .load(doctorProfilePictures.get(position))
+                .placeholder(R.drawable.plasholder)
+                .into(holder.doctorImage);
 
         String status = appointmentStatuses.get(position);
         if (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("cancelled_by_doctor")) {
@@ -130,7 +136,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             holder.viewDetailsButton.setVisibility(View.VISIBLE);
         }
 
-
         if (appointmentStatuses.get(position).equalsIgnoreCase("Completed")) {
             int docId = doctorIds.get(position);
             int appId = appointmentIds.get(position);
@@ -153,7 +158,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
                 holder.viewDetailsButton.setText("View Details");
             }
         });
-
 
         holder.btnViewBill.setOnClickListener(v -> {
             Intent in = new Intent(context, complet_bill.class);
@@ -184,7 +188,8 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
                         Log.d(TAG, "checkAndPromptForReview API response for doctorId " + doctorId +
                                 ": alreadyReviewed=" + alreadyReviewed + ", reviewCanceled=" + reviewCanceled);
                         if (!alreadyReviewed && !reviewCanceled) {
-                            // Mark the popup as shown to prevent re-triggering during auto-refresh.                 reviewPopupShown.add(doctorId);
+                            // Mark the popup as shown to prevent re-triggering during auto-refresh.
+                            reviewPopupShown.add(doctorId);
                             showReviewPopup(doctorId, appointmentId);
                         }
                     } catch (JSONException e) {
@@ -307,7 +312,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             btnViewBill = itemView.findViewById(R.id.btnViewBill);
             btnViewReport = itemView.findViewById(R.id.btnViewReport);
             btnViewProfile = itemView.findViewById(R.id.btnViewProfile);
-            // New cancellation status message
             statusMessage = itemView.findViewById(R.id.statusMessage);
         }
     }

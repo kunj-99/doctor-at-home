@@ -16,13 +16,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 public class doctor_details extends AppCompatActivity {
@@ -69,12 +66,12 @@ public class doctor_details extends AppCompatActivity {
         // Back button functionality
         backButton.setOnClickListener(v -> finish());
 
-        // Handle Book Appointment button click
-        bookButton.setOnClickListener(v -> {
-            Intent intent = new Intent(doctor_details.this, book_form.class);
-            intent.putExtra("doctor_id", doctorId);
-            startActivity(intent);
-        });
+//        // Handle Book Appointment button click
+//        bookButton.setOnClickListener(v -> {
+//            Intent intent = new Intent(doctor_details.this, book_form.class);
+//            intent.putExtra("doctor_id", doctorId);
+//            startActivity(intent);
+//        });
     }
 
     // Fetch doctor details from API

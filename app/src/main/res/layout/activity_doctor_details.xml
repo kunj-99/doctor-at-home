@@ -252,16 +252,16 @@
             android:layout_marginTop="10dp" />
 
         <!-- Book Button -->
-        <Button
-            android:id="@+id/bookButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:backgroundTint="@color/dgreen"
-            android:text="Book Appointment"
-            android:textSize="16sp"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold" />
+<!--        <Button-->
+<!--            android:id="@+id/bookButton"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginTop="24dp"-->
+<!--            android:backgroundTint="@color/dgreen"-->
+<!--            android:text="Book Appointment"-->
+<!--            android:textSize="16sp"-->
+<!--            android:textColor="#FFFFFF"-->
+<!--            android:textStyle="bold" />-->
 
     </LinearLayout>
 </ScrollView>

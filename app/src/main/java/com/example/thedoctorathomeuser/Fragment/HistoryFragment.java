@@ -16,14 +16,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.Adapter.DoctorHistoryAdapter;
 import com.example.thedoctorathomeuser.R;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -40,7 +38,8 @@ public class HistoryFragment extends Fragment {
     private List<String> doctorSpecialties = new ArrayList<>();
     private List<String> appointmentDates = new ArrayList<>();
     private List<String> appointmentPrices = new ArrayList<>();
-    private List<Integer> doctorImages = new ArrayList<>();
+    // New list to hold profile picture URLs instead of image resource IDs
+    private List<String> doctorProfilePictures = new ArrayList<>();
     private List<Integer> doctorIds = new ArrayList<>();
     private List<Integer> appointmentIds = new ArrayList<>();
     private List<String> appointmentStatuses = new ArrayList<>();  // Track appointment status
@@ -72,7 +71,7 @@ public class HistoryFragment extends Fragment {
         // Initialize RequestQueue
         requestQueue = Volley.newRequestQueue(requireContext());
 
-        // Get Patient ID from UserPrefs
+        // Get Patient ID from SharedPreferences
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
 
@@ -85,9 +84,9 @@ public class HistoryFragment extends Fragment {
         Log.d("HistoryFragment", "Patient ID: " + patientId);
         apiUrl = "http://sxm.a58.mytemp.website/get_history.php?patient_id=" + patientId;
 
-        // Updated adapter instantiation: include patientId as the second parameter
+        // Updated adapter instantiation: pass doctorProfilePictures list instead of image resource list
         adapter = new DoctorHistoryAdapter(requireContext(), patientId, doctorIds, doctorNames, doctorSpecialties,
-                appointmentDates, appointmentPrices, doctorImages, appointmentIds, appointmentStatuses);
+                appointmentDates, appointmentPrices, doctorProfilePictures, appointmentIds, appointmentStatuses);
         recyclerView.setAdapter(adapter);
 
         handler = new Handler(Looper.getMainLooper());
@@ -112,7 +111,7 @@ public class HistoryFragment extends Fragment {
                             doctorSpecialties.clear();
                             appointmentDates.clear();
                             appointmentPrices.clear();
-                            doctorImages.clear();
+                            doctorProfilePictures.clear();
                             appointmentIds.clear();
                             appointmentStatuses.clear();
 
@@ -124,8 +123,15 @@ public class HistoryFragment extends Fragment {
                                 doctorSpecialties.add(obj.getString("specialty"));
                                 appointmentDates.add(obj.getString("appointment_date"));
                                 appointmentPrices.add("₹ " + obj.getString("fee") + " /-");
-                                doctorImages.add(R.drawable.plasholder);
-                                appointmentStatuses.add(obj.getString("status")); // Store status
+
+                                // Retrieve the profile_picture URL from the JSON response
+                                String profilePicUrl = obj.optString("profile_picture", "");
+                                if (profilePicUrl.isEmpty()) {
+                                    profilePicUrl = "http://sxm.a58.mytemp.website/doctor_images/default.png";
+                                }
+                                doctorProfilePictures.add(profilePicUrl);
+
+                                appointmentStatuses.add(obj.getString("status"));
                             }
 
                             adapter.notifyDataSetChanged();
