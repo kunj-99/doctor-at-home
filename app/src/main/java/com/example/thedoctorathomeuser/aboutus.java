@@ -23,12 +23,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class aboutus extends AppCompatActivity {
-
+ImageView backbutton;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_aboutus);
-
+    backbutton = findViewById(R.id.backButton);
+    backbutton.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            Intent in = new Intent(aboutus.this, MainActivity.class);
+            startActivity(in);
+        }
+    });
         setupFeatures();
         setupTeam();
         setupSteps();
