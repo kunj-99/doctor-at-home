@@ -1,5 +1,6 @@
 package com.example.thedoctorathomeuser.Fragment;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -40,17 +41,19 @@ public class OngoingAppointmentFragment extends Fragment {
     private static final String API_URL = "http://sxm.a58.mytemp.website/getOngoingAppointment.php";
     private static final int REFRESH_INTERVAL = 5000; // 5 seconds
 
-    private List<String> doctorNames = new ArrayList<>();
-    private List<String> specialties = new ArrayList<>();
-    private List<String> hospitals = new ArrayList<>();
-    private List<Float> ratings = new ArrayList<>();
+    private final List<String> doctorNames = new ArrayList<>();
+    private final List<String> specialties = new ArrayList<>();
+    private final List<String> hospitals = new ArrayList<>();
+    private final List<Float> ratings = new ArrayList<>();
     // New list to hold profile picture URLs (instead of resource ids)
-    private List<String> profilePictures = new ArrayList<>();
-    private List<Integer> appointmentIds = new ArrayList<>();
-    private List<String> statuses = new ArrayList<>(); // Appointment statuses
-    private List<String> durations = new ArrayList<>(); // Experience duration
+    private final List<String> profilePictures = new ArrayList<>();
+    private final List<Integer> appointmentIds = new ArrayList<>();
+    private final List<String> statuses = new ArrayList<>(); // Appointment statuses
+    private final List<String> durations = new ArrayList<>(); // Experience duration
+    private final List<Integer> doctorIds = new ArrayList<>();
 
-    private Handler handler = new Handler();
+
+    private final Handler handler = new Handler();
     private Runnable refreshRunnable;
 
     @Override
@@ -78,7 +81,8 @@ public class OngoingAppointmentFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         // Pass all lists including statuses and durations to the adapter
-        adapter = new OngoingAdapter(requireContext(), doctorNames, specialties, hospitals, ratings, profilePictures, appointmentIds, statuses, durations);
+        adapter = new OngoingAdapter(requireContext(), doctorNames, specialties, hospitals, ratings, profilePictures, appointmentIds, statuses, durations, doctorIds);
+
         recyclerView.setAdapter(adapter);
 
         fetchOngoingAppointments();
@@ -91,7 +95,7 @@ public class OngoingAppointmentFragment extends Fragment {
     }
 
     private void fetchOngoingAppointments() {
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL,
+        @SuppressLint("NotifyDataSetChanged") StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL,
                 response -> {
                     Log.d("API_RESPONSE", "Response: " + response);
                     try {
@@ -105,7 +109,6 @@ public class OngoingAppointmentFragment extends Fragment {
                         if (jsonObject.getBoolean("success")) {
                             JSONArray appointmentsArray = jsonObject.getJSONArray("appointments");
 
-                            // Clear existing lists
                             doctorNames.clear();
                             specialties.clear();
                             hospitals.clear();
@@ -113,6 +116,7 @@ public class OngoingAppointmentFragment extends Fragment {
                             profilePictures.clear();
                             appointmentIds.clear();
                             statuses.clear();
+                            doctorIds.clear();
                             durations.clear();
 
                             for (int i = 0; i < appointmentsArray.length(); i++) {
@@ -126,6 +130,8 @@ public class OngoingAppointmentFragment extends Fragment {
                                 statuses.add(appointment.getString("status"));
                                 appointmentIds.add(appointment.getInt("appointment_id"));
                                 durations.add(appointment.getString("experience_duration"));
+                                doctorIds.add(appointment.getInt("doctor_id"));
+
 
                                 // Retrieve the profile_picture URL from the API response
                                 String profilePicUrl = appointment.optString("profile_picture", "");

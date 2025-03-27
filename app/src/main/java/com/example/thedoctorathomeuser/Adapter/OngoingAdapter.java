@@ -29,18 +29,18 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
     private final List<String> specialties;
     private final List<String> hospitals;
     private final List<Float> ratings;
-    // Updated list for profile picture URLs
     private final List<String> profilePictures;
     private final List<Integer> appointmentIds;
-    private final List<String> statuses; // Appointment statuses
-    private final List<String> durations;  // New list for experience duration
+    private final List<String> statuses;
+    private final List<String> durations;
+    private final List<Integer> doctorIds; // Added list for doctor IDs
     private final Context context;
 
-    // Updated constructor including profilePictures (as String URLs) and durations
     public OngoingAdapter(Context context, List<String> names, List<String> specialties,
                           List<String> hospitals, List<Float> ratings,
                           List<String> profilePictures, List<Integer> appointmentIds,
-                          List<String> statuses, List<String> durations) {
+                          List<String> statuses, List<String> durations,
+                          List<Integer> doctorIds) { // Include doctorIds in constructor
         this.context = context;
         this.names = names;
         this.specialties = specialties;
@@ -50,6 +50,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
         this.appointmentIds = appointmentIds;
         this.statuses = statuses;
         this.durations = durations;
+        this.doctorIds = doctorIds; // Assign doctorIds
     }
 
     @NonNull
@@ -63,32 +64,25 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
     public void onBindViewHolder(@NonNull DoctorViewHolder holder, int position) {
         holder.setIsRecyclable(false);
 
-        // Set basic info
         holder.name.setText(names.get(position));
         holder.specialty.setText(specialties.get(position));
         holder.hospital.setText(hospitals.get(position));
         holder.ratingBar.setRating(ratings.get(position));
-
-        // Set the experience duration text (e.g., "Experience: 5 years")
         holder.experienceDuration.setText("Experience: " + durations.get(position));
 
-        // Load image using Glide from URL (profilePictures list)
         Glide.with(context)
                 .load(profilePictures.get(position))
                 .placeholder(R.drawable.plasholder)
                 .into(holder.image);
 
-        // Reset Track button to default state (visible, enabled, and with default green tint)
         holder.track.setVisibility(View.VISIBLE);
         holder.track.setEnabled(true);
         holder.track.setText("Track");
         holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.dgreen));
 
-        // Cancel button remains unchanged (always visible and enabled)
         holder.cancel.setVisibility(View.VISIBLE);
         holder.cancel.setEnabled(true);
 
-        // Get the appointment status, trim and convert to lowercase
         String status = statuses.get(position);
         if (status != null) {
             status = status.trim().toLowerCase();
@@ -98,7 +92,6 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
 
         Log.d("OngoingAdapter", "Appointment ID " + appointmentIds.get(position) + " Status: " + status);
 
-        // Modify the Track button based on the appointment status using contains() for flexible matching
         if (status.contains("requested")) {
             holder.track.setText("riqes is prosesing");
             holder.track.setEnabled(false);
@@ -108,22 +101,20 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
             holder.track.setEnabled(false);
             holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.gray));
         }
-        // For any other status, the Track button remains "Track", enabled, and tinted green.
 
-        // Cancel button click listener
         holder.cancel.setOnClickListener(v -> {
             Intent intent = new Intent(context, cancle_appintment.class);
             intent.putExtra("appointment_id", appointmentIds.get(position));
             context.startActivity(intent);
         });
 
-        // Track button click listener (only works if the button is enabled)
         holder.track.setOnClickListener(v -> {
             if (holder.track.isEnabled()) {
                 Intent intent = new Intent(context, track_doctor.class);
                 intent.putExtra("doctor_name", names.get(position));
                 intent.putExtra("appointment_id", appointmentIds.get(position));
                 intent.putExtra("specialty", specialties.get(position));
+                intent.putExtra("doctor_id", doctorIds.get(position)); // ✅ Pass doctor_id
                 context.startActivity(intent);
             }
         });
@@ -149,7 +140,6 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
             image = itemView.findViewById(R.id.civ_profile);
             track = itemView.findViewById(R.id.Track_button);
             cancel = itemView.findViewById(R.id.Cancel_button);
-            // New TextView for experience duration; ensure this ID exists in item_ongoing.xml
             experienceDuration = itemView.findViewById(R.id.doctor_experience_duration);
         }
     }

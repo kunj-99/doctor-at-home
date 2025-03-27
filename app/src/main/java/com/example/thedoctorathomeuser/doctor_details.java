@@ -47,7 +47,6 @@ public class doctor_details extends AppCompatActivity {
         doctorQualification = findViewById(R.id.degreeDetails);
         doctorRating = findViewById(R.id.doctor_rating);
         doctorImage = findViewById(R.id.doctorImage);
-//        bookButton = findViewById(R.id.bookButton);
         progressBar = findViewById(R.id.progressBar);
         backButton = findViewById(R.id.backButton);
 

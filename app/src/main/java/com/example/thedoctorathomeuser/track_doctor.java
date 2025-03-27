@@ -1,4 +1,5 @@
 package com.example.thedoctorathomeuser;
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -20,7 +21,7 @@ import org.json.JSONObject;
 
 public class track_doctor extends AppCompatActivity implements OnMapReadyCallback {
 
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "TrackDoctor";
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
     private static final String GET_LOCATION_URL = "http://sxm.a58.mytemp.website/get_live_location.php";
 
@@ -29,13 +30,26 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     private Marker doctorMarker;
     private Handler handler = new Handler();
     private Runnable updateRunnable;
-    private String doctorId = "11"; // Example doctor ID
-    private String appointmentId = "35"; // Example appointment ID
+
+    private String doctorId;
+    private String appointmentId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_track_doctor);
+
+        // Get doctor_id and appointment_id from Intent
+        doctorId = String.valueOf(getIntent().getIntExtra("doctor_id", -1));
+        appointmentId = String.valueOf(getIntent().getIntExtra("appointment_id", -1));
+
+        if (doctorId.equals("-1") || appointmentId.equals("-1")) {
+            Toast.makeText(this, "Invalid Doctor or Appointment ID", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+
+        Log.d(TAG, "Doctor ID: " + doctorId + ", Appointment ID: " + appointmentId);
 
         mapView = findViewById(R.id.mapView);
         Bundle mapBundle = savedInstanceState != null ? savedInstanceState.getBundle(MAPVIEW_BUNDLE_KEY) : null;
@@ -62,6 +76,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
 
     private void fetchLiveLocation() {
         String url = GET_LOCATION_URL + "?doctor_id=" + doctorId + "&appointment_id=" + appointmentId;
+
         RequestQueue queue = Volley.newRequestQueue(this);
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
