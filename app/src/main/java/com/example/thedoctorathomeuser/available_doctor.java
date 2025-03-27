@@ -47,8 +47,7 @@ public class available_doctor extends AppCompatActivity {
     private View loaderLayout;
 
     private String categoryId, categoryName;
-    private static final String DEFAULT_PINCODE = "110001";
-    private String userPincode = DEFAULT_PINCODE;
+    private String userPincode = ""; // pincode will now be fetched from the server
 
     private final Handler handler = new Handler();
     private static final int DOCTOR_STATUS_REFRESH_INTERVAL = 2000;
@@ -69,7 +68,10 @@ public class available_doctor extends AppCompatActivity {
         @Override
         public void run() {
             if (isActivityVisible) {
-                fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
+                // Ensure we have a valid pincode before fetching
+                if (!userPincode.isEmpty()) {
+                    fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
+                }
                 handler.postDelayed(this, DOCTOR_LIST_REFRESH_INTERVAL);
             }
         }
@@ -100,15 +102,15 @@ public class available_doctor extends AppCompatActivity {
             finish();
         });
 
-        // Call all required APIs during 3-second loader
+        // After a 3-second delay, fetch the user ID from SharedPreferences and then retrieve the pincode from the server.
         new Handler().postDelayed(() -> {
             SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
             String userId = sp.getString("user_id", "");
+
             if (!userId.isEmpty()) {
                 fetchUserPincode(userId);
             } else {
-                userPincode = DEFAULT_PINCODE;
-                fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
+                Toast.makeText(available_doctor.this, "User ID not found. Please log in.", Toast.LENGTH_SHORT).show();
             }
 
             updateDoctorAutoStatus(); // Run status update during loader
@@ -137,23 +139,24 @@ public class available_doctor extends AppCompatActivity {
     }
 
     private void fetchUserPincode(String userId) {
-        String url = "http://sxm.a58.mytemp.website/get_user_pincode.php?user_id=" + userId;
+        String url = "http://sxm.a58.mytemp.website/user_pincode.php?user_id=" + userId;
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
-                        if (response.has("pincode")) {
+                        if (response.has("pincode") && !response.getString("pincode").isEmpty()) {
                             userPincode = response.getString("pincode");
                         } else {
-                            userPincode = DEFAULT_PINCODE;
+                            Toast.makeText(available_doctor.this, "No pincode found for the user", Toast.LENGTH_SHORT).show();
+                            return;
                         }
                     } catch (JSONException e) {
-                        userPincode = DEFAULT_PINCODE;
+                        Toast.makeText(available_doctor.this, "Error parsing pincode", Toast.LENGTH_SHORT).show();
+                        return;
                     }
                     fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
                 },
                 error -> {
-                    userPincode = DEFAULT_PINCODE;
-                    fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
+                    Toast.makeText(available_doctor.this, "Error fetching pincode", Toast.LENGTH_SHORT).show();
                 }
         );
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -162,7 +165,6 @@ public class available_doctor extends AppCompatActivity {
 
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
         String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode=" + pincode + "&category_id=" + categoryId;
-
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {
                     doctorIds.clear();
