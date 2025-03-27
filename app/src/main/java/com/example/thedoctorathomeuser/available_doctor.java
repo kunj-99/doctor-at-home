@@ -9,21 +9,23 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.thedoctorathomeuser.Adapter.DoctorAdapter;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.ArrayList;
 
 public class available_doctor extends AppCompatActivity {
@@ -35,7 +37,6 @@ public class available_doctor extends AppCompatActivity {
     private final ArrayList<String> specialties = new ArrayList<>();
     private final ArrayList<String> hospitals = new ArrayList<>();
     private final ArrayList<Float> ratings = new ArrayList<>();
-    // Updated list to hold profile picture URLs
     private final ArrayList<String> imageUrls = new ArrayList<>();
     private final ArrayList<String> Duration = new ArrayList<>();
 
@@ -43,6 +44,7 @@ public class available_doctor extends AppCompatActivity {
     private ImageButton btnSearch;
     private TextView tvNoDoctors;
     private ImageButton btnBack;
+    private View loaderLayout;
 
     private String categoryId, categoryName;
     private static final String DEFAULT_PINCODE = "110001";
@@ -78,17 +80,12 @@ public class available_doctor extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_available_doctor);
 
-        btnBack = findViewById(R.id.btn_back);
-        btnBack.setOnClickListener(v -> {
-            Intent intent = new Intent(available_doctor.this, MainActivity.class);
-            intent.putExtra("open_fragment", 1);
-            startActivity(intent);
-            finish();
-        });
+        loaderLayout = findViewById(R.id.loaderLayout);
+        loaderLayout.setVisibility(View.VISIBLE); // Show loader immediately
 
+        btnBack = findViewById(R.id.btn_back);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
         edtPincode = findViewById(R.id.edt_pincode);
         btnSearch = findViewById(R.id.btn_search);
         tvNoDoctors = findViewById(R.id.tv_no_doctors);
@@ -96,14 +93,35 @@ public class available_doctor extends AppCompatActivity {
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
-        SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        String userId = sp.getString("user_id", "");
-        if (!userId.isEmpty()) {
-            fetchUserPincode(userId);
-        } else {
-            userPincode = DEFAULT_PINCODE;
-            fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
-        }
+        btnBack.setOnClickListener(v -> {
+            Intent intent = new Intent(available_doctor.this, MainActivity.class);
+            intent.putExtra("open_fragment", 1);
+            startActivity(intent);
+            finish();
+        });
+
+        // Call all required APIs during 3-second loader
+        new Handler().postDelayed(() -> {
+            SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+            String userId = sp.getString("user_id", "");
+            if (!userId.isEmpty()) {
+                fetchUserPincode(userId);
+            } else {
+                userPincode = DEFAULT_PINCODE;
+                fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
+            }
+
+            updateDoctorAutoStatus(); // Run status update during loader
+
+            // After delay, show the actual UI
+            loaderLayout.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+
+            isActivityVisible = true;
+            handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
+            handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
+
+        }, 3000); // 3-second delay
 
         btnSearch.setOnClickListener(v -> {
             String pincode = edtPincode.getText().toString().trim();
@@ -142,25 +160,8 @@ public class available_doctor extends AppCompatActivity {
         queue.add(request);
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        isActivityVisible = true;
-        handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
-        handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        isActivityVisible = false;
-        handler.removeCallbacks(autoUpdateStatusRunnable);
-        handler.removeCallbacks(autoRefreshDoctorsRunnable);
-    }
-
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
-        String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode="
-                + pincode + "&category_id=" + categoryId;
+        String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode=" + pincode + "&category_id=" + categoryId;
 
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {
@@ -201,7 +202,6 @@ public class available_doctor extends AppCompatActivity {
                             hospitals.add(doctor.getString("hospital_affiliation"));
                             ratings.add((float) doctor.getDouble("rating"));
 
-                            // Get profile_picture URL and check if it's empty; if so, use default image URL.
                             String profilePicUrl = doctor.optString("profile_picture", "");
                             if (profilePicUrl.isEmpty() || profilePicUrl.equals("null")) {
                                 profilePicUrl = "http://sxm.a58.mytemp.website/doctor_images/default.png";
@@ -235,14 +235,28 @@ public class available_doctor extends AppCompatActivity {
         String updateUrl = "http://sxm.a58.mytemp.website/update_doctor_status.php";
         StringRequest updateRequest = new StringRequest(Request.Method.GET, updateUrl,
                 response -> {
-                    // Minimal logging or no logging here
+                    // Logging can be added if needed
                 },
                 error -> {
-                    // Minimal logging or no logging here
+                    // Silent fail
                 }
         );
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(updateRequest);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isActivityVisible = true;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isActivityVisible = false;
+        handler.removeCallbacks(autoUpdateStatusRunnable);
+        handler.removeCallbacks(autoRefreshDoctorsRunnable);
     }
 
     @Override
