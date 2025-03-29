@@ -1,84 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:app="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/white">
 
-    <!-- Title Bar -->
-    <TextView
-        android:id="@+id/title"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="75dp"
-        android:padding="20dp"
-        android:background="@drawable/bottom_curve"
-        android:text="Track Your Doctor"
-        android:textColor="@color/white"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:elevation="4dp" />
-
-    <!-- Doctor's Image -->
-    <de.hdodenhof.circleimageview.CircleImageView
-        android:id="@+id/civ_profile"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_gravity="center"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="12dp"
-        android:src="@drawable/main1"
-        app:civ_border_color="@color/cyan"
-        app:civ_border_width="3dp" />
-
-    <!-- Doctor's Name -->
-    <TextView
-        android:id="@+id/doctor_name"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Dr. Tranquilli"
-        android:textColor="@color/black"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="24dp" />
+        android:orientation="vertical"
+        app:ignore="NamespaceTypo">
 
-    <!-- Google Map View -->
-    <com.google.android.gms.maps.MapView
-        android:id="@+id/mapView"
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="24dp"
-        android:layout_marginTop="8dp"
-        android:background="@android:color/darker_gray" />
+        <!-- Title Bar -->
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="match_parent"
+            android:layout_height="75dp"
+            android:padding="20dp"
+            android:background="@drawable/bottom_curve"
+            android:text="Track Your Doctor"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:elevation="4dp" />
 
-    <!-- Action Buttons -->
-    <Button
-        android:id="@+id/button_bill"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:text="Your Bill"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="12dp"
-        android:backgroundTint="@color/dgreen"
-        android:textColor="@android:color/white"
-        android:elevation="2dp" />
+        <!-- Doctor's Image -->
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/civ_profile"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="center"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="12dp"
+            android:src="@drawable/main1"
+            app:civ_border_color="@color/cyan"
+            app:civ_border_width="3dp" />
 
-    <Button
-        android:id="@+id/button_done"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:text="Done"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginHorizontal="20dp"
-        android:backgroundTint="#CF003340"
-        android:textColor="@android:color/white"
-        android:elevation="2dp" />
+        <!-- Doctor's Name -->
+        <TextView
+            android:id="@+id/doctor_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Dr. Tranquilli"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
 
-</LinearLayout>
+        <!-- Map and Overlaid Distance/Duration -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp">
+
+            <com.google.android.gms.maps.MapView
+                android:id="@+id/mapView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/darker_gray" />
+
+            <!-- Overlaid information container -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:orientation="vertical"
+                android:padding="8dp"
+                android:background="#80000000">
+
+                <TextView
+                    android:id="@+id/tvDistance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Distance:"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvDuration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Duration:"
+                    android:textColor="@android:color/white"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- Action Buttons -->
+        <Button
+            android:id="@+id/button_bill"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Your Bill"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="12dp"
+            android:backgroundTint="@color/dgreen"
+            android:textColor="@android:color/white"
+            android:elevation="2dp" />
+
+        <Button
+            android:id="@+id/button_done"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Done"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginHorizontal="20dp"
+            android:backgroundTint="#CF003340"
+            android:textColor="@android:color/white"
+            android:elevation="2dp" />
+
+    </LinearLayout>
+</ScrollView>

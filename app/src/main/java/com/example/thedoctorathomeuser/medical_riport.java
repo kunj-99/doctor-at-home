@@ -1,12 +1,23 @@
 package com.example.thedoctorathomeuser;
 
-import android.annotation.SuppressLint;
+import android.Manifest;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.pdf.PdfDocument;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -24,17 +35,22 @@ import com.bumptech.glide.Glide;
 
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class medical_riport extends AppCompatActivity {
 
     // API endpoint URL (update with your actual server URL)
-    // This endpoint expects an "appointment_id" parameter.
     private static final String GET_REPORT_URL = "http://sxm.a58.mytemp.website/get_medical_report.php?appointment_id=";
 
     // Appointment ID retrieved from the Intent extra
     private String appointmentId;
+    // Store report photo URL if available
+    private String reportPhotoUrl = "";
+
     private TextView tvHospitalName, tvHospitalAddress;
     private TextView tvPatientName, tvPatientAddress, tvVisitDate;
     private TextView tvPatientAge, tvPatientWeight, tvPatientSex;
@@ -43,11 +59,11 @@ public class medical_riport extends AppCompatActivity {
     private TextView tvDoctorName;
     private ImageButton btnBack;
     private ImageView ivReportPhoto;
+    private Button btnDownload;
 
     private RequestQueue requestQueue;
     private static final String TAG = "MedicalReport";
 
-    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +99,7 @@ public class medical_riport extends AppCompatActivity {
         tvDoctorName = findViewById(R.id.tv_doctor_name);
         ivReportPhoto = findViewById(R.id.iv_report_photo);
         btnBack = findViewById(R.id.btn_back);
+        btnDownload = findViewById(R.id.btn_download);
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -95,6 +112,20 @@ public class medical_riport extends AppCompatActivity {
 
         // Fetch the medical report data using the appointment ID
         fetchMedicalReport();
+
+        // Set click listener for download button
+        btnDownload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (ivReportPhoto.getVisibility() == View.VISIBLE && !reportPhotoUrl.isEmpty()) {
+                    // Report is image-based – download the image
+                    downloadImage(reportPhotoUrl);
+                } else {
+                    // Virtual report – generate a PDF from the view
+                    generatePdf();
+                }
+            }
+        });
     }
 
     private void fetchMedicalReport() {
@@ -103,16 +134,12 @@ public class medical_riport extends AppCompatActivity {
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 new Response.Listener<JSONObject>() {
-                    @SuppressLint("SetTextI18n")
                     @Override
                     public void onResponse(JSONObject response) {
                         Log.d(TAG, "API Response received: " + response.toString());
 
                         try {
                             String status = response.optString("status", "");
-                            Log.d(TAG, "Response status: " + status);
-
-                            // If the response is not success, redirect immediately
                             if (!status.equalsIgnoreCase("success")) {
                                 Toast.makeText(medical_riport.this, "Report not found", Toast.LENGTH_SHORT).show();
                                 redirectToHistoryFragment();
@@ -128,10 +155,20 @@ public class medical_riport extends AppCompatActivity {
 
                             String photoUrl = data.optString("report_photo", "");
                             if (!photoUrl.isEmpty()) {
+                                // Image report: save the URL and show the image
+                                reportPhotoUrl = photoUrl;
                                 ivReportPhoto.setVisibility(View.VISIBLE);
-
-                                // Hide everything else
-                                findViewById(R.id.content_container).setVisibility(View.GONE);
+                                // Instead of hiding the entire content container, hide all children except the download button
+                                LinearLayout contentContainer = findViewById(R.id.content_container);
+                                for (int i = 0; i < contentContainer.getChildCount(); i++) {
+                                    View child = contentContainer.getChildAt(i);
+                                    // Keep the download button visible (assumes its id is btn_download)
+                                    if (child.getId() != R.id.btn_download) {
+                                        child.setVisibility(View.GONE);
+                                    }
+                                }
+                                // Ensure the download button is visible
+                                btnDownload.setVisibility(View.VISIBLE);
 
                                 Glide.with(medical_riport.this)
                                         .load(photoUrl)
@@ -140,7 +177,7 @@ public class medical_riport extends AppCompatActivity {
                                 return;
                             }
 
-
+                            // Virtual report: populate text views
                             tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
                             tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
                             tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
@@ -156,6 +193,7 @@ public class medical_riport extends AppCompatActivity {
                             tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
                             tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
 
+                            // Populate medications table
                             String medicationsStr = data.optString("medications", "");
                             String dosageStr = data.optString("dosage", "");
 
@@ -224,6 +262,64 @@ public class medical_riport extends AppCompatActivity {
         );
 
         requestQueue.add(request);
+    }
+
+    // Download the image using DownloadManager
+    private void downloadImage(String url) {
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "medical_report.jpg");
+        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        downloadManager.enqueue(request);
+        Toast.makeText(this, "Downloading Image...", Toast.LENGTH_SHORT).show();
+    }
+
+    // Generate a PDF from the virtual report view and save it in Downloads
+    private void generatePdf() {
+        // Get the content container view (virtual report data)
+        View content = findViewById(R.id.content_container);
+
+        // Temporarily hide the download button so it doesn't appear in the PDF
+        btnDownload.setVisibility(View.GONE);
+
+        // Capture the bitmap from the view
+        Bitmap bitmap = getBitmapFromView(content);
+
+        // Restore the download button visibility
+        btnDownload.setVisibility(View.VISIBLE);
+
+        PdfDocument document = new PdfDocument();
+        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(bitmap.getWidth(), bitmap.getHeight(), 1).create();
+        PdfDocument.Page page = document.startPage(pageInfo);
+        Canvas canvas = page.getCanvas();
+        canvas.drawBitmap(bitmap, 0, 0, null);
+        document.finishPage(page);
+
+        String fileName = "medical_report.pdf";
+        File pdfFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+        try {
+            FileOutputStream fos = new FileOutputStream(pdfFile);
+            document.writeTo(fos);
+            document.close();
+            fos.close();
+            Toast.makeText(this, "PDF saved in Downloads", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Error generating PDF", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Helper method to create a bitmap from a view
+    private Bitmap getBitmapFromView(View view) {
+        Bitmap returnedBitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(returnedBitmap);
+        Drawable bgDrawable = view.getBackground();
+        if (bgDrawable != null)
+            bgDrawable.draw(canvas);
+        else
+            canvas.drawColor(Color.WHITE);
+        view.draw(canvas);
+        return returnedBitmap;
     }
 
     private void redirectToHistoryFragment() {
