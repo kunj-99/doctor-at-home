@@ -65,6 +65,7 @@ public class medical_riport extends AppCompatActivity {
     private RequestQueue requestQueue;
     private static final String TAG = "MedicalReport";
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
