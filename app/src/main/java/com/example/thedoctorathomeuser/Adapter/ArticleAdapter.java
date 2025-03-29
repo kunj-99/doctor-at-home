@@ -1,15 +1,20 @@
 package com.example.thedoctorathomeuser.Adapter;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.thedoctorathomeuser.ArticleItem;
 import com.example.thedoctorathomeuser.R;
 
@@ -37,7 +42,26 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ArticleV
         ArticleItem item = articleList.get(position);
         holder.title.setText(item.getTitle());
         holder.subtitle.setText(item.getSubtitle());
-        holder.image.setImageResource(item.getImageResId());
+
+        // Use Glide to load the cover image from the full URL.
+        Glide.with(context)
+                .load(item.getCover())
+                .into(holder.image);
+
+        // Set a click listener on the entire item view to open the PDF online.
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Create an intent with ACTION_VIEW to open the PDF URL.
+                Uri pdfUri = Uri.parse(item.getPdf());
+                Intent intent = new Intent(Intent.ACTION_VIEW, pdfUri);
+                try {
+                    context.startActivity(intent);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(context, "No application available to view PDF", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     @Override

@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -62,6 +63,10 @@ public class medical_riport extends AppCompatActivity {
     private ImageView ivReportPhoto;
     private Button btnDownload;
 
+    // Loader view and its ImageView for the GIF loader
+    private View loader;
+    private ImageView ivLoader;
+
     private RequestQueue requestQueue;
     private static final String TAG = "MedicalReport";
 
@@ -103,6 +108,16 @@ public class medical_riport extends AppCompatActivity {
         btnBack = findViewById(R.id.btn_back);
         btnDownload = findViewById(R.id.btn_download);
 
+        // Initialize loader view and its ImageView for GIF
+        loader = findViewById(R.id.loader);
+        ivLoader = findViewById(R.id.iv_loader);
+        loader.setVisibility(View.VISIBLE);
+        // Load the GIF loader using Glide
+        Glide.with(this)
+                .asGif()
+                .load(R.drawable.loader)  // Make sure loader.gif is in res/drawable and referenced correctly
+                .into(ivLoader);
+
         btnBack.setOnClickListener(v -> finish());
 
         // Optionally, set static header texts
@@ -140,7 +155,6 @@ public class medical_riport extends AppCompatActivity {
                     @Override
                     public void onResponse(JSONObject response) {
                         Log.d(TAG, "API Response received: " + response.toString());
-
                         try {
                             String status = response.optString("status", "");
                             if (!status.equalsIgnoreCase("success")) {
@@ -161,97 +175,102 @@ public class medical_riport extends AppCompatActivity {
                                 // Image report: save the URL and show the image
                                 reportPhotoUrl = photoUrl;
                                 ivReportPhoto.setVisibility(View.VISIBLE);
-                                // Instead of hiding the entire content container, hide all children except the download button
+                                // Hide all children in the content container except the download button
                                 LinearLayout contentContainer = findViewById(R.id.content_container);
                                 for (int i = 0; i < contentContainer.getChildCount(); i++) {
                                     View child = contentContainer.getChildAt(i);
-                                    // Keep the download button visible (assumes its id is btn_download)
                                     if (child.getId() != R.id.btn_download) {
                                         child.setVisibility(View.GONE);
                                     }
                                 }
-                                // Ensure the download button is visible
                                 btnDownload.setVisibility(View.VISIBLE);
 
                                 Glide.with(medical_riport.this)
                                         .load(photoUrl)
                                         .error(R.drawable.error)
                                         .into(ivReportPhoto);
-                                return;
-                            }
+                            } else {
+                                // Virtual report: populate text views
+                                tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
+                                tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
+                                tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
+                                tvTemperature.setText("Temperature: " + data.optString("temperature", "N/A"));
+                                tvPatientAge.setText("Age: " + data.optString("age", "N/A") + " Years");
+                                tvPatientWeight.setText("Weight: " + data.optString("weight", "N/A") + " kg");
+                                tvPatientSex.setText("Sex: " + data.optString("sex", "N/A"));
+                                tvPulse.setText("Pulse: " + data.optString("pulse", "N/A"));
+                                tvSpo2.setText("SP02: " + data.optString("spo2", "N/A"));
+                                tvBloodPressure.setText("Blood Pressure: " + data.optString("blood_pressure", "N/A"));
+                                tvRespiratory.setText("Respiratory: " + data.optString("respiratory_system", "N/A"));
+                                tvSymptoms.setText("Symptoms: " + data.optString("symptoms", "N/A"));
+                                tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
+                                tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
 
-                            // Virtual report: populate text views
-                            tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
-                            tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
-                            tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
-                            tvTemperature.setText("Temperature: " + data.optString("temperature", "N/A"));
-                            tvPatientAge.setText("Age: " + data.optString("age", "N/A") + " Years");
-                            tvPatientWeight.setText("Weight: " + data.optString("weight", "N/A") + " kg");
-                            tvPatientSex.setText("Sex: " + data.optString("sex", "N/A"));
-                            tvPulse.setText("Pulse: " + data.optString("pulse", "N/A"));
-                            tvSpo2.setText("SP02: " + data.optString("spo2", "N/A"));
-                            tvBloodPressure.setText("Blood Pressure: " + data.optString("blood_pressure", "N/A"));
-                            tvRespiratory.setText("Respiratory: " + data.optString("respiratory_system", "N/A"));
-                            tvSymptoms.setText("Symptoms: " + data.optString("symptoms", "N/A"));
-                            tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
-                            tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
+                                // Populate medications table
+                                String medicationsStr = data.optString("medications", "");
+                                String dosageStr = data.optString("dosage", "");
 
-                            // Populate medications table
-                            String medicationsStr = data.optString("medications", "");
-                            String dosageStr = data.optString("dosage", "");
+                                String[] medicationsArray = medicationsStr.split("\\n");
+                                String[] dosageArray = dosageStr.split("\\n");
 
-                            String[] medicationsArray = medicationsStr.split("\\n");
-                            String[] dosageArray = dosageStr.split("\\n");
-
-                            List<String> medList = new ArrayList<>();
-                            for (String med : medicationsArray) {
-                                med = med.trim();
-                                if (!med.isEmpty()) {
-                                    if (med.endsWith(",")) med = med.substring(0, med.length() - 1);
-                                    medList.add(med);
+                                List<String> medList = new ArrayList<>();
+                                for (String med : medicationsArray) {
+                                    med = med.trim();
+                                    if (!med.isEmpty()) {
+                                        if (med.endsWith(",")) med = med.substring(0, med.length() - 1);
+                                        medList.add(med);
+                                    }
                                 }
-                            }
 
-                            List<String> dosageList = new ArrayList<>();
-                            for (String dos : dosageArray) {
-                                dos = dos.trim();
-                                if (!dos.isEmpty()) {
-                                    if (dos.endsWith(",")) dos = dos.substring(0, dos.length() - 1);
-                                    dosageList.add(dos);
+                                List<String> dosageList = new ArrayList<>();
+                                for (String dos : dosageArray) {
+                                    dos = dos.trim();
+                                    if (!dos.isEmpty()) {
+                                        if (dos.endsWith(",")) dos = dos.substring(0, dos.length() - 1);
+                                        dosageList.add(dos);
+                                    }
                                 }
-                            }
 
-                            int rowCount = Math.max(medList.size(), dosageList.size());
-                            TableLayout tableMedications = findViewById(R.id.table_medications);
-                            if (tableMedications.getChildCount() > 1) {
-                                tableMedications.removeViews(1, tableMedications.getChildCount() - 1);
-                            }
+                                int rowCount = Math.max(medList.size(), dosageList.size());
+                                TableLayout tableMedications = findViewById(R.id.table_medications);
+                                if (tableMedications.getChildCount() > 1) {
+                                    tableMedications.removeViews(1, tableMedications.getChildCount() - 1);
+                                }
 
-                            for (int i = 0; i < rowCount; i++) {
-                                TableRow row = new TableRow(medical_riport.this);
-                                TextView tvNo = new TextView(medical_riport.this);
-                                tvNo.setText(String.valueOf(i + 1));
-                                tvNo.setTextSize(16);
-                                tvNo.setPadding(4, 4, 4, 4);
+                                for (int i = 0; i < rowCount; i++) {
+                                    TableRow row = new TableRow(medical_riport.this);
+                                    TextView tvNo = new TextView(medical_riport.this);
+                                    tvNo.setText(String.valueOf(i + 1));
+                                    tvNo.setTextSize(16);
+                                    tvNo.setPadding(4, 4, 4, 4);
 
-                                TextView tvMedName = new TextView(medical_riport.this);
-                                tvMedName.setText(i < medList.size() ? medList.get(i) : "");
-                                tvMedName.setTextSize(16);
-                                tvMedName.setPadding(4, 4, 4, 4);
+                                    TextView tvMedName = new TextView(medical_riport.this);
+                                    tvMedName.setText(i < medList.size() ? medList.get(i) : "");
+                                    tvMedName.setTextSize(16);
+                                    tvMedName.setPadding(4, 4, 4, 4);
 
-                                TextView tvDosage = new TextView(medical_riport.this);
-                                tvDosage.setText(i < dosageList.size() ? dosageList.get(i) : "");
-                                tvDosage.setTextSize(16);
-                                tvDosage.setPadding(4, 4, 4, 4);
+                                    TextView tvDosage = new TextView(medical_riport.this);
+                                    tvDosage.setText(i < dosageList.size() ? dosageList.get(i) : "");
+                                    tvDosage.setTextSize(16);
+                                    tvDosage.setPadding(4, 4, 4, 4);
 
-                                row.addView(tvNo);
-                                row.addView(tvMedName);
-                                row.addView(tvDosage);
-                                tableMedications.addView(row);
+                                    row.addView(tvNo);
+                                    row.addView(tvMedName);
+                                    row.addView(tvDosage);
+                                    tableMedications.addView(row);
+                                }
                             }
                         } catch (Exception e) {
                             Log.e(TAG, "Exception during parsing: " + e.getMessage(), e);
                             Toast.makeText(medical_riport.this, "Error parsing report data", Toast.LENGTH_SHORT).show();
+                        } finally {
+                            // Hide the loader after a minimum delay of 1 second
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    loader.setVisibility(View.GONE);
+                                }
+                            }, 1000);
                         }
                     }
                 },
@@ -260,6 +279,13 @@ public class medical_riport extends AppCompatActivity {
                     public void onErrorResponse(VolleyError error) {
                         Log.e(TAG, "Volley error: " + error.getMessage(), error);
                         Toast.makeText(medical_riport.this, "Error fetching report", Toast.LENGTH_SHORT).show();
+                        // Hide the loader even if there is an error
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                loader.setVisibility(View.GONE);
+                            }
+                        }, 1000);
                     }
                 }
         );

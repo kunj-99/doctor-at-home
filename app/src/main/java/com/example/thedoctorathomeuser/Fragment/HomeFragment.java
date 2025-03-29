@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -37,6 +38,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class HomeFragment extends Fragment {
 
@@ -88,7 +90,7 @@ public class HomeFragment extends Fragment {
 
     private void setupHealthTips() {
         // Create a Volley request queue using the fragment's context.
-        RequestQueue requestQueue = Volley.newRequestQueue(getContext());
+        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
 
         // Replace with your API endpoint URL.
         String url = "http://sxm.a58.mytemp.website/healthtip.php";
@@ -139,7 +141,7 @@ public class HomeFragment extends Fragment {
 
     private void setupTopDoctors() {
         // Create a Volley request queue using the fragment's context.
-        RequestQueue requestQueue = Volley.newRequestQueue(getContext());
+        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
 
         // Replace with your actual API endpoint URL that returns top doctor data.
         String url = "http://sxm.a58.mytemp.website/topdoctor.php";
@@ -190,7 +192,7 @@ public class HomeFragment extends Fragment {
 
     private void setupAppointmentStats() {
         // Create a Volley request queue using the fragment's context.
-        RequestQueue requestQueue = Volley.newRequestQueue(getContext());
+        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
 
         // Replace with your API endpoint URL for completed appointment count.
         String url = "http://sxm.a58.mytemp.website/completed_appointment.php";
@@ -251,13 +253,62 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupArticles() {
-        List<ArticleItem> articles = new ArrayList<>();
-        articles.add(new ArticleItem("Iron Supplements for Women", "7 min(s) read", R.drawable.article1));
-        articles.add(new ArticleItem("Oil Pulling: Traditional Remedy", "5 min(s) read", R.drawable.article2));
+        // URL of your PHP endpoint that returns articles in JSON format.
+        String url = "http://sxm.a58.mytemp.website/get_articles.php";
 
-        articlesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-        articlesRecyclerView.setAdapter(new ArticleAdapter(getContext(), articles));
+        // Create a new RequestQueue using Volley.
+        RequestQueue requestQueue = Volley.newRequestQueue(getContext());
+
+        // Create a JSON array request.
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
+                Request.Method.GET,
+                url,
+                null,
+                new Response.Listener<JSONArray>() {
+                    @Override
+                    public void onResponse(JSONArray response) {
+                        List<ArticleItem> articles = new ArrayList<>();
+                        try {
+                            // Loop through each JSON object in the array.
+                            for (int i = 0; i < response.length(); i++) {
+                                JSONObject articleObject = response.getJSONObject(i);
+
+                                // Retrieve data from the JSON object.
+                                int id = articleObject.getInt("id");
+                                String title = articleObject.getString("title");
+                                // If "subtitle" is provided in the JSON, use it; otherwise, default to an empty string.
+                                String subtitle = articleObject.optString("title", "");
+                                String cover = articleObject.getString("cover"); // full URL provided by PHP
+                                String pdf = articleObject.getString("pdf");     // full URL provided by PHP
+
+                                // Create an ArticleItem object with the fetched data.
+                                articles.add(new ArticleItem(id, title, subtitle, cover, pdf));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        // Setup the RecyclerView with a horizontal layout.
+                        articlesRecyclerView.setLayoutManager(
+                                new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false)
+                        );
+                        // Pass the list of articles to your adapter.
+                        articlesRecyclerView.setAdapter(new ArticleAdapter(getContext(), articles));
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        Toast.makeText(getContext(), "Error fetching articles", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+
+        // Add the request to the Volley request queue.
+        requestQueue.add(jsonArrayRequest);
     }
+
 
     private void setupAutoRotation() {
         handler = new Handler();
