@@ -1,0 +1,10 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Solid background color -->
+    <solid android:color="@color/dgreen" />
+    <!-- Sharp corners to create a square shape -->
+    <corners android:radius="0dp" />
+    <!-- Optional: Add a border -->
+    <stroke
+        android:width="2dp"
+        android:color="@color/dark_green" />
+</shape>

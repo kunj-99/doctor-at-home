@@ -11,15 +11,17 @@
         android:id="@+id/degreeTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@android:color/white"
+        android:textColor="@color/primaryColor"
         android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:text="Degree Info" />
 
     <TextView
         android:id="@+id/feeTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:textColor="@android:color/white"
-        android:textSize="14sp" />
+        android:textColor="@color/primaryColor"
+        android:textSize="14sp"
+        android:text="Fee Info" />
 </LinearLayout>

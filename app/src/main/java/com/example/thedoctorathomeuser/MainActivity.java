@@ -3,6 +3,8 @@ package com.example.thedoctorathomeuser;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -12,6 +14,8 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.GravityCompat;
 
 import com.bumptech.glide.Glide; // Using Glide for image loading
@@ -77,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
         TextView tvProfileName = headerView.findViewById(R.id.tv_profile_name);
         TextView tvProfileEmail = headerView.findViewById(R.id.tv_profile_email);
 
+
+
         // Fetch profile details from remote server using GET_PROFILE_URL
         SharedPreferences userPrefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String patientId = userPrefs.getString("patient_id", "");
@@ -98,6 +104,37 @@ public class MainActivity extends AppCompatActivity {
                 this, drawerLayout, toolbar,
                 R.string.navigation_drawer_open,
                 R.string.navigation_drawer_close);
+
+        toggle.setDrawerIndicatorEnabled(false);
+        toolbar.setNavigationIcon(R.drawable.burger_menu);  // Replace with your custom icon drawable
+
+        // Load your custom icon drawable
+        Drawable customIcon = ContextCompat.getDrawable(this, R.drawable.burger_menu);
+
+        if (customIcon != null) {
+            // Wrap the drawable so that it can be tinted
+            customIcon = DrawableCompat.wrap(customIcon);
+            // Set the tint color to white
+            DrawableCompat.setTint(customIcon, ContextCompat.getColor(this, android.R.color.white));
+            // Optionally, if you need to change the tint mode
+            // DrawableCompat.setTintMode(customIcon, PorterDuff.Mode.SRC_ATOP);
+        }
+
+// Set the tinted icon as the navigation icon
+        toolbar.setNavigationIcon(customIcon);
+
+// Optionally, add a click listener to handle opening and closing the drawer
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    drawerLayout.openDrawer(GravityCompat.START);
+                }
+            }
+        });
+
         toggle.getDrawerArrowDrawable().setColor(getResources().getColor(android.R.color.black));
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
@@ -171,13 +208,15 @@ public class MainActivity extends AppCompatActivity {
             } else if (item.getItemId() == R.id.support1) {
                 intent = new Intent(MainActivity.this, suppor.class);
             } else if (item.getItemId() == R.id.shareapp1) {
-                intent = new Intent(MainActivity.this, share_app.class);
+                shareApp();  // Directly share the app
+                return true;
             } else if (item.getItemId() == R.id.aboutus1) {
                 intent = new Intent(MainActivity.this, aboutus.class);
             } else if (item.getItemId() == R.id.settings1) {
                 intent = new Intent(MainActivity.this, settings.class);
             } else if (item.getItemId() == R.id.rateapp) {
-                intent = new Intent(MainActivity.this, Rate_app.class);
+                rateApp();
+                return true;
             } else if (item.getItemId() == R.id.logout) {
                 // Clear UserPrefs SharedPreferences
                 SharedPreferences userPrefsLogout = getSharedPreferences("UserPrefs", MODE_PRIVATE);
@@ -215,6 +254,35 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, Profile.class);
             startActivity(intent);
         });
+    }
+
+    private void rateApp() {
+        String appPackageName = getPackageName(); // Get your app package name dynamically
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
+        } catch (android.content.ActivityNotFoundException anfe) {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + appPackageName)));
+        }
+
+    }
+
+    private void shareApp() {
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("text/plain");
+            String shareBody = "Check out this cool app: [Your App Link Here]";
+            String shareSubject = "The Doctor At Home App";
+            shareIntent.putExtra(Intent.EXTRA_SUBJECT, shareSubject);
+            shareIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
+            startActivity(Intent.createChooser(shareIntent, "Share via"));
+
+    }
+
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
     }
 
     private void adjustNavigationDrawerWidth() {

@@ -77,6 +77,7 @@ public class OngoingAppointmentFragment extends Fragment {
         }
 
         bookAppointment = view.findViewById(R.id.bookButton);
+
         recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 

@@ -34,13 +34,34 @@
     <color name="cream">#FBFFE4</color>
     <color name="vlgreen">#A3D1C6</color>
 
-    <color name="primaryColor">#2196F3</color>
+
+        <!-- Primary Colors -->
+        <color name="primaryColor">#2196F3</color>       <!-- Bright Blue -->
+        <color name="primaryDarkColor">#1976D2</color>   <!-- Darker Blue -->
+        <color name="accentColor">#4CAF50</color>        <!-- Green Accent -->
+
+        <!-- Text Colors -->
+        <color name="textColorPrimary">#FFFFFF</color>   <!-- White -->
+        <color name="textColorSecondary">#757575</color> <!-- Gray -->
+
+        <!-- Background Colors -->
+        <color name="backgroundColor">#F5F5F5</color>   <!-- Light Gray -->
+        <color name="cardBackground">#E3F2FD</color>    <!-- Light Blue -->
+        <color name="buttonColor">#388E3C</color>        <!-- Dark Green -->
+
+
+        <color name="ldgreen">#388E3C</color>       <!-- Primary Green -->
+        <color name="dark_green">#2E7D32</color>  <!-- Darker Shade -->
+
+
+
+
     <color name="primaryLightColor">#BBDEFB</color>
     <color name="primaryTextColor">#212121</color>
     <color name="secondaryTextColor">#757575</color>
 
-
-<!--    <color name="primaryColor">#2196F3</color>-->
+    <color name="dark_blue">#1976D2</color>
+    <!--    <color name="primaryColor">#2196F3</color>-->
     <color name="primaryLight">#BBDEFB</color>
     <color name="primaryText">#212121</color>
     <color name="secondaryText">#757575</color>

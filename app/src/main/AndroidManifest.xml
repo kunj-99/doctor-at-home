@@ -94,12 +94,7 @@
         <activity
             android:name=".Profile"
             android:exported="false" />
-        <activity
-            android:name=".Rate_app"
-            android:exported="false" />
-        <activity
-            android:name=".share_app"
-            android:exported="false" />
+
         <activity
             android:name=".otp_verification"
             android:exported="false" />
@@ -119,9 +114,9 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="true" /> <!-- <meta-data -->
-        <!-- android:name="com.google.android.maps.v2.API_KEY" -->
-        <!-- android:value="AlzaSy01q7enExdYHYWRV4DgMWbGr8i-CTQss3z" /> -->
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" /> <!-- <meta-data -->
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />

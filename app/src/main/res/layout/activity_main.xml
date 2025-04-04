@@ -19,7 +19,7 @@
             android:id="@+id/tb"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:navigationIconTint="@color/black"
+            app:navigationIconTint="@color/white"
             android:background="@color/dgreen">
 
             <!-- Centered Title -->
@@ -49,11 +49,11 @@
             android:id="@+id/bottem"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:menu="@menu/bottom_nav_menu"
             android:background="@color/dgreen"
             app:itemBackground="@color/dgreen"
-            app:itemIconTint="@color/white"
-            app:itemTextColor="@color/white"/>
+            app:itemIconTint="@color/nav_item_color"
+            app:itemTextColor="@color/nav_item_color"
+            app:menu="@menu/bottom_nav_menu" />
     </LinearLayout>
 
     <!-- Navigation Drawer -->
