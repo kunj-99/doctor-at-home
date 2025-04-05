@@ -48,7 +48,6 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ArticleV
                 .load(item.getCover())
                 .into(holder.image);
 
-        // Set a click listener on the entire item view to open the PDF online.
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

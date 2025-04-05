@@ -58,7 +58,8 @@ public class available_doctor extends AppCompatActivity {
         @Override
         public void run() {
             if (isActivityVisible) {
-                updateDoctorAutoStatus();
+                // Call update with a null callback for silent updates
+                updateDoctorAutoStatus(null);
                 handler.postDelayed(this, DOCTOR_STATUS_REFRESH_INTERVAL);
             }
         }
@@ -95,6 +96,7 @@ public class available_doctor extends AppCompatActivity {
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
+        // On back button click, go to MainActivity with fragment 1.
         btnBack.setOnClickListener(v -> {
             Intent intent = new Intent(available_doctor.this, MainActivity.class);
             intent.putExtra("open_fragment", 1);
@@ -102,28 +104,29 @@ public class available_doctor extends AppCompatActivity {
             finish();
         });
 
-        // After a 3-second delay, fetch the user ID from SharedPreferences and then retrieve the pincode from the server.
-        new Handler().postDelayed(() -> {
-            SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-            String userId = sp.getString("user_id", "");
+        // Instead of a fixed delay, update doctor status and then load UI
+        updateDoctorAutoStatus(new Runnable() {
+            @Override
+            public void run() {
+                // After background status update, fetch the user's pincode
+                SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+                String userId = sp.getString("user_id", "");
 
-            if (!userId.isEmpty()) {
-                fetchUserPincode(userId);
-            } else {
-                Toast.makeText(available_doctor.this, "User ID not found. Please log in.", Toast.LENGTH_SHORT).show();
+                if (!userId.isEmpty()) {
+                    fetchUserPincode(userId);
+                } else {
+                    Toast.makeText(available_doctor.this, "User ID not found. Please log in.", Toast.LENGTH_SHORT).show();
+                }
+
+                // Hide loader and display the actual UI
+                loaderLayout.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.VISIBLE);
+
+                isActivityVisible = true;
+                handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
+                handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
             }
-
-            updateDoctorAutoStatus(); // Run status update during loader
-
-            // After delay, show the actual UI
-            loaderLayout.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.VISIBLE);
-
-            isActivityVisible = true;
-            handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
-            handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
-
-        }, 3000); // 3-second delay
+        });
 
         btnSearch.setOnClickListener(v -> {
             String pincode = edtPincode.getText().toString().trim();
@@ -233,14 +236,22 @@ public class available_doctor extends AppCompatActivity {
         queue.add(request);
     }
 
-    private void updateDoctorAutoStatus() {
+    /**
+     * Updates doctor status and executes the onComplete callback after the request finishes.
+     * If onComplete is null, the callback is simply ignored.
+     */
+    private void updateDoctorAutoStatus(final Runnable onComplete) {
         String updateUrl = "http://sxm.a58.mytemp.website/update_doctor_status.php";
         StringRequest updateRequest = new StringRequest(Request.Method.GET, updateUrl,
                 response -> {
-                    // Logging can be added if needed
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
                 },
                 error -> {
-                    // Silent fail
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
                 }
         );
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -266,5 +277,15 @@ public class available_doctor extends AppCompatActivity {
         super.onDestroy();
         handler.removeCallbacks(autoUpdateStatusRunnable);
         handler.removeCallbacks(autoRefreshDoctorsRunnable);
+    }
+
+    // Override the system back press to go to MainActivity with fragment 1
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        Intent intent = new Intent(available_doctor.this, MainActivity.class);
+        intent.putExtra("open_fragment", 1);
+        startActivity(intent);
+        finish();
     }
 }

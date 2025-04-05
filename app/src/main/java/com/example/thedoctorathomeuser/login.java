@@ -28,8 +28,10 @@ public class login extends AppCompatActivity {
 
     private static final String TAG = "LoginActivity";
 
-    EditText etMobile;
-    Button sendotp;
+    private EditText etMobile;
+    private Button sendotp;
+    // Store the original button text to restore it later
+    private String originalButtonText;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -39,15 +41,13 @@ public class login extends AppCompatActivity {
 
         etMobile = findViewById(R.id.etMobileNumber);
         sendotp = findViewById(R.id.btnSendOtp);
+        originalButtonText = sendotp.getText().toString();
 
-        // ✅ Register Intent Restored
+        // Register "Create Account" Intent
         TextView tvCreateAccount = findViewById(R.id.tvCreateAccount);
-        tvCreateAccount.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(login.this, Register.class);
-                startActivity(intent);
-            }
+        tvCreateAccount.setOnClickListener(v -> {
+            Intent intent = new Intent(login.this, Register.class);
+            startActivity(intent);
         });
 
         sendotp.setOnClickListener(new View.OnClickListener() {
@@ -60,12 +60,15 @@ public class login extends AppCompatActivity {
                     return;
                 }
 
-                checkMobileNumber(mobile); // Call function to check number in database
+                // Disable the button and show loader text
+                sendotp.setEnabled(false);
+                sendotp.setText("Loading...");
+                checkMobileNumber(mobile, originalButtonText);
             }
         });
     }
 
-    private void checkMobileNumber(String mobile) {
+    private void checkMobileNumber(String mobile, final String originalText) {
         String URL = "http://sxm.a58.mytemp.website/login.php"; // Your server URL
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, URL,
@@ -78,20 +81,27 @@ public class login extends AppCompatActivity {
                         if (success) {
                             Toast.makeText(login.this, "Mobile number found! Proceeding to OTP verification.", Toast.LENGTH_SHORT).show();
 
-                            // ✅ Pass mobile number to OTP Verification Activity
+                            // Pass mobile number to OTP Verification Activity
                             Intent intent = new Intent(login.this, otp_verification.class);
                             intent.putExtra("mobile", mobile);
                             startActivity(intent);
+                            finish();
                         } else {
                             Toast.makeText(login.this, message, Toast.LENGTH_SHORT).show();
+                            sendotp.setEnabled(true);
+                            sendotp.setText(originalText);
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "JSON Parsing Error: " + e.getMessage(), e);
+                        sendotp.setEnabled(true);
+                        sendotp.setText(originalText);
                     }
                 },
                 error -> {
                     Log.e(TAG, "Volley Error: " + error.getMessage(), error);
                     Toast.makeText(login.this, "Server error! Try again.", Toast.LENGTH_SHORT).show();
+                    sendotp.setEnabled(true);
+                    sendotp.setText(originalText);
                 }) {
             @Override
             protected Map<String, String> getParams() {
@@ -103,5 +113,13 @@ public class login extends AppCompatActivity {
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(stringRequest);
+    }
+
+    // Override onBackPressed to close the app
+    @Override
+    public void onBackPressed() {
+        // Closes all activities and exits the app
+        super.onBackPressed();
+        finishAffinity();
     }
 }

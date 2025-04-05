@@ -115,7 +115,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" /> <!-- <meta-data -->
+           /> <!-- <meta-data -->
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

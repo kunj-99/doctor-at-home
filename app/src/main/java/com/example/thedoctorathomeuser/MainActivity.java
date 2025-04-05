@@ -277,13 +277,17 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
+        } else if (vp.getCurrentItem() != 0) {  // If you're not on the Home fragment (index 0)
+            vp.setCurrentItem(0);              // Go back to the Home fragment
         } else {
             super.onBackPressed();
         }
     }
+
 
     private void adjustNavigationDrawerWidth() {
         DisplayMetrics metrics = new DisplayMetrics();

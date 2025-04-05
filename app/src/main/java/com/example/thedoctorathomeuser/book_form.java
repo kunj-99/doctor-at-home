@@ -94,58 +94,94 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         // Initialize FusedLocationProviderClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // Handle Book Button Click
+        // Handle Book Button Click with detailed validation
         bookButton.setOnClickListener(v -> {
+            // Retrieve values and trim whitespace
             String name = patientName.getText().toString().trim();
             String addressText = address.getText().toString().trim();
             String selectedProblem = problem.getText().toString().trim();
             String pincode = edtPincode.getText().toString().trim();
 
+            boolean valid = true;
+
+            // Validate patient's name
+            if (name.isEmpty()) {
+                patientName.setError("Please enter patient's name");
+                valid = false;
+            }
+
+            // Validate address
+            if (addressText.isEmpty()) {
+                address.setError("Please enter address");
+                valid = false;
+            }
+
+            // Validate problem description
+            if (selectedProblem.isEmpty()) {
+                problem.setError("Please describe the problem");
+                valid = false;
+            }
+            if (pincode.isEmpty()) {
+                edtPincode.setError("Please enter pincode");
+                valid = false;
+            } else if (!pincode.matches("\\d{6}")) {
+                edtPincode.setError("Please enter a valid 6-digit pincode");
+                valid = false;
+            }
+
+            // Validate date fields
+            int day, month, year;
             try {
-                int day = Integer.parseInt(daySpinner.getSelectedItem().toString());
-                int month = monthSpinner.getSelectedItemPosition() + 1;
-                int year = Integer.parseInt(yearSpinner.getSelectedItem().toString());
-                int calculatedAge = calculateAge(year, month, day);
-
-                // Get selected gender
-                int selectedGenderId = genderGroup.getCheckedRadioButtonId();
-                String gender = "";
-                if (selectedGenderId != -1) {
-                    RadioButton selectedGender = findViewById(selectedGenderId);
-                    gender = selectedGender.getText().toString();
-                }
-
-                // Validate required fields
-                if (name.isEmpty() || addressText.isEmpty() || selectedProblem.isEmpty() ||
-                        gender.isEmpty() || pincode.isEmpty()) {
-                    Toast.makeText(book_form.this, "Please fill all details", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                // Validate that a location has been selected
-                if (selectedLocation == null) {
-                    Toast.makeText(book_form.this, "Please select a location on the map", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                // Pass all data, including pincode, to the next activity.
-                Intent intentNext = new Intent(book_form.this, pending_bill.class);
-                intentNext.putExtra("patient_name", name);
-                intentNext.putExtra("age", calculatedAge);
-                intentNext.putExtra("gender", gender);
-                intentNext.putExtra("problem", selectedProblem);
-                intentNext.putExtra("address", addressText);
-                intentNext.putExtra("pincode", pincode);
-                intentNext.putExtra("doctor_id", doctorId);
-                intentNext.putExtra("doctorName", doctorName);
-                intentNext.putExtra("appointment_status", appointmentStatus);
-                intentNext.putExtra("latitude", selectedLocation.latitude);
-                intentNext.putExtra("longitude", selectedLocation.longitude);
-                startActivity(intentNext);
-
+                day = Integer.parseInt(daySpinner.getSelectedItem().toString());
+                month = monthSpinner.getSelectedItemPosition() + 1;
+                year = Integer.parseInt(yearSpinner.getSelectedItem().toString());
             } catch (Exception e) {
                 Toast.makeText(book_form.this, "Please select a valid date", Toast.LENGTH_SHORT).show();
+                return;
             }
+
+            int calculatedAge = calculateAge(year, month, day);
+            if (calculatedAge < 0 || calculatedAge > 150) {
+                Toast.makeText(book_form.this, "Please select a valid date of birth", Toast.LENGTH_SHORT).show();
+                valid = false;
+            }
+
+            // Validate gender selection
+            int selectedGenderId = genderGroup.getCheckedRadioButtonId();
+            String gender = "";
+            if (selectedGenderId != -1) {
+                RadioButton selectedGender = findViewById(selectedGenderId);
+                gender = selectedGender.getText().toString();
+            } else {
+                Toast.makeText(book_form.this, "Please select gender", Toast.LENGTH_SHORT).show();
+                valid = false;
+            }
+
+            // Validate that a location has been selected on the map
+            if (selectedLocation == null) {
+                Toast.makeText(book_form.this, "Please select a location on the map", Toast.LENGTH_SHORT).show();
+                valid = false;
+            }
+
+            // If any validation fails, stop further processing
+            if (!valid) {
+                return;
+            }
+
+            // If all validations pass, pass all data (including pincode and location) to the next activity
+            Intent intentNext = new Intent(book_form.this, pending_bill.class);
+            intentNext.putExtra("patient_name", name);
+            intentNext.putExtra("age", calculatedAge);
+            intentNext.putExtra("gender", gender);
+            intentNext.putExtra("problem", selectedProblem);
+            intentNext.putExtra("address", addressText);
+            intentNext.putExtra("pincode", pincode);
+            intentNext.putExtra("doctor_id", doctorId);
+            intentNext.putExtra("doctorName", doctorName);
+            intentNext.putExtra("appointment_status", appointmentStatus);
+            intentNext.putExtra("latitude", selectedLocation.latitude);
+            intentNext.putExtra("longitude", selectedLocation.longitude);
+            startActivity(intentNext);
         });
     }
 

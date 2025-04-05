@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:app="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -32,6 +33,17 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingVertical="8dp">
+
+            <!-- Error Message TextView -->
+            <TextView
+                android:id="@+id/tvErrorMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/error"
+            android:textSize="14sp"
+            android:padding="8dp"
+            android:visibility="visible"
+            android:text="" />
 
             <!-- Doctor Header -->
             <LinearLayout

@@ -2,6 +2,7 @@ package com.example.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,6 +24,8 @@ public class cancle_appintment extends AppCompatActivity {
     private MaterialCheckBox confirmationCheckbox;
     private MaterialButton btnBack, btnConfirm;
     private TextView doctorName, doctorQualification, patientName, appointmentDate;
+    // TextView to display error messages in UI
+    private TextView tvErrorMessage;
 
     private String appointmentId = "";
     private static final String API_URL = "http://sxm.a58.mytemp.website/cancel_appointment.php";
@@ -37,12 +40,12 @@ public class cancle_appintment extends AppCompatActivity {
         if (getIntent().hasExtra("appointment_id")) {
             appointmentId = String.valueOf(getIntent().getIntExtra("appointment_id", -1));
             if (appointmentId.equals("-1")) {
-                showToast("Invalid appointment ID");
+                tvError("Invalid appointment ID");
                 finish();
                 return;
             }
         } else {
-            showToast("No appointment ID received");
+            tvError("No appointment ID received");
             finish();
             return;
         }
@@ -53,10 +56,11 @@ public class cancle_appintment extends AppCompatActivity {
         patientName = findViewById(R.id.patientName1);
         appointmentDate = findViewById(R.id.appointment_date1);
         reasonInput = findViewById(R.id.reasonInput);
-        upiIdInput = findViewById(R.id.upi_id_input); // New UPI ID field
+        upiIdInput = findViewById(R.id.upi_id_input);
         confirmationCheckbox = findViewById(R.id.confirmationCheckbox);
         btnBack = findViewById(R.id.btn_back);
         btnConfirm = findViewById(R.id.btn_confirm);
+        tvErrorMessage = findViewById(R.id.tvErrorMessage);
 
         // Fetch appointment details
         fetchAppointmentDetails();
@@ -64,37 +68,48 @@ public class cancle_appintment extends AppCompatActivity {
         // Back Button
         btnBack.setOnClickListener(v -> finish());
 
-        // Confirm Button
+        // Confirm Button - validate EditText inputs first, then check checkbox
         btnConfirm.setOnClickListener(v -> {
-            if (!confirmationCheckbox.isChecked()) {
-                showToast("Please confirm cancellation");
-                return;
-            }
+            // Clear previous error message
+            tvErrorMessage.setText("");
+            StringBuilder errorBuilder = new StringBuilder();
 
+            // Validate cancellation reason
             String reason = reasonInput.getText().toString().trim();
-            if (reason.isEmpty()) {
-                showToast("Please enter a cancellation reason");
-                return;
+            if (TextUtils.isEmpty(reason)) {
+                reasonInput.setError("Enter a cancellation reason");
+                errorBuilder.append("Enter a cancellation reason\n");
             }
 
+            // Validate UPI ID
             String upi = upiIdInput.getText().toString().trim();
-            if (upi.isEmpty()) {
-                showToast("Please enter your UPI ID");
-                return;
+            if (TextUtils.isEmpty(upi)) {
+                upiIdInput.setError("Enter your UPI ID");
+                errorBuilder.append("Enter your UPI ID\n");
+            } else if (!isValidUpi(upi)) {
+                upiIdInput.setError("Invalid UPI ID format");
+                errorBuilder.append("Invalid UPI ID format\n");
             }
-            if (!isValidUpi(upi)) {
-                showToast("Invalid UPI ID format");
+
+            // If any errors exist in the EditText fields, display them and stop processing
+            if (errorBuilder.length() > 0) {
+                tvErrorMessage.setText(errorBuilder.toString());
                 return;
             }
 
-            // First update the UPI ID then cancel the appointment
+            // Now, check the confirmation checkbox
+            if (!confirmationCheckbox.isChecked()) {
+                Toast.makeText(cancle_appintment.this, "Please confirm cancellation", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // All validations passed, update UPI and cancel the appointment
             updateUpi(upi, () -> cancelAppointment(reason));
         });
     }
 
-    // Validate UPI ID using regex (e.g., format: username@bank)
+    // Validate UPI ID using regex (format: username@bank)
     private boolean isValidUpi(String upi) {
-
         return upi.matches("^[a-zA-Z0-9._-]+@[a-zA-Z]{2,}$");
     }
 
@@ -105,22 +120,19 @@ public class cancle_appintment extends AppCompatActivity {
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         if (!jsonObject.getBoolean("success")) {
-                            showToast(jsonObject.getString("error"));
+                            tvError(jsonObject.getString("error"));
                             return;
                         }
-
                         JSONObject appointment = jsonObject.getJSONObject("appointment");
-
                         if (doctorName != null) doctorName.setText(appointment.getString("doctor_name"));
                         if (doctorQualification != null) doctorQualification.setText(appointment.getString("qualification"));
                         if (patientName != null) patientName.setText(appointment.getString("patient_name"));
                         if (appointmentDate != null) appointmentDate.setText(appointment.getString("appointment_date"));
-
                     } catch (JSONException e) {
-                        showToast("Error loading appointment details.");
+                        tvError("Error loading appointment details.");
                     }
                 },
-                error -> showToast("Network Error! Please try again.")) {
+                error -> tvError("Network Error! Please try again.")) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
@@ -143,13 +155,13 @@ public class cancle_appintment extends AppCompatActivity {
                         if (jsonObject.getBoolean("success")) {
                             onSuccess.run();
                         } else {
-                            showToast("UPI update failed: " + jsonObject.getString("error"));
+                            tvError("UPI update failed: " + jsonObject.getString("error"));
                         }
                     } catch (JSONException e) {
-                        showToast("Error processing UPI update response.");
+                        tvError("Error processing UPI update response.");
                     }
                 },
-                error -> showToast("Network Error during UPI update! Please try again.")) {
+                error -> tvError("Network Error during UPI update! Please try again.")) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
@@ -171,16 +183,16 @@ public class cancle_appintment extends AppCompatActivity {
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         if (jsonObject.getBoolean("success")) {
-                            showToast("Appointment cancelled successfully!");
+                            tvError("Appointment cancelled successfully!");
                             finish();
                         } else {
-                            showToast("Cancellation failed: " + jsonObject.getString("error"));
+                            tvError("Cancellation failed: " + jsonObject.getString("error"));
                         }
                     } catch (JSONException e) {
-                        showToast("Error processing request.");
+                        tvError("Error processing request.");
                     }
                 },
-                error -> showToast("Network Error! Please try again.")) {
+                error -> tvError("Network Error! Please try again.")) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
@@ -195,8 +207,10 @@ public class cancle_appintment extends AppCompatActivity {
         requestQueue.add(stringRequest);
     }
 
-
-    private void showToast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    // Helper method to display error messages in UI
+    private void tvError(String message) {
+        if (tvErrorMessage != null) {
+            tvErrorMessage.setText(message);
+        }
     }
 }

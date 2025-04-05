@@ -1,6 +1,5 @@
 package com.example.thedoctorathomeuser;
 
-import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -16,11 +15,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Toast;
-
-import android.widget.ImageView; // Import ImageView
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -54,11 +51,13 @@ public class Profile extends AppCompatActivity {
 
     private static final int PICK_IMAGE = 1;
     private static final String TAG = "Profile";
+
     private CircleImageView civProfile;
     private EditText etFullName, etDOB, etAddress, etMobile, etEmail, etMedicalHistory,
             etAllergies, etCurrentMedications, etEmergencyName, etEmergencyNumber;
     private Spinner spinnerGender, spinnerBloodGroup;
     private Button btnUpdate;
+
     private ProgressDialog progressDialog;
     private RequestQueue requestQueue;
     private int patientId;
@@ -69,6 +68,8 @@ public class Profile extends AppCompatActivity {
 
     // Store selected image for upload
     private Bitmap selectedBitmap = null;
+    // Store the old image name fetched from the DB
+    private String oldImageUrl = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,8 +84,7 @@ public class Profile extends AppCompatActivity {
             return;
         }
 
-
-// In your onCreate() method of Profile.java, add the following:
+        // Back button functionality
         ImageView btnBack = findViewById(R.id.iv_back_arrow);
         btnBack.setOnClickListener(v -> {
             Intent intent = new Intent(Profile.this, MainActivity.class);
@@ -123,7 +123,7 @@ public class Profile extends AppCompatActivity {
         bloodGroupAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerBloodGroup.setAdapter(bloodGroupAdapter);
 
-        // Use DatePickerDialog for DOB field
+        // Set up DatePicker for DOB field
         etDOB.setFocusable(false);
         etDOB.setClickable(true);
         etDOB.setOnClickListener(v -> showDatePicker());
@@ -162,15 +162,37 @@ public class Profile extends AppCompatActivity {
 
     private void showDatePicker() {
         Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
+        String dobText = etDOB.getText().toString();
+        if (!dobText.isEmpty()) {
+            try {
+                Date date = sdf.parse(dobText);
+                calendar.setTime(date);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+
         int year = calendar.get(Calendar.YEAR);
         int month = calendar.get(Calendar.MONTH);
         int day = calendar.get(Calendar.DAY_OF_MONTH);
+
         DatePickerDialog datePickerDialog = new DatePickerDialog(Profile.this,
                 (DatePicker view, int selectedYear, int selectedMonth, int selectedDay) -> {
-                    String formattedDate = String.format(Locale.getDefault(), "%02d/%02d/%04d",
-                            selectedDay, selectedMonth + 1, selectedYear);
-                    etDOB.setText(formattedDate);
+                    Calendar selectedCalendar = Calendar.getInstance();
+                    selectedCalendar.set(selectedYear, selectedMonth, selectedDay);
+                    Calendar currentCalendar = Calendar.getInstance();
+                    if (selectedCalendar.after(currentCalendar)) {
+                        Toast.makeText(Profile.this, "Date cannot be in the future", Toast.LENGTH_SHORT).show();
+                    } else {
+                        String formattedDate = String.format(Locale.getDefault(), "%02d/%02d/%04d",
+                                selectedDay, selectedMonth + 1, selectedYear);
+                        etDOB.setText(formattedDate);
+                    }
                 }, year, month, day);
+
+        datePickerDialog.getDatePicker().setMaxDate(System.currentTimeMillis());
         datePickerDialog.show();
     }
 
@@ -196,12 +218,21 @@ public class Profile extends AppCompatActivity {
                             etAllergies.setText(data.optString("allergies", ""));
                             etCurrentMedications.setText(data.optString("current_medications", ""));
 
-                            // Load profile picture if URL is available
+                            // Load the profile picture if available and extract the image file name.
                             String profilePictureUrl = data.optString("profile_picture", "");
                             if (!TextUtils.isEmpty(profilePictureUrl)) {
                                 Glide.with(this)
                                         .load(profilePictureUrl)
                                         .into(civProfile);
+                                int lastSlash = profilePictureUrl.lastIndexOf('/');
+                                if (lastSlash != -1) {
+                                    oldImageUrl = profilePictureUrl.substring(lastSlash + 1);
+                                } else {
+                                    oldImageUrl = profilePictureUrl;
+                                }
+                                Log.d(TAG, "Fetched old image name: " + oldImageUrl);
+                            } else {
+                                Log.d(TAG, "No profile image found in DB.");
                             }
                         } else {
                             Toast.makeText(Profile.this, "Profile not found", Toast.LENGTH_SHORT).show();
@@ -238,9 +269,8 @@ public class Profile extends AppCompatActivity {
         }
         progressDialog.show();
 
-        // Use multipart request if a new image is selected
         if (selectedBitmap != null) {
-            byte[] imageData = getFileDataFromDrawable(selectedBitmap);
+            // If a new image is selected, use multipart request.
             VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, UPDATE_PROFILE_URL,
                     response -> {
                         progressDialog.dismiss();
@@ -248,6 +278,10 @@ public class Profile extends AppCompatActivity {
                             JSONObject jsonResponse = new JSONObject(new String(response.data));
                             if ("success".equals(jsonResponse.getString("status"))) {
                                 Toast.makeText(Profile.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                                // Redirect to MainActivity
+                                Intent intent = new Intent(Profile.this, MainActivity.class);
+                                startActivity(intent);
+                                finish();
                             } else {
                                 Toast.makeText(Profile.this, "Update failed: " + jsonResponse.getString("message"), Toast.LENGTH_SHORT).show();
                             }
@@ -299,7 +333,8 @@ public class Profile extends AppCompatActivity {
             };
             requestQueue.add(multipartRequest);
         } else {
-            // Use standard StringRequest if no new image is selected
+            // No new image selected—send the old image name.
+            Log.d(TAG, "Updating profile with old image name: " + oldImageUrl);
             StringRequest stringRequest = new StringRequest(Request.Method.POST, UPDATE_PROFILE_URL,
                     response -> {
                         progressDialog.dismiss();
@@ -307,6 +342,10 @@ public class Profile extends AppCompatActivity {
                             JSONObject jsonResponse = new JSONObject(response);
                             if ("success".equals(jsonResponse.getString("status"))) {
                                 Toast.makeText(Profile.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                                // Redirect to MainActivity
+                                Intent intent = new Intent(Profile.this, MainActivity.class);
+                                startActivity(intent);
+                                finish();
                             } else {
                                 Toast.makeText(Profile.this, "Update failed: " + jsonResponse.getString("message"), Toast.LENGTH_SHORT).show();
                             }
@@ -346,6 +385,9 @@ public class Profile extends AppCompatActivity {
                     params.put("medical_history", etMedicalHistory.getText().toString());
                     params.put("allergies", etAllergies.getText().toString());
                     params.put("current_medications", etCurrentMedications.getText().toString());
+
+                    // Always send the old image name
+                    params.put("profile_image", oldImageUrl);
                     return params;
                 }
             };
