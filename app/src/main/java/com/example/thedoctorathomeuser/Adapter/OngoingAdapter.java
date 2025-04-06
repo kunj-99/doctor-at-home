@@ -93,11 +93,11 @@ public class OngoingAdapter extends RecyclerView.Adapter<OngoingAdapter.DoctorVi
         Log.d("OngoingAdapter", "Appointment ID " + appointmentIds.get(position) + " Status: " + status);
 
         if (status.contains("requested")) {
-            holder.track.setText("riqes is prosesing");
+            holder.track.setText("Requested");
             holder.track.setEnabled(false);
             holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.gray));
         } else if (status.contains("pending")) {
-            holder.track.setText("panding");
+            holder.track.setText("pending");
             holder.track.setEnabled(false);
             holder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.gray));
         }
