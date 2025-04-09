@@ -183,13 +183,34 @@
         </RadioGroup>
     </LinearLayout>
 
-    <!-- Terms Checkbox -->
     <CheckBox
         android:id="@+id/cb_terms"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="@color/black"
-        android:layout_marginTop="50dp" />
+        android:text="I agree with the Terms of Service and Privacy Policy" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
+
+        <TextView
+            android:id="@+id/tv_terms"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Terms of Service"
+            android:textColor="@android:color/holo_blue_dark"
+            android:paddingEnd="16dp" />
+
+        <TextView
+            android:id="@+id/tv_policy"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Privacy Policy"
+            android:textColor="@android:color/holo_blue_dark" />
+    </LinearLayout>
+
 
     <!-- Sign Up Button -->
 

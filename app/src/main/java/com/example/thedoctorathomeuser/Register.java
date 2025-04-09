@@ -1,12 +1,9 @@
 package com.example.thedoctorathomeuser;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.text.Html;
-import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -39,6 +36,7 @@ public class Register extends AppCompatActivity {
     AutoCompleteTextView actvCity, actvAge;
     RadioGroup rgGender;
     CheckBox cbTerms;
+    TextView tvTerms, tvPolicy;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,14 +53,21 @@ public class Register extends AppCompatActivity {
         rgGender = findViewById(R.id.rg_gender);
         cbTerms = findViewById(R.id.cb_terms);
         signup = findViewById(R.id.btn_signup);
+        tvTerms = findViewById(R.id.tv_terms);
+        tvPolicy = findViewById(R.id.tv_policy);
 
-        // ✅ Set clickable HTML links in checkbox
-        String html = "I agree with the <a href='http://sxm.a58.mytemp.website/term.html'>Terms of Service</a> and <a href='http://sxm.a58.mytemp.website/policy.html'>Privacy Policy</a>.";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            cbTerms.setText(Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY));
-        }
-        cbTerms.setMovementMethod(LinkMovementMethod.getInstance());
-        cbTerms.setLinksClickable(true);
+        cbTerms.setText("I agree with the Terms of Service and Privacy Policy");
+
+        // Terms and Policy Clicks
+        tvTerms.setOnClickListener(v -> {
+            Intent intent = new Intent(Register.this, tarmsandcondition.class);
+            startActivity(intent);
+        });
+
+        tvPolicy.setOnClickListener(v -> {
+            Intent intent = new Intent(Register.this, policy.class);
+            startActivity(intent);
+        });
 
         // "Log in" TextView
         TextView tvLogin = findViewById(R.id.tv_login);
@@ -113,6 +118,10 @@ public class Register extends AppCompatActivity {
         }
         if (TextUtils.isEmpty(actvAge.getText().toString()) || !actvAge.getText().toString().matches("\\d+")) {
             actvAge.setError("Enter a valid age");
+            return false;
+        }
+        if (Integer.parseInt(actvAge.getText().toString()) < 18) {
+            actvAge.setError("You must be 18 or older to use this app");
             return false;
         }
         if (TextUtils.isEmpty(etPincode.getText().toString()) || etPincode.getText().toString().length() != 6) {
