@@ -1,36 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".payments">
+    android:background="#FFFFFF">
 
-    <!-- Icon ImageView -->
-    <ImageView
-        android:id="@+id/ivIcon"
-        android:layout_width="327dp"
-        android:layout_height="302dp"
-        android:src="@drawable/error"
-        app:layout_constraintBottom_toTopOf="@+id/tvComingSoon"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed" />
-
-    <!-- Coming Soon TextView -->
-    <TextView
-        android:id="@+id/tvComingSoon"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Coming Soon"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/ivIcon"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Privacy Policy"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:textColor="#000000"
+            android:paddingBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Effective Date:"
+            android:textSize="14sp"
+            android:textColor="#000000"
+            android:paddingBottom="12dp"/>
+
+        <!-- Introduction -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Introduction\n\n[The Doctor at Home] we respects your privacy and is committed to protecting the personal information you provide while using our mobile application (the Doctor at Home). This Privacy Policy describes how we collect, use, and safeguard your information when you use the Application. Please read this policy carefully. By using the Application, you agree to the terms of this Privacy Policy. If you do not agree, please discontinue use of the Application."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 1 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Information We Collect\n\nWe may collect the following types of information:\n\n• Personal Information:\nInformation that can directly or indirectly identify you, including but not limited to your name, email address, phone number, date of birth, and physical address.\n\n• Health Information:\nMedical data you provide, including medical history, medications, appointment details, and any other health-related information entered into the Application.\n\n• Usage Data:\nData collected automatically through your use of the Application, such as IP addresses, device information (e.g., model, OS), browser type, time zone, and language preferences.\n\n• Location Data:\nWith your permission, the Application may access location data from your device to provide location-based services.\n\n• Cookies and Tracking Technologies:\nInformation collected through cookies, beacons, tags, and similar technologies to enhance your experience and improve our services."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 2 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. How We Use Your Information\n\nThe information we collect may be used to:\n• Facilitate appointment scheduling and communication with healthcare providers.\n• Provide location-based features, such as identifying nearby clinics.\n• Improve the Application’s performance, functionality, and user experience.\n• Personalize content and ensure the Application meets your preferences.\n• Comply with legal and regulatory requirements.\n• Conduct internal research and analysis to improve our services.\n• Send you notifications, updates, and other communications relevant to the Application."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 3 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. How We Share Your Information\n\nWe do not sell your personal information. However, we may share it in the following circumstances:\n\n• With Healthcare Providers:\nTo ensure accurate and effective treatment.\n\n• With Third-Party Service Providers:\nPartners that assist us in operating the Application are contractually obligated to protect your data.\n\n• For Legal Compliance:\nIf required by law, such as in response to court orders.\n\n• In Business Transfers:\nIf involved in a merger or acquisition, your information may be transferred under the same privacy protections."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 4 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="4. Data Retention\n\nWe retain your information only as long as necessary to fulfill the purposes in this policy, comply with legal obligations, resolve disputes, and enforce our agreements."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 5 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="5. Data Security\n\nWe implement appropriate security measures to protect your personal data. However, no system is completely secure, and we cannot guarantee absolute protection."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 6 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="6. Your Rights\n\nDepending on applicable laws, your rights may include:\n• Access and Portability\n• Correction\n• Deletion\n• Objection and Restriction\n• Withdraw Consent\n\nTo exercise these rights, contact: thedoctorathome2@gmail.com. We may require identity verification before processing requests."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 7 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="7. Children’s Privacy\n\nThe Application is not intended for users under 13. We do not knowingly collect data from children. If we do, it will be deleted immediately."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 8 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="8. Changes to This Privacy Policy\n\nWe may revise this policy from time to time. Material changes will be posted within the app. Continued use means you accept those changes."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="16dp"/>
+
+        <!-- Section 9 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="9. Contact Us\n\nThe Doctor at Home\nEmail: thedoctorathome2@gmail.com"
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="32dp"/>
+
+    </LinearLayout>
+</ScrollView>

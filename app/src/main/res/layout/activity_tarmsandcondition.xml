@@ -1,36 +1,219 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".payments">
+    android:background="#FFFFFF">
 
-    <!-- Icon ImageView -->
-    <ImageView
-        android:id="@+id/ivIcon"
-        android:layout_width="327dp"
-        android:layout_height="302dp"
-        android:src="@drawable/error"
-        app:layout_constraintBottom_toTopOf="@+id/tvComingSoon"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed" />
-
-    <!-- Coming Soon TextView -->
-    <TextView
-        android:id="@+id/tvComingSoon"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/llTermsContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Coming Soon"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/ivIcon"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:orientation="vertical"
+        android:padding="16dp">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Patient Terms and Conditions for the &quot;Doctor at Home&quot; App"
+            android:textColor="#000000"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingBottom="12dp"/>
+
+        <!-- Intro Paragraph -->
+        <TextView
+            android:id="@+id/tvIntro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="These Terms and Conditions (&quot;Terms&quot;) apply to the services (&quot;Services&quot;) provided by the Doctor at Home mobile application (&quot;the doctor at home &quot;) and [Infowave ] . Please read these Terms carefully before using the App and Services."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 1: Acceptance of Terms -->
+        <TextView
+            android:id="@+id/tvSection1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Acceptance of Terms\n\nBy downloading, installing, or using the App, you acknowledge that you have read, understood, and agreed to comply with these Terms. If you do not agree with these Terms, do not use the App or Services."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 2: Description of Services -->
+        <TextView
+            android:id="@+id/tvSection2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Description of Services\n\nThis App connects patients with qualified healthcare professionals (&quot;Doctors&quot;) for home visits. These services include:\n\u2022 Scheduling home doctor visits.\n\u2022 Communicating with doctors via the in-app messaging system or video calls (if applicable).\n\u2022 Accessing and managing medical records through the App.\n\u2022 Conducting Zoom or Google Meet consultations.\n\u2022 Requesting prescription refills (if applicable and legally permitted).\n\nNote: The Company does not provide medical advice. Doctors are independent professionals responsible for the medical advice and treatment they offer.\n\nIf required, after assessing the patient’s condition, the App also facilitates home pathology tests (e.g., blood and urine tests)."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 3: User Registration and Account -->
+        <TextView
+            android:id="@+id/tvSection3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. User Registration and Account\n\nTo use the App, you must register with a bank account. You agree to provide accurate, updated, and complete information during registration. You are responsible for maintaining the confidentiality of your account details and any activity under your account. Notify us immediately of unauthorized account use."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 4: Patient Responsibilities -->
+        <TextView
+            android:id="@+id/tvSection4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="4. Patient Responsibilities\n\nProvide accurate and complete medical information to the doctor.\nFollow the doctor's instructions and treatment plan.\nUnderstand that home visits have some limitations compared to in-clinic consultations.\nEnsure timely payment for services (cash/online).\nTreat doctors with respect."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 5: Doctor Responsibilities -->
+        <TextView
+            android:id="@+id/tvSection5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="5. Doctor Responsibilities\n\nDoctors are independent contractors; the Company is not responsible for their actions.\nDoctors are responsible for providing professional medical advice and maintaining accurate medical records.\nVisiting doctors will prescribe medications, but patients are responsible for obtaining them.\nIf there are complaints about a visiting doctor, report them immediately via message or phone.\nThrough the App, patients can select specialist or super-specialist doctors based on their fees. Directly contacting doctors outside the App for visits violates company policy."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 6: Fees and Payments -->
+        <TextView
+            android:id="@+id/tvSection6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="6. Fees and Payments\n\nYou agree to pay the fees displayed in the App.\nPayment methods specified in the App apply.\nFees may vary based on the doctor, consultation type, and other factors.\nCancellation policies will be outlined in the App.\nIf a scheduled doctor visit does not happen due to any reason, the amount will be refunded to your bank account within 24 hours."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 7: Privacy and Data Security -->
+        <TextView
+            android:id="@+id/tvSection7"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="7. Privacy and Data Security\n\nWe collect and use personal information as per our Privacy Policy.\nWe take reasonable measures to protect your data but cannot guarantee absolute security.\nYour health-related data will be handled according to applicable privacy laws."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 8: Intellectual Property -->
+        <TextView
+            android:id="@+id/tvSection8"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="8. Intellectual Property\n\nThe App and its content (text, graphics, images, software) are owned by the Company or its licensors.\nYou may not reproduce, distribute, or modify the App’s content without prior written permission."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 9: Disclaimer of Warranties -->
+        <TextView
+            android:id="@+id/tvSection9"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="9. Disclaimer of Warranties\n\nThe App and Services are provided 'as is' and 'as available,' without any warranties.\nWe do not guarantee uninterrupted, error-free, or secure services.\nInformation provided through the App is not guaranteed to be completely accurate or comprehensive.\nThe Company does not guarantee the accuracy of medical advice provided by doctors."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 10: Limitation of Liability -->
+        <TextView
+            android:id="@+id/tvSection10"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="10. Limitation of Liability\n\nThe Company is not liable for any direct, indirect, incidental, or punitive damages.\nThe Company's total liability for any claims related to these Terms will not exceed the amount you paid for the service."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 11: Indemnification -->
+        <TextView
+            android:id="@+id/tvSection11"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="11. Indemnification\n\nYou agree to indemnify and protect the Company, its officers, employees, and agents from any claims arising from your use of the App."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 12: Termination -->
+        <TextView
+            android:id="@+id/tvSection12"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="12. Termination\n\nWe may terminate your access to the App and Services at any time for any reason.\nYou can delete your account at any time through the App."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 13: Compliance with Laws and Dispute Resolution -->
+        <TextView
+            android:id="@+id/tvSection13"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="13. Compliance with Laws and Dispute Resolution\n\nThese Terms are governed by [Jurisdiction] laws.\nAny disputes related to these Terms will be resolved through [Dispute Resolution Method, e.g., Arbitration or Court Proceedings]."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 14: Changes to Terms -->
+        <TextView
+            android:id="@+id/tvSection14"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="14. Changes to Terms\n\nWe may update these Terms periodically. Any significant changes will be notified via the App or other means.\nContinuing to use the App after changes means you accept the updated Terms."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"
+            tools:ignore="HardcodedText"/>
+
+        <!-- Section 15: Contact Information -->
+        <TextView
+            android:id="@+id/tvSection15"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="15. Contact Information\n\nFor any questions regarding these Terms, please contact us at [Contact Information]."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 16: Emergency Situations -->
+        <TextView
+            android:id="@+id/tvSection16"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="16. Emergency Situations\n\nIn case of a medical emergency, call your local emergency services immediately. This App is not for emergency medical situations.\nThe Company does not send doctors for emergency or chronic patient care. If needed, contact a nearby hospital or admit the patient."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 17: Prescriptions -->
+        <TextView
+            android:id="@+id/tvSection17"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="17. Prescriptions\n\nPrescriptions will be provided based on the doctor's evaluation and in compliance with legal regulations. There is no guarantee of receiving a prescription.\nBy using the App, you acknowledge that you have read and agreed to these Terms."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+        <!-- Section 18: Age Requirement -->
+        <TextView
+            android:id="@+id/tvSection18"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="18. Age Requirement\n\nOnly users aged 18 years or older are permitted to use this App."
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:paddingBottom="12dp"/>
+
+    </LinearLayout>
+</ScrollView>

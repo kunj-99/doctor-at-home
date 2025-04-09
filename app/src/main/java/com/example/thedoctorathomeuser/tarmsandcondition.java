@@ -1,20 +1,25 @@
 package com.example.thedoctorathomeuser;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 public class tarmsandcondition extends AppCompatActivity {
+
+    // Replace this with your actual URL
+    private static final String PRIVACY_URL = "http://sxm.a58.mytemp.website/term.html";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_tarmsandcondition);
+        // Immediately launch browser with the privacy policy URL
+        Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL));
+        startActivity(browserIntent);
 
+        // Optional: Close this activity so the user doesn't come back to a blank screen
+        finish();
     }
 }

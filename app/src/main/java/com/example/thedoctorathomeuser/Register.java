@@ -1,8 +1,12 @@
 package com.example.thedoctorathomeuser;
 
 import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -20,7 +24,6 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.android.volley.VolleyError;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -53,6 +56,14 @@ public class Register extends AppCompatActivity {
         cbTerms = findViewById(R.id.cb_terms);
         signup = findViewById(R.id.btn_signup);
 
+        // ✅ Set clickable HTML links in checkbox
+        String html = "I agree with the <a href='http://sxm.a58.mytemp.website/term.html'>Terms of Service</a> and <a href='http://sxm.a58.mytemp.website/policy.html'>Privacy Policy</a>.";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            cbTerms.setText(Html.fromHtml(html, Html.FROM_HTML_MODE_LEGACY));
+        }
+        cbTerms.setMovementMethod(LinkMovementMethod.getInstance());
+        cbTerms.setLinksClickable(true);
+
         // "Log in" TextView
         TextView tvLogin = findViewById(R.id.tv_login);
         tvLogin.setOnClickListener(v -> {
@@ -61,12 +72,12 @@ public class Register extends AppCompatActivity {
             finish();
         });
 
-        // Set up AutoCompleteTextView for City
+        // AutoCompleteTextView for City
         String[] cities = {"Rajkot", "Ahemdabad", "Surat", "Mumbai", "Junagadh"};
         ArrayAdapter<String> cityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, cities);
         actvCity.setAdapter(cityAdapter);
 
-        // Set up AutoCompleteTextView for Age
+        // AutoCompleteTextView for Age
         String[] ages = new String[100];
         for (int i = 1; i <= 100; i++) {
             ages[i - 1] = String.valueOf(i);
@@ -74,10 +85,10 @@ public class Register extends AppCompatActivity {
         ArrayAdapter<String> ageAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, ages);
         actvAge.setAdapter(ageAdapter);
 
-        // Set up Sign Up button click
+        // Sign Up button click
         signup.setOnClickListener(v -> {
             if (validateInputs()) {
-                registerUser(); // Send data to the server
+                registerUser();
             }
         });
     }
@@ -143,13 +154,11 @@ public class Register extends AppCompatActivity {
 
                         if (success) {
                             Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
-                            // ✅ Redirect to login only when registration is successful
                             Intent intent = new Intent(Register.this, login.class);
                             startActivity(intent);
                             finish();
                         } else {
                             Log.e(TAG, "Registration Failed: " + message);
-                            // ✅ Only show Toast, no redirect
                             Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
@@ -185,5 +194,4 @@ public class Register extends AppCompatActivity {
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(stringRequest);
     }
-
 }
