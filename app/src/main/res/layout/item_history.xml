@@ -28,7 +28,7 @@
                 android:layout_width="100dp"
                 android:layout_height="100dp"
                 android:src="@drawable/main1"
-                app:civ_border_color="@color/dgreen"
+                app:civ_border_color="@color/blue"
                 app:civ_border_width="2dp" />
 
             <!-- Doctor Details -->
@@ -87,7 +87,7 @@
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:backgroundTint="@color/dgreen"
+            android:backgroundTint="@color/blue"
             android:layout_marginTop="16dp"
             android:elevation="2dp" />
 
@@ -109,7 +109,7 @@
                 android:textColor="@android:color/white"
                 android:textSize="15sp"
                 android:layout_marginBottom="8dp"
-                android:backgroundTint="@color/dgreen" />
+                android:backgroundTint="@color/blue" />
 
             <Button
                 android:id="@+id/btnViewReport"
@@ -120,7 +120,7 @@
                 android:textColor="@android:color/white"
                 android:textSize="15sp"
                 android:layout_marginBottom="8dp"
-                android:backgroundTint="@color/dgreen" />
+                android:backgroundTint="@color/blue" />
 
             <Button
                 android:id="@+id/btnViewProfile"
@@ -130,7 +130,7 @@
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
                 android:textSize="15sp"
-                android:backgroundTint="@color/dgreen" />
+                android:backgroundTint="@color/blue" />
         </LinearLayout>
 
         <!-- Status Message -->

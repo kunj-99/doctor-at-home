@@ -323,7 +323,7 @@
             android:id="@+id/btn_update_profile"
             android:layout_width="368dp"
             android:layout_height="wrap_content"
-            android:backgroundTint="@color/dgreen"
+            android:backgroundTint="@color/blue"
             android:text="Update Profile"
             android:textColor="@color/white"
             android:padding="12dp" />

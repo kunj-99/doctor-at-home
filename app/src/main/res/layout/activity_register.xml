@@ -200,7 +200,7 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:layout_marginTop="15dp"
-        android:backgroundTint="@color/dgreen"
+        android:backgroundTint="@color/blue"
         android:text="Sign up"
         android:textColor="@color/white" />
 
@@ -209,7 +209,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Have an account? Log in"
-        android:textColor="@color/dgreen"
+        android:textColor="@color/blue"
         android:textSize="14sp"
         android:layout_marginTop="16dp"
         android:clickable="true"
