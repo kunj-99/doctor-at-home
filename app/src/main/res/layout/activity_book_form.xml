@@ -241,7 +241,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="20dp"
         android:layout_marginTop="8dp"
-        android:backgroundTint="@color/dgreen"
+        android:backgroundTint="@color/blue"
         android:text="Book"
         android:textColor="#FFF"
         android:textSize="16sp"
