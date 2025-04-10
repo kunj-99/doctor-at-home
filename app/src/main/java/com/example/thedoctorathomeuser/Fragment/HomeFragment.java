@@ -66,14 +66,14 @@ public class HomeFragment extends Fragment {
         // Bind all RecyclerViews
         recyclerView = view.findViewById(R.id.recyclerView);
         tipRecyclerView = view.findViewById(R.id.tipRecyclerView);
-        doctorRecyclerView = view.findViewById(R.id.topDoctorsRecyclerView);
+//        doctorRecyclerView = view.findViewById(R.id.topDoctorsRecyclerView);
         appointmentStatRecyclerView = view.findViewById(R.id.appointmentStatRecyclerView);
         servicesRecyclerView = view.findViewById(R.id.servicesRecyclerView);
         articlesRecyclerView = view.findViewById(R.id.articlesRecyclerView);
 
         setupImageSlider();
         setupHealthTips();
-        setupTopDoctors();
+//        setupTopDoctors();
         setupAppointmentStats();
         setupServices();
         setupArticles();
@@ -139,56 +139,56 @@ public class HomeFragment extends Fragment {
         requestQueue.add(jsonArrayRequest);
     }
 
-    private void setupTopDoctors() {
-        // Create a Volley request queue using the fragment's context.
-        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-
-        // Replace with your actual API endpoint URL that returns top doctor data.
-        String url = "http://sxm.a58.mytemp.website/topdoctor.php";
-
-        // Create a JsonArrayRequest assuming the API returns a JSON array.
-        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
-                Request.Method.GET,
-                url,
-                null,
-                new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        List<TopDoctor> doctors = new ArrayList<>();
-
-                        try {
-                            // Loop through the JSON array and parse each object.
-                            for (int i = 0; i < response.length(); i++) {
-                                JSONObject jsonObject = response.getJSONObject(i);
-                                String fullName = jsonObject.getString("full_name");
-                                String specialty = jsonObject.getString("category_name"); // assuming API returns category_name as specialty
-
-                                // Use a static image resource for now.
-                                int imageResId = R.drawable.doctor_avatar;
-
-                                doctors.add(new TopDoctor(fullName, specialty, imageResId));
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-
-                        // Create and set the adapter with the fetched data.
-                        TopDoctorAdapter doctorAdapter = new TopDoctorAdapter(getContext(), doctors);
-                        doctorRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
-                        doctorRecyclerView.setAdapter(doctorAdapter);
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
-                    }
-                }
-        );
-
-        // Add the request to the Volley request queue.
-        requestQueue.add(jsonArrayRequest);
-    }
+//    private void setupTopDoctors() {
+//        // Create a Volley request queue using the fragment's context.
+//        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
+//
+//        // Replace with your actual API endpoint URL that returns top doctor data.
+//        String url = "http://sxm.a58.mytemp.website/topdoctor.php";
+//
+//        // Create a JsonArrayRequest assuming the API returns a JSON array.
+//        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
+//                Request.Method.GET,
+//                url,
+//                null,
+//                new Response.Listener<JSONArray>() {
+//                    @Override
+//                    public void onResponse(JSONArray response) {
+//                        List<TopDoctor> doctors = new ArrayList<>();
+//
+//                        try {
+//                            // Loop through the JSON array and parse each object.
+//                            for (int i = 0; i < response.length(); i++) {
+//                                JSONObject jsonObject = response.getJSONObject(i);
+//                                String fullName = jsonObject.getString("full_name");
+//                                String specialty = jsonObject.getString("category_name"); // assuming API returns category_name as specialty
+//
+//                                // Use a static image resource for now.
+//                                int imageResId = R.drawable.doctor_avatar;
+//
+//                                doctors.add(new TopDoctor(fullName, specialty, imageResId));
+//                            }
+//                        } catch (JSONException e) {
+//                            e.printStackTrace();
+//                        }
+//
+//                        // Create and set the adapter with the fetched data.
+//                        TopDoctorAdapter doctorAdapter = new TopDoctorAdapter(getContext(), doctors);
+//                        doctorRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
+//                        doctorRecyclerView.setAdapter(doctorAdapter);
+//                    }
+//                },
+//                new Response.ErrorListener() {
+//                    @Override
+//                    public void onErrorResponse(VolleyError error) {
+//                        error.printStackTrace();
+//                    }
+//                }
+//        );
+//
+//        // Add the request to the Volley request queue.
+//        requestQueue.add(jsonArrayRequest);
+//    }
 
     private void setupAppointmentStats() {
         // Create a Volley request queue using the fragment's context.
