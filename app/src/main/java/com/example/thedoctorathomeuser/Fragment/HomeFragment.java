@@ -244,7 +244,7 @@ public class HomeFragment extends Fragment {
 
     private void setupServices() {
         List<ServiceItem> services = new ArrayList<>();
-        services.add(new ServiceItem("Doctor Home Visit", "Specialist Doctor at your Doorstep", R.drawable.ic_doctor_home));
+//        services.add(new ServiceItem("Doctor Home Visit", "Specialist Doctor at your Doorstep", R.drawable.ic_doctor_home));
         services.add(new ServiceItem("Medicine Delivery", "Order medicines easily", R.drawable.ic_medicine));
         services.add(new ServiceItem("Pathology Lab Test", "Book lab tests from home", R.drawable.ic_lab));
 

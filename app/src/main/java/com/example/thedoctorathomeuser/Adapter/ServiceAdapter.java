@@ -1,6 +1,7 @@
 package com.example.thedoctorathomeuser.Adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.thedoctorathomeuser.ServiceItem;
 import com.example.thedoctorathomeuser.R;
+import com.example.thedoctorathomeuser.pathology_test;
 
 import java.util.List;
 
@@ -57,6 +59,15 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
             title = itemView.findViewById(R.id.serviceTitle);
             subtitle = itemView.findViewById(R.id.serviceSubtitle);
             bookNow = itemView.findViewById(R.id.bookNowButton);
+
+            bookNow.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Context context = view.getContext();
+                    Intent intent = new Intent(context, pathology_test.class);
+                    context.startActivity(intent);
+                }
+            });
         }
     }
 }
