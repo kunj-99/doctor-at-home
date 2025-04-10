@@ -1,7 +1,7 @@
 package com.example.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -38,6 +38,7 @@ public class Register extends AppCompatActivity {
     CheckBox cbTerms;
     TextView tvTerms, tvPolicy;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,7 +70,7 @@ public class Register extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // "Log in" TextView
+        // "Log in" TextView click
         TextView tvLogin = findViewById(R.id.tv_login);
         tvLogin.setOnClickListener(v -> {
             Intent intent = new Intent(Register.this, login.class);
@@ -90,7 +91,7 @@ public class Register extends AppCompatActivity {
         ArrayAdapter<String> ageAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, ages);
         actvAge.setAdapter(ageAdapter);
 
-        // Sign Up button click
+        // Sign Up button click event
         signup.setOnClickListener(v -> {
             if (validateInputs()) {
                 registerUser();
@@ -98,6 +99,7 @@ public class Register extends AppCompatActivity {
         });
     }
 
+    // Validate input fields in the register form
     private boolean validateInputs() {
         if (TextUtils.isEmpty(etName.getText().toString())) {
             etName.setError("Name is required");
@@ -139,6 +141,7 @@ public class Register extends AppCompatActivity {
         return true;
     }
 
+    // Register user by calling register.php endpoint
     private void registerUser() {
         signup.setEnabled(false);
         signup.setText("Processing...");
@@ -163,18 +166,19 @@ public class Register extends AppCompatActivity {
 
                         if (success) {
                             Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
-                            Intent intent = new Intent(Register.this, login.class);
-                            startActivity(intent);
-                            finish();
+                            // After registration, call login.php so that the OTP is sent.
+                            callLoginForOtp(mobile);
                         } else {
                             Log.e(TAG, "Registration Failed: " + message);
                             Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
+                            signup.setEnabled(true);
+                            signup.setText("Sign Up");
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "JSON Parsing Error: " + e.getMessage(), e);
+                        signup.setEnabled(true);
+                        signup.setText("Sign Up");
                     }
-                    signup.setEnabled(true);
-                    signup.setText("Sign Up");
                 },
                 error -> {
                     if (error.networkResponse != null) {
@@ -201,6 +205,53 @@ public class Register extends AppCompatActivity {
         };
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(stringRequest);
+    }
+
+    // Call the login.php endpoint to trigger OTP generation
+    private void callLoginForOtp(String mobile) {
+        String URL = "http://sxm.a58.mytemp.website/login.php";
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, URL,
+                response -> {
+                    try {
+                        JSONObject jsonObject = new JSONObject(response);
+                        boolean success = jsonObject.getBoolean("success");
+                        String message = jsonObject.getString("message");
+
+                        if (success) {
+                            Toast.makeText(Register.this, "OTP sent! Proceeding to OTP verification.", Toast.LENGTH_SHORT).show();
+                            // Pass the mobile number to the OTP verification activity
+                            Intent intent = new Intent(Register.this, otp_verification.class);
+                            intent.putExtra("mobile", mobile);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
+                            signup.setEnabled(true);
+                            signup.setText("Sign Up");
+                        }
+                    } catch (JSONException e) {
+                        Log.e(TAG, "JSON Parsing Error: " + e.getMessage(), e);
+                        signup.setEnabled(true);
+                        signup.setText("Sign Up");
+                    }
+                },
+                error -> {
+                    Log.e(TAG, "Volley Error: " + error.getMessage(), error);
+                    Toast.makeText(Register.this, "Server error! Try again.", Toast.LENGTH_SHORT).show();
+                    signup.setEnabled(true);
+                    signup.setText("Sign Up");
+                }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<>();
+                params.put("mobile", mobile);
+                return params;
+            }
+        };
+
+        RequestQueue requestQueue = Volley.newRequestQueue(Register.this);
         requestQueue.add(stringRequest);
     }
 }
