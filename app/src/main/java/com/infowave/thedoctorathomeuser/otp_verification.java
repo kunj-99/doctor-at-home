@@ -36,7 +36,7 @@ public class otp_verification extends AppCompatActivity {
     private Button continu, resend_otp;
     private EditText etOtp;
     private String mobileNumber;
-    private SharedPreferences sharedPreferences; // SharedPreferences for storing user data
+    private SharedPreferences sharedPreferences; // For storing user data
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -72,7 +72,6 @@ public class otp_verification extends AppCompatActivity {
         resend_otp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // When clicked, resend the OTP
                 resendOtp();
             }
         });
@@ -96,14 +95,11 @@ public class otp_verification extends AppCompatActivity {
             @SuppressLint("SetTextI18n")
             @Override
             public void onTick(long millisUntilFinished) {
-                // Update button text to show remaining seconds
                 resend_otp.setText("Resend OTP in " + millisUntilFinished / 1000 + "s");
             }
 
-            @SuppressLint("SetTextI18n")
             @Override
             public void onFinish() {
-                // Enable the button and reset text after the timer finishes
                 resend_otp.setText("Resend OTP");
                 resend_otp.setEnabled(true);
             }
@@ -111,10 +107,10 @@ public class otp_verification extends AppCompatActivity {
     }
 
     /**
-     * Method to resend OTP using an API similar to your reference method.
+     * Resends the OTP via an API call.
      */
     private void resendOtp() {
-        // Disable the button immediately and restart the timer upon resending
+        // Disable the button immediately and restart timer
         resend_otp.setEnabled(false);
         startResendOtpTimer();
 
@@ -155,7 +151,6 @@ public class otp_verification extends AppCompatActivity {
                 }) {
             @Override
             protected Map<String, String> getParams() {
-                // Pass the mobile number to the API
                 Map<String, String> params = new HashMap<>();
                 params.put("mobile", mobileNumber);
                 return params;
@@ -193,7 +188,6 @@ public class otp_verification extends AppCompatActivity {
                                 String userId = jsonObject.getString("user_id");
                                 String username = jsonObject.getString("username");
                                 String email = jsonObject.getString("email");
-                                // Retrieve patient_id from API response
                                 String patientId = jsonObject.getString("patient_id");
 
                                 // Store user data in SharedPreferences
@@ -212,8 +206,11 @@ public class otp_verification extends AppCompatActivity {
                                 startActivity(intent);
                                 finish();
                             } else {
+                                // OTP verification failed; show toast and clear OTP EditText.
                                 String message = jsonObject.getString("message");
                                 Log.w(TAG, "OTP Verification Failed: " + message);
+                                Toast.makeText(otp_verification.this, message, Toast.LENGTH_SHORT).show();
+                                etOtp.setText("");
                             }
                         } catch (JSONException e) {
                             Log.e(TAG, "JSON Parsing Error: " + e.getMessage());
@@ -230,6 +227,9 @@ public class otp_verification extends AppCompatActivity {
                             Log.e(TAG, "Network Response Data: " + new String(networkResponse.data));
                         }
                         Log.e(TAG, errorMsg);
+                        // Optionally, you can show a toast and clear the OTP field in case of a network error as well.
+                        Toast.makeText(otp_verification.this, "Error verifying OTP. Please try again.", Toast.LENGTH_SHORT).show();
+                        etOtp.setText("");
                     }
                 }) {
             @Override
