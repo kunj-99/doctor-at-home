@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.thedoctorathomeuser"
+    namespace = "com.infowave.thedoctorathomeuser"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.thedoctorathomeuser"
+        applicationId = "com.infowave.thedoctorathomeuser"
         minSdk = 23
         targetSdk = 34
         versionCode = 1
@@ -18,14 +18,28 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
+        getByName("release") {
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
+                getDefaultProguardFile("proguard-android.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("debug")
+        }
+
+        getByName("debug") {
+            isDebuggable = true
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android.txt"),
                 "proguard-rules.pro"
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
