@@ -130,51 +130,50 @@
     <string name="google_maps_key">AIzaSyCiSh4VnnI1jemtZTytDoj2X7Wl6evey30</string>
 
 
+    <!-- App Information -->
+    <string name="app_version">Version %s</string>
+    <string name="about_us">About Us</string>
+    <string name="app_description">Your trusted partner in healthcare management. We combine cutting-edge technology with medical expertise to provide seamless healthcare solutions for both practitioners and patients.</string>
 
-        <!-- App Information -->
-        <string name="app_version">Version %s</string>
-        <string name="about_us">About Us</string>
-        <string name="app_description">Your trusted partner in healthcare management. We combine cutting-edge technology with medical expertise to provide seamless healthcare solutions for both practitioners and patients.</string>
+    <!-- Features Section -->
+    <string name="features">Key Features</string>
+    <string name="feature1_title">Appointment Booking</string>
+    <string name="feature1_desc">Book consultations with certified doctors in just a few taps</string>
+    <string name="feature2_title">Medical Records</string>
+    <string name="feature2_desc">Secure digital storage for all your medical history</string>
+    <string name="feature3_title">Telemedicine</string>
+    <string name="feature3_desc">Virtual consultations from the comfort of your home</string>
+    <string name="feature4_title">Medication Tracker</string>
+    <string name="feature4_desc">Never miss a dose with smart reminders</string>
 
-        <!-- Features Section -->
-        <string name="features">Key Features</string>
-        <string name="feature1_title">Appointment Booking</string>
-        <string name="feature1_desc">Book consultations with certified doctors in just a few taps</string>
-        <string name="feature2_title">Medical Records</string>
-        <string name="feature2_desc">Secure digital storage for all your medical history</string>
-        <string name="feature3_title">Telemedicine</string>
-        <string name="feature3_desc">Virtual consultations from the comfort of your home</string>
-        <string name="feature4_title">Medication Tracker</string>
-        <string name="feature4_desc">Never miss a dose with smart reminders</string>
+    <!-- Team Section -->
+    <string name="development_team">Our Team</string>
+    <string name="team_member1">Dr. Sarah Johnson</string>
+    <string name="team_role1">Medical Director</string>
+    <string name="team_member2">Michael Chen</string>
+    <string name="team_role2">Lead Developer</string>
+    <string name="team_member3">Emma Wilson</string>
+    <string name="team_role3">UX Designer</string>
 
-        <!-- Team Section -->
-        <string name="development_team">Our Team</string>
-        <string name="team_member1">Dr. Sarah Johnson</string>
-        <string name="team_role1">Medical Director</string>
-        <string name="team_member2">Michael Chen</string>
-        <string name="team_role2">Lead Developer</string>
-        <string name="team_member3">Emma Wilson</string>
-        <string name="team_role3">UX Designer</string>
+    <!-- Contact Section -->
+    <string name="contact_us">Contact Us</string>
+    <string name="email">support@healthcarepro.app</string>
+    <string name="phone">+1 (800) 123-4567</string>
+    <string name="address">123 Healthcare Street\nMedical City, HC 4567</string>
+    <string name="website">www.healthcarepro.app</string>
 
-        <!-- Contact Section -->
-        <string name="contact_us">Contact Us</string>
-        <string name="email">support@healthcarepro.app</string>
-        <string name="phone">+1 (800) 123-4567</string>
-        <string name="address">123 Healthcare Street\nMedical City, HC 4567</string>
-        <string name="website">www.healthcarepro.app</string>
+    <!-- Social Media -->
+    <string name="facebook_url">https://facebook.com/healthcarepro</string>
+    <string name="twitter_url">https://twitter.com/healthcarepro</string>
+    <string name="linkedin_url">https://linkedin.com/company/healthcarepro</string>
 
-        <!-- Social Media -->
-        <string name="facebook_url">https://facebook.com/healthcarepro</string>
-        <string name="twitter_url">https://twitter.com/healthcarepro</string>
-        <string name="linkedin_url">https://linkedin.com/company/healthcarepro</string>
+    <!-- Accessibility Content Descriptions -->
+    <string name="app_logo_desc">Healthcare Pro Logo</string>
+    <string name="email_icon_desc">Email Icon</string>
+    <string name="facebook_icon_desc">Facebook Page</string>
+    <string name="twitter_icon_desc">Twitter Profile</string>
 
-        <!-- Accessibility Content Descriptions -->
-        <string name="app_logo_desc">Healthcare Pro Logo</string>
-        <string name="email_icon_desc">Email Icon</string>
-        <string name="facebook_icon_desc">Facebook Page</string>
-        <string name="twitter_icon_desc">Twitter Profile</string>
-
-        <!-- Error Messages -->
-        <string name="link_error">Unable to open link. Please check your internet connection.</string>
+    <!-- Error Messages -->
+    <string name="link_error">Unable to open link. Please check your internet connection.</string>
     <string name="steps_to_book">How to Book an Appointment</string>
 </resources>

@@ -32,6 +32,9 @@
         tools:ignore="WrongManifestParent"
         tools:targetApi="n">
         <activity
+            android:name=".loader"
+            android:exported="false" />
+        <activity
             android:name=".aboutus"
             android:exported="false" />
         <activity
@@ -94,7 +97,6 @@
         <activity
             android:name=".Profile"
             android:exported="false" />
-
         <activity
             android:name=".otp_verification"
             android:exported="false" />
@@ -114,9 +116,7 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="false"
-           /> <!-- <meta-data -->
-
+            android:exported="false" /> <!-- <meta-data -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />

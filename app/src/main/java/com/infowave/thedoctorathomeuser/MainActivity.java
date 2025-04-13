@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log; // For debugging
 import android.view.View;
@@ -26,7 +27,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.viewpager.widget.ViewPager;
 
-import com.infowave.thedoctorathomeuser.view.view;
+import com.infowave.thedoctorathomeuser.view.*;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
@@ -55,6 +56,11 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout profileSection;
     private TextView toolbarTitle; // To dynamically update the title
 
+    // Loader-related fields
+    private final Handler loaderHandler = new Handler();
+    private Runnable loaderRunnable;
+    private boolean networkResponseReceived = false;
+
     @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,13 +86,25 @@ public class MainActivity extends AppCompatActivity {
         TextView tvProfileName = headerView.findViewById(R.id.tv_profile_name);
         TextView tvProfileEmail = headerView.findViewById(R.id.tv_profile_email);
 
-
-
         // Fetch profile details from remote server using GET_PROFILE_URL
         SharedPreferences userPrefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         String patientId = userPrefs.getString("patient_id", "");
         Log.d(TAG, "Patient ID from SharedPreferences: " + patientId);
         if (!patientId.isEmpty()) {
+            // Setup delayed loader trigger (300ms delay)
+            networkResponseReceived = false;
+            loaderRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    // If the network response isn't received yet, show the custom loader using loaderutil
+                    if (!networkResponseReceived) {
+                        loaderutil.showLoader(MainActivity.this);
+                    }
+                }
+            };
+            loaderHandler.postDelayed(loaderRunnable, 300);
+
+            // Execute the AsyncTask to fetch profile details
             new GetProfileTask(civProfile, tvProfileName, tvProfileEmail).execute(patientId);
         } else {
             Log.d(TAG, "No patient ID found in SharedPreferences.");
@@ -115,14 +133,12 @@ public class MainActivity extends AppCompatActivity {
             customIcon = DrawableCompat.wrap(customIcon);
             // Set the tint color to white
             DrawableCompat.setTint(customIcon, ContextCompat.getColor(this, android.R.color.white));
-            // Optionally, if you need to change the tint mode
-            // DrawableCompat.setTintMode(customIcon, PorterDuff.Mode.SRC_ATOP);
         }
 
-// Set the tinted icon as the navigation icon
+        // Set the tinted icon as the navigation icon
         toolbar.setNavigationIcon(customIcon);
 
-// Optionally, add a click listener to handle opening and closing the drawer
+        // Add click listener for the navigation icon to open/close the drawer
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -144,10 +160,9 @@ public class MainActivity extends AppCompatActivity {
 
         // Set up BottomNavigationView
         int fragmentToOpen = getIntent().getIntExtra("open_fragment", 0);
-        // Set the correct fragment and update Bottom Navigation selection
         vp.setCurrentItem(fragmentToOpen);
         if (fragmentToOpen == 2) {
-            btn.setSelectedItemId(R.id.page_3); // ✅ Set the correct bottom navigation icon
+            btn.setSelectedItemId(R.id.page_3);
         }
         btn.setOnNavigationItemSelectedListener(item -> {
             if (item.getItemId() == R.id.page_1) {
@@ -256,37 +271,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void rateApp() {
-        String appPackageName = getPackageName(); // Get your app package name dynamically
+        String appPackageName = getPackageName();
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + appPackageName)));
         } catch (android.content.ActivityNotFoundException anfe) {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + appPackageName)));
         }
-
     }
 
     private void shareApp() {
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("text/plain");
-            String shareBody = "Check out this cool app: [Your App Link Here]";
-            String shareSubject = "The Doctor At Home App";
-            shareIntent.putExtra(Intent.EXTRA_SUBJECT, shareSubject);
-            shareIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
-            startActivity(Intent.createChooser(shareIntent, "Share via"));
-
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        String shareBody = "Check out this cool app: [Your App Link Here]";
+        String shareSubject = "The Doctor At Home App";
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, shareSubject);
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
+        startActivity(Intent.createChooser(shareIntent, "Share via"));
     }
 
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
-        } else if (vp.getCurrentItem() != 0) {  // If you're not on the Home fragment (index 0)
-            vp.setCurrentItem(0);              // Go back to the Home fragment
+        } else if (vp.getCurrentItem() != 0) {
+            vp.setCurrentItem(0);
         } else {
             super.onBackPressed();
         }
     }
-
 
     private void adjustNavigationDrawerWidth() {
         DisplayMetrics metrics = new DisplayMetrics();
@@ -298,17 +310,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // AsyncTask to fetch profile details from the remote server
+    @SuppressLint("StaticFieldLeak")
     private class GetProfileTask extends AsyncTask<String, Void, ProfileData> {
 
-        private CircleImageView civProfile;
-        private TextView tvProfileName, tvProfileEmail;
+        private final CircleImageView civProfile;
+        private final TextView tvProfileName;
+        private final TextView tvProfileEmail;
 
         public GetProfileTask(CircleImageView civProfile, TextView tvProfileName, TextView tvProfileEmail) {
             this.civProfile = civProfile;
             this.tvProfileName = tvProfileName;
             this.tvProfileEmail = tvProfileEmail;
         }
-
 
         @Override
         protected ProfileData doInBackground(String... params) {
@@ -334,7 +347,7 @@ public class MainActivity extends AppCompatActivity {
                         response.append(line);
                     }
                     reader.close();
-                    Log.d(TAG, "Response: " + response.toString());
+                    Log.d(TAG, "Response: " + response);
 
                     // Parse JSON from the "data" object
                     JSONObject jsonObject = new JSONObject(response.toString());
@@ -359,6 +372,11 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(ProfileData profileData) {
+            // Cancel the loader since the network response is received
+            MainActivity.this.networkResponseReceived = true;
+            loaderHandler.removeCallbacks(loaderRunnable);
+            loaderutil.hideLoader();
+
             if (profileData != null) {
                 Log.d(TAG, "ProfileData received - Name: " + profileData.getName() +
                         ", Mobile: " + profileData.getMobileNumber() +
@@ -376,11 +394,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Model class for profile data (renamed to avoid conflict with your Profile activity)
+    // Model class for profile data
     private class ProfileData {
-        private String name;
-        private String mobileNumber;
-        private String imageName; // Now contains the full URL
+        private final String name;
+        private final String mobileNumber;
+        private final String imageName; // Contains the full URL
 
         public ProfileData(String name, String mobileNumber, String imageName) {
             this.name = name;

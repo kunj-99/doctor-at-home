@@ -9,6 +9,5 @@ public class MyApp extends Application {
     public void onCreate() {
         super.onCreate();
         FirebaseApp.initializeApp(this);
-
     }
 }

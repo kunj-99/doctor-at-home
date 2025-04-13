@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.*;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
@@ -33,9 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdapter.ViewHolder> {
+public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final String TAG = "DoctorHistoryAdapter";
+    private static final int VIEW_TYPE_ITEM = 0;
+    private static final int VIEW_TYPE_EMPTY = 1;
+
     private final Context context;
     private final String patientId; // Passed from login or global context
     private final List<Integer> doctorIds;
@@ -71,114 +75,141 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         this.appointmentStatuses = appointmentStatuses;
     }
 
+    @Override
+    public int getItemViewType(int position) {
+        // If there is no data in the doctorNames list, use the empty view.
+        if (doctorNames == null || doctorNames.isEmpty()) {
+            return VIEW_TYPE_EMPTY;
+        }
+        return VIEW_TYPE_ITEM;
+    }
+
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_history, parent, false);
-        return new ViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == VIEW_TYPE_EMPTY) {
+            // Inflate the empty state layout
+            View view = LayoutInflater.from(context).inflate(R.layout.item_empty_state, parent, false);
+            return new EmptyViewHolder(view);
+        } else {
+            // Inflate the regular item layout for doctor history
+            View view = LayoutInflater.from(context).inflate(R.layout.item_history, parent, false);
+            return new ViewHolder(view);
+        }
     }
 
     @SuppressLint("SetTextI18n")
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        // Set doctor and appointment details
-        holder.doctorName.setText(doctorNames.get(position));
-        holder.doctorSpecialty.setText(doctorSpecialties.get(position));
-        holder.appointmentDate.setText(appointmentDates.get(position));
-        holder.appointmentPrice.setText(appointmentPrices.get(position));
-        // Load image using Glide from the URL
-        Glide.with(context)
-                .load(doctorProfilePictures.get(position))
-                .placeholder(R.drawable.plasholder)
-                .into(holder.doctorImage);
-
-        String status = appointmentStatuses.get(position);
-        if (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("cancelled_by_doctor")) {
-            String cancelText;
-            if (status.equalsIgnoreCase("cancelled_by_doctor")) {
-                cancelText = "Cancelled By Doctor";
-            } else {
-                cancelText = "Cancelled By User";
-            }
-
-            // Disable action buttons and change their text to indicate cancellation
-            holder.viewDetailsButton.setEnabled(false);
-            holder.viewDetailsButton.setText(cancelText);
-            holder.viewDetailsButton.setBackgroundColor(Color.RED);
-
-            holder.btnViewBill.setEnabled(false);
-            holder.btnViewBill.setText("Cancelled");
-
-            holder.btnViewReport.setEnabled(false);
-            holder.btnViewReport.setText("Cancelled");
-
-            holder.btnViewProfile.setEnabled(false);
-            holder.btnViewProfile.setText("Cancelled");
-
-            // Optionally, hide the details layout and any status message view if present
-            holder.detailsLayout.setVisibility(View.GONE);
-            holder.statusMessage.setVisibility(View.GONE);
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof EmptyViewHolder) {
+            // Bind the empty state view
+            EmptyViewHolder emptyHolder = (EmptyViewHolder) holder;
+            Glide.with(context)
+                    .load(R.drawable.nodataimg)  // Use your empty state image resource here
+                    .into(emptyHolder.emptyImage);
+            emptyHolder.emptyText.setText("No Appointment History Available");
         } else {
-            // For non-cancelled appointments, ensure buttons are enabled and show default text.
-            holder.viewDetailsButton.setEnabled(true);
-            holder.viewDetailsButton.setText("View Details");
+            // Bind the regular data
+            ViewHolder viewHolder = (ViewHolder) holder;
+            viewHolder.doctorName.setText(doctorNames.get(position));
+            viewHolder.doctorSpecialty.setText(doctorSpecialties.get(position));
+            viewHolder.appointmentDate.setText(appointmentDates.get(position));
+            viewHolder.appointmentPrice.setText(appointmentPrices.get(position));
+            Glide.with(context)
+                    .load(doctorProfilePictures.get(position))
+                    .placeholder(R.drawable.plasholder)
+                    .into(viewHolder.doctorImage);
 
-            holder.btnViewBill.setEnabled(true);
-            holder.btnViewBill.setText("View Bill");
+            String status = appointmentStatuses.get(position);
+            if (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("cancelled_by_doctor")) {
+                String cancelText;
+                if (status.equalsIgnoreCase("cancelled_by_doctor")) {
+                    cancelText = "Cancelled By Doctor";
+                } else {
+                    cancelText = "Cancelled By User";
+                }
+                viewHolder.viewDetailsButton.setEnabled(false);
+                viewHolder.viewDetailsButton.setText(cancelText);
+                viewHolder.viewDetailsButton.setBackgroundColor(Color.RED);
 
-            holder.btnViewReport.setEnabled(true);
-            holder.btnViewReport.setText("View Report");
+                viewHolder.btnViewBill.setEnabled(false);
+                viewHolder.btnViewBill.setText("Cancelled");
 
-            holder.btnViewProfile.setEnabled(true);
-            holder.btnViewProfile.setText("View Profile");
+                viewHolder.btnViewReport.setEnabled(false);
+                viewHolder.btnViewReport.setText("Cancelled");
 
-            // Make sure details layout is visible if needed
-            holder.viewDetailsButton.setVisibility(View.VISIBLE);
-        }
+                viewHolder.btnViewProfile.setEnabled(false);
+                viewHolder.btnViewProfile.setText("Cancelled");
 
-        if (appointmentStatuses.get(position).equalsIgnoreCase("Completed")) {
-            int docId = doctorIds.get(position);
-            int appId = appointmentIds.get(position);
-            Log.d(TAG, "Appointment " + appId + " is Completed. Checking review status for doctorId " + docId);
-            // Only trigger the check if the popup hasn't been shown yet for this doctor
-            if (!reviewPopupShown.contains(docId)) {
-                checkAndPromptForReview(docId, appId);
+                viewHolder.detailsLayout.setVisibility(View.GONE);
+                viewHolder.statusMessage.setVisibility(View.GONE);
             } else {
-                Log.d(TAG, "Review popup already shown for doctorId " + docId + ". Skipping.");
+                viewHolder.viewDetailsButton.setEnabled(true);
+                viewHolder.viewDetailsButton.setText("View Details");
+
+                viewHolder.btnViewBill.setEnabled(true);
+                viewHolder.btnViewBill.setText("View Bill");
+
+                viewHolder.btnViewReport.setEnabled(true);
+                viewHolder.btnViewReport.setText("View Report");
+
+                viewHolder.btnViewProfile.setEnabled(true);
+                viewHolder.btnViewProfile.setText("View Profile");
+
+                viewHolder.viewDetailsButton.setVisibility(View.VISIBLE);
             }
+
+            if (appointmentStatuses.get(position).equalsIgnoreCase("Completed")) {
+                int docId = doctorIds.get(position);
+                int appId = appointmentIds.get(position);
+                Log.d(TAG, "Appointment " + appId + " is Completed. Checking review status for doctorId " + docId);
+                if (!reviewPopupShown.contains(docId)) {
+                    checkAndPromptForReview(docId, appId);
+                } else {
+                    Log.d(TAG, "Review popup already shown for doctorId " + docId + ". Skipping.");
+                }
+            }
+
+            viewHolder.viewDetailsButton.setOnClickListener(v -> {
+                if (viewHolder.detailsLayout.getVisibility() == View.GONE) {
+                    viewHolder.detailsLayout.setVisibility(View.VISIBLE);
+                    viewHolder.viewDetailsButton.setText("Hide Details");
+                } else {
+                    viewHolder.detailsLayout.setVisibility(View.GONE);
+                    viewHolder.viewDetailsButton.setText("View Details");
+                }
+            });
+
+            viewHolder.btnViewBill.setOnClickListener(v -> {
+                Intent in = new Intent(context, complet_bill.class);
+                context.startActivity(in);
+            });
+
+            viewHolder.btnViewReport.setOnClickListener(v -> {
+                Intent in = new Intent(context, medical_riport.class);
+                in.putExtra("appointment_id", String.valueOf(appointmentIds.get(position)));
+                context.startActivity(in);
+            });
+
+            viewHolder.btnViewProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(context, doctor_details.class);
+                intent.putExtra("doctor_id", String.valueOf(doctorIds.get(position)));
+                context.startActivity(intent);
+            });
         }
+    }
 
-        // Toggle details visibility if not cancelled
-        holder.viewDetailsButton.setOnClickListener(v -> {
-            if (holder.detailsLayout.getVisibility() == View.GONE) {
-                holder.detailsLayout.setVisibility(View.VISIBLE);
-                holder.viewDetailsButton.setText("Hide Details");
-            } else {
-                holder.detailsLayout.setVisibility(View.GONE);
-                holder.viewDetailsButton.setText("View Details");
-            }
-        });
-
-        holder.btnViewBill.setOnClickListener(v -> {
-            Intent in = new Intent(context, complet_bill.class);
-            context.startActivity(in);
-        });
-
-        holder.btnViewReport.setOnClickListener(v -> {
-            Intent in = new Intent(context, medical_riport.class);
-            in.putExtra("appointment_id", String.valueOf(appointmentIds.get(position)));
-            context.startActivity(in);
-        });
-
-        holder.btnViewProfile.setOnClickListener(v -> {
-            Intent intent = new Intent(context, doctor_details.class);
-            intent.putExtra("doctor_id", String.valueOf(doctorIds.get(position)));
-            context.startActivity(intent);
-        });
+    // Unified getItemCount() implementation
+    @Override
+    public int getItemCount() {
+        // If the list is empty, return 1 to show the empty view.
+        if (doctorNames == null || doctorNames.isEmpty()) {
+            return 1;
+        }
+        return doctorNames.size();
     }
 
     private void checkAndPromptForReview(int doctorId, int appointmentId) {
-        // Make a POST request to check review status from the server.
         StringRequest request = new StringRequest(Request.Method.POST, CHECK_REVIEW_API_URL,
                 response -> {
                     try {
@@ -188,7 +219,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
                         Log.d(TAG, "checkAndPromptForReview API response for doctorId " + doctorId +
                                 ": alreadyReviewed=" + alreadyReviewed + ", reviewCanceled=" + reviewCanceled);
                         if (!alreadyReviewed && !reviewCanceled) {
-                            // Mark the popup as shown to prevent re-triggering during auto-refresh.
                             reviewPopupShown.add(doctorId);
                             showReviewPopup(doctorId, appointmentId);
                         }
@@ -217,7 +247,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         builder.setView(dialogView);
         AlertDialog dialog = builder.create();
 
-        // Get references to dialog UI elements
         RatingBar ratingBar = dialogView.findViewById(R.id.ratingBar);
         EditText etReviewComment = dialogView.findViewById(R.id.etReviewComment);
         Button btnSubmitReview = dialogView.findViewById(R.id.btnSubmitReview);
@@ -231,13 +260,11 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
                 Toast.makeText(context, "Please give a rating", Toast.LENGTH_SHORT).show();
                 return;
             }
-            // Submit review with action "submit"
             submitReview(doctorId, rating, comment, "submit");
             dialog.dismiss();
         });
 
         btnCancelReview.setOnClickListener(v -> {
-            // On cancel, submit review with action "skip"
             submitReview(doctorId, 0, "", "skip");
             Log.d(TAG, "Review canceled for doctorId " + doctorId);
             Toast.makeText(context, "Review canceled", Toast.LENGTH_SHORT).show();
@@ -289,11 +316,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
         queue.add(stringRequest);
     }
 
-    @Override
-    public int getItemCount() {
-        return doctorNames.size();
-    }
-
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView doctorImage;
         TextView doctorName, doctorSpecialty, appointmentDate, appointmentPrice, statusMessage;
@@ -313,6 +335,18 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<DoctorHistoryAdap
             btnViewReport = itemView.findViewById(R.id.btnViewReport);
             btnViewProfile = itemView.findViewById(R.id.btnViewProfile);
             statusMessage = itemView.findViewById(R.id.statusMessage);
+        }
+    }
+
+    // Empty view holder for displaying the empty state when there is no appointment history
+    public static class EmptyViewHolder extends RecyclerView.ViewHolder {
+        ImageView emptyImage;
+        TextView emptyText;
+
+        public EmptyViewHolder(@NonNull View itemView) {
+            super(itemView);
+            emptyImage = itemView.findViewById(R.id.empty_state_image);
+            emptyText = itemView.findViewById(R.id.empty_state_text);
         }
     }
 }
