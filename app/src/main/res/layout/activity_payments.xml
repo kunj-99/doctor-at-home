@@ -6,31 +6,91 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".payments">
+    tools:context=".payments"
+    android:background="#F5F5F5">
 
-    <!-- Icon ImageView -->
-    <ImageView
-        android:id="@+id/ivIcon"
-        android:layout_width="327dp"
-        android:layout_height="302dp"
-        android:src="@drawable/error"
-        app:layout_constraintBottom_toTopOf="@+id/tvComingSoon"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+    <!-- 💰 Wallet Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardWallet"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#FFFFFF"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp">
 
-    <!-- Coming Soon TextView -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Wallet Title -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Your Wallet Balance"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#333" />
+
+            <!-- Balance Amount -->
+            <TextView
+                android:id="@+id/tvWalletBalance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="₹0.00"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:textColor="#4CAF50"
+                android:layout_marginTop="8dp" />
+
+            <!-- Recharge Button -->
+            <Button
+                android:id="@+id/btnRecharge"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recharge Wallet"
+                android:backgroundTint="#2196F3"
+                android:textColor="#FFF"
+                android:textStyle="bold"
+                android:layout_marginTop="20dp"
+                android:padding="12dp"/>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- 🔁 Transaction History Label -->
     <TextView
-        android:id="@+id/tvComingSoon"
+        android:id="@+id/tvHistoryTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Coming Soon"
-        android:textSize="24sp"
+        android:text="Transaction History"
+        android:textSize="18sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/ivIcon"
+        android:textColor="#333"
+        app:layout_constraintTop_toBottomOf="@id/cardWallet"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="32dp"
+        android:layout_marginStart="24dp" />
+
+    <!-- 🧾 Transaction List -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTransactions"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="8dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/tvHistoryTitle"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

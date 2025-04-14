@@ -212,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             Intent intent = null;
             if (item.getItemId() == R.id.payments1) {
-                intent = new Intent(MainActivity.this, payments.class);
+                intent = new Intent(MainActivity.this,  payments.class);
             } else if (item.getItemId() == R.id.records1) {
                 intent = new Intent(MainActivity.this, pathology_test.class);
             } else if (item.getItemId() == R.id.policy) {

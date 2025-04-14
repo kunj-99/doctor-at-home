@@ -60,6 +60,10 @@
     <color name="primaryTextColor">#212121</color>
     <color name="secondaryTextColor">#757575</color>
 
+    <color name="custom_green">#4CAF50</color>
+
+    <color name="custom_gray">#BDBDBD</color>
+
     <color name="dark_blue">#1976D2</color>
     <!--    <color name="primaryColor">#2196F3</color>-->
     <color name="primaryLight">#BBDEFB</color>

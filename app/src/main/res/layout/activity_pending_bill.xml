@@ -19,6 +19,46 @@
         android:gravity="center"
         android:padding="16dp"
         android:layout_marginBottom="16dp" />
+    <TextView
+        android:id="@+id/tv_wallet_balance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Wallet Balance: ₹0.00"
+        android:textSize="16sp"
+        android:textColor="@color/black"
+        android:layout_margin="16dp"/>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_online_payment"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Online Payment"
+            android:layout_margin="5dp"
+            android:backgroundTint="@color/blue"
+            android:textColor="#FFF"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btn_offline_payment"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Offline Payment"
+            android:layout_margin="5dp"
+            android:backgroundTint="@color/blue"
+            android:textColor="#FFF"
+            android:textSize="16sp" />
+    </LinearLayout>
+
 
     <!-- Scrollable Content -->
     <ScrollView
@@ -28,10 +68,13 @@
         android:background="@color/white"
         android:padding="16dp">
 
+
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
 
             <!-- Payment Info Card -->
             <androidx.cardview.widget.CardView
@@ -205,9 +248,53 @@
                             android:layout_height="wrap_content"
                             android:layout_marginLeft="140dp"
                             android:text="₹ 500"
-                        android:textColor="@color/black"
-                        android:textSize="20dp"/>
+                            android:textColor="@color/black"
+                            android:textSize="20dp"/>
                     </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="platform charges"
+                            android:layout_marginBottom="20dp"
+                            android:textSize="15sp"
+                            android:textColor="@color/black" />
+
+                        <TextView
+                            android:id="@+id/tv_pletformcharje"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginLeft="140dp"
+                            android:text="₹ 50"
+                            android:textColor="@color/black"
+                            android:textSize="20dp"/>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="platform charges"
+                        android:layout_marginBottom="20dp"
+                        android:textSize="15sp"
+                        android:textColor="@color/black" />
+
+                    <TextView
+                        android:id="@+id/tv_platform_charge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Platform Charge: ₹0.00"
+                        android:textSize="16sp"
+                        android:textColor="#FF0000"
+                        android:paddingTop="8dp"/>
+                </LinearLayout>
 
                     <!-- Consulting Fee -->
                     <LinearLayout
@@ -351,29 +438,9 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Payment Method RadioGroup -->
-            <RadioGroup
-                android:id="@+id/payment_method_group"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:layout_marginTop="5dp"
-                android:orientation="horizontal">
+            <!-- Two Payment Method Buttons (replacing the old RadioGroup) -->
 
-                <RadioButton
-                    android:id="@+id/payment_online"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Online Payment"
-                    android:checked="true" /> <!-- Default selection -->
-
-                <RadioButton
-                    android:id="@+id/payment_offline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Offline Payment" />
-            </RadioGroup>
-
+            <!-- Proceed to Payment Button -->
             <Button
                 android:id="@+id/pay_button"
                 android:layout_width="match_parent"
@@ -385,6 +452,15 @@
                 android:textColor="#FFF"
                 android:textSize="20sp"
                 android:textStyle="bold" />
+            <Button
+                android:id="@+id/btn_recharge_wallet"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recharge Wallet"
+                android:visibility="gone"
+                android:textColor="#FFF"
+                android:backgroundTint="@color/blue"
+                android:layout_marginTop="16dp"/>
 
         </LinearLayout>
     </ScrollView>
