@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -56,9 +57,6 @@ public class pending_bill extends AppCompatActivity {
     // Platform Charge
     private static final double PLATFORM_CHARGE = 50.0;
 
-    // Google Routes API Key
-    private static final String GOOGLE_API_KEY = "AIzaSyCg79KiSpncjitTJDiOAmpc5SjjTHtcc24";
-
     // Booking Data
     private String patientName, age, gender, problem, address, doctorId, doctorName, Status, selectedPaymentMethod = "";
     private String patientId;
@@ -88,9 +86,10 @@ public class pending_bill extends AppCompatActivity {
     private boolean platformChargeAdded = false;
 
     // Handler for continuous wallet refresh (e.g., every 30 seconds)
-    private Handler walletHandler = new Handler();
+    private final Handler walletHandler = new Handler();
     private Runnable walletRunnable;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -211,6 +210,13 @@ public class pending_bill extends AppCompatActivity {
             btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_green));
             btnOnlinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
 
+            // Remove platform charge if it was added for online payment
+            if (platformChargeAdded) {
+                finalCost -= PLATFORM_CHARGE;
+                platformChargeAdded = false;  // Reset the flag
+                tvPlatformCharge.setText(""); // Clear the platform charge text
+            }
+
             // Check offline payment: if wallet balance is sufficient (>= PLATFORM_CHARGE)
             if (walletBalance >= PLATFORM_CHARGE) {
                 payButton.setEnabled(true);
@@ -225,6 +231,9 @@ public class pending_bill extends AppCompatActivity {
                 // Show the recharge wallet button instead of immediately redirecting
                 btnRechargeWallet.setVisibility(View.VISIBLE);
             }
+
+            // Update the payment UI for offline payment (with platform charge removed)
+            updatePaymentUI();
         });
 
         btnOnlinePayment.setOnClickListener(v -> {
@@ -311,7 +320,7 @@ public class pending_bill extends AppCompatActivity {
     private void fetchWalletBalance() {
         String url = "http://sxm.a58.mytemp.website/get_wallet_balance.php";
 
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
+        @SuppressLint("SetTextI18n") StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
                 response -> {
                     try {
                         JSONObject obj = new JSONObject(response);
@@ -406,47 +415,18 @@ public class pending_bill extends AppCompatActivity {
 
     // Fetch driving distance using Google Routes API
     private void fetchDrivingDistance(double lat1, double lng1, double lat2, double lng2) {
-        String url = "https://routes.googleapis.com/directions/v2:computeRoutes?key=" + GOOGLE_API_KEY;
-        JSONObject requestBody = new JSONObject();
-        try {
-            JSONObject originObj = new JSONObject();
-            JSONObject originLocation = new JSONObject();
-            JSONObject originLatLng = new JSONObject();
-            originLatLng.put("latitude", lat1);
-            originLatLng.put("longitude", lng1);
-            originLocation.put("latLng", originLatLng);
-            originObj.put("location", originLocation);
-            requestBody.put("origin", originObj);
+        // Construct the URL with your API key (replace with your own key)
+        String url = "https://maps.googleapis.com/maps/api/directions/json?origin=" + lat1 + "," + lng1 + "&destination=" + lat2 + "," + lng2 + "&key=" + getString(R.string.google_maps_key);
 
-            JSONObject destinationObj = new JSONObject();
-            JSONObject destinationLocation = new JSONObject();
-            JSONObject destinationLatLng = new JSONObject();
-            destinationLatLng.put("latitude", lat2);
-            destinationLatLng.put("longitude", lng2);
-            destinationLocation.put("latLng", destinationLatLng);
-            destinationObj.put("location", destinationLocation);
-            requestBody.put("destination", destinationObj);
-
-            requestBody.put("travelMode", "DRIVE");
-            requestBody.put("routingPreference", "TRAFFIC_AWARE");
-            requestBody.put("computeAlternativeRoutes", false);
-            requestBody.put("languageCode", "en-US");
-            requestBody.put("units", "METRIC");
-        } catch (JSONException e) {
-            Log.e(TAG, "Error building JSON request: " + e.getMessage());
-            updatePaymentUI();
-            return;
-        }
-
-        Log.d(TAG, "fetchDrivingDistance (Routes API) => " + url + " Request: " + requestBody.toString());
+        // Make the network request using Volley
         RequestQueue queue = Volley.newRequestQueue(this);
         JsonObjectRequest routeReq = new JsonObjectRequest(
-                Request.Method.POST,
+                Request.Method.GET,
                 url,
-                requestBody,
+                null,
                 response -> {
                     Log.d(TAG, "Routes API response => " + response);
-                    parseRoutesResponse(response);
+                    parseRoutesResponse(response);  // Handle the response after the request
                 },
                 error -> {
                     String errorMessage = error.getMessage();
@@ -454,44 +434,60 @@ public class pending_bill extends AppCompatActivity {
                         errorMessage = new String(error.networkResponse.data);
                     }
                     Log.e(TAG, "Routes API error => " + errorMessage);
-                    updatePaymentUI();
+                    updatePaymentUI();  // Handle errors
                 }
-        ) {
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/json");
-                headers.put("X-Goog-FieldMask", "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline");
-                return headers;
-            }
-        };
+        );
         queue.add(routeReq);
     }
 
     // Parse Routes API response to extract driving distance and calculate charge
+    // Parse Routes API response to extract driving distance and calculate charge
     private void parseRoutesResponse(JSONObject response) {
         try {
+            // Extract the "routes" array from the response
             JSONArray routes = response.getJSONArray("routes");
+
             if (routes.length() > 0) {
                 JSONObject firstRoute = routes.getJSONObject(0);
-                long distanceMeters = firstRoute.getLong("distanceMeters");
-                distanceKm = distanceMeters / 1000.0;
-                Log.d(TAG, "Driving distance (Routes API) => " + distanceKm + " km");
-                if (distanceKm > BASE_DISTANCE) {
-                    double extraDist = distanceKm - BASE_DISTANCE;
-                    distanceCharge = extraDist * EXTRA_COST_PER_KM;
-                } else {
-                    distanceCharge = 0.0;
+
+                // Extract the "legs" array from the first route
+                JSONArray legs = firstRoute.getJSONArray("legs");
+
+                if (legs.length() > 0) {
+                    JSONObject firstLeg = legs.getJSONObject(0);
+
+                    // Get the distance in meters from the first leg
+                    JSONObject distance = firstLeg.getJSONObject("distance");
+                    long distanceMeters = distance.getLong("value");
+
+                    // Convert the distance to kilometers
+                    distanceKm = distanceMeters / 1000.0;
+
+                    Log.d(TAG, "Driving distance (Routes API) => " + distanceKm + " km");
+
+                    // Calculate the charge based on the distance
+                    if (distanceKm > BASE_DISTANCE) {
+                        double extraDist = distanceKm - BASE_DISTANCE;
+                        distanceCharge = extraDist * EXTRA_COST_PER_KM;
+                    } else {
+                        distanceCharge = 0.0;
+                    }
+
+                    // Calculate the final cost
+                    finalCost = baseCost + consultingFee + gst + distanceCharge;
                 }
-                finalCost = baseCost + consultingFee + gst + distanceCharge;
             }
         } catch (JSONException e) {
             Log.e(TAG, "Error parsing Routes API response => " + e.getMessage());
         }
+
+        // Update the UI with the parsed data
         updatePaymentUI();
     }
 
+
     // Update Payment UI fields
+    @SuppressLint("SetTextI18n")
     private void updatePaymentUI() {
         Log.d(TAG, "Updating UI => distance: " + distanceKm + " km, charge: " + distanceCharge + ", final cost: " + finalCost);
         tvPaymentAmountValue.setText("₹ " + String.format(Locale.getDefault(), "%.0f", baseCost));
