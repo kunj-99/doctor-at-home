@@ -197,7 +197,7 @@ public class pending_bill extends AppCompatActivity {
             @Override
             public void run() {
                 fetchWalletBalance();
-                walletHandler.postDelayed(this, 30000);
+                walletHandler.postDelayed(this, 3000);
             }
         };
         walletHandler.post(walletRunnable);
@@ -502,7 +502,7 @@ public class pending_bill extends AppCompatActivity {
     private void deductWalletCharge(double charge, String reason) {
         walletBalance -= charge;
         updateUserWallet(patientId, walletBalance);
-        addWalletTransaction(patientId, charge, "debit", reason);
+        addWalletTransaction(Integer.parseInt(patientId), charge, "debit", reason);
     }
 
     // Initiate UPI Payment flow
@@ -641,25 +641,28 @@ public class pending_bill extends AppCompatActivity {
     }
 
     // Add a wallet transaction entry
-    private void addWalletTransaction(String userId, double amount, String type, String reason) {
+    private void addWalletTransaction(int patientId, double amount, String type, String reason) {
         String url = "http://sxm.a58.mytemp.website/add_wallet_transaction.php";
         StringRequest req = new StringRequest(Request.Method.POST, url,
                 response -> {
                     Log.d(TAG, "Wallet transaction added: " + response);
+                    // Handle the response from the server, e.g., show a success message
                 },
                 error -> {
                     Log.e(TAG, "Error adding wallet transaction: " + error.getMessage());
+                    // Handle the error, e.g., show an error message
                 }
         ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
-                params.put("user_id", userId);
+                params.put("patient_id", String.valueOf(patientId));  // Use patientId here
                 params.put("amount", String.format(Locale.getDefault(), "%.2f", amount));
                 params.put("type", type);
                 params.put("reason", reason);
                 return params;
             }
+
             @Override
             public Map<String, String> getHeaders() {
                 Map<String, String> headers = new HashMap<>();
@@ -667,6 +670,7 @@ public class pending_bill extends AppCompatActivity {
                 return headers;
             }
         };
+
         RequestQueue q = Volley.newRequestQueue(this);
         q.add(req);
     }
