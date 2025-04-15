@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:background="@color/white">
 
@@ -18,23 +18,18 @@
         android:padding="16dp"
         android:layout_marginBottom="16dp" />
 
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:id="@+id/bill_layout"
-
         android:background="@color/white"
         android:padding="16dp">
-
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-            <!-- Header -->
 
             <!-- Payment Info Card -->
             <androidx.cardview.widget.CardView
@@ -45,18 +40,40 @@
                 app:cardBackgroundColor="@color/white"
                 android:elevation="4dp">
 
-                <LinearLayout
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:background="@drawable/app_logo"
                     android:padding="16dp">
 
-                    <!-- Left Details -->
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <!-- App Logo Top Right -->
+
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_above="@+id/linearLayout"
+                        android:layout_marginBottom="36dp"
+                        android:text="THE DOCTOR AT HOME USER" />
+
+                    <ImageView
+                        android:id="@+id/app_logo_icon"
+                        android:layout_width="53dp"
+                        android:layout_height="52dp"
+                        android:layout_alignParentTop="true"
+                        android:layout_alignParentEnd="true"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_marginBottom="8dp"
+                        android:contentDescription="App Logo"
+                        android:src="@drawable/app_logo" />
+
+                    <!-- Details Block -->
+                    <LinearLayout
+                        android:id="@+id/linearLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_below="@id/app_logo_icon"
+                        android:layout_alignParentStart="true"
+                        android:layout_marginTop="8dp"
                         android:orientation="vertical">
 
                         <TextView
@@ -66,15 +83,14 @@
                             android:textColor="@color/black"
                             android:textSize="15sp" />
 
-
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="102340000001242"
-                            android:textStyle="bold"
                             android:layout_marginTop="8dp"
+                            android:layout_marginBottom="10dp"
+                            android:text="102340000001242"
                             android:textColor="@color/black"
-                            android:layout_marginBottom="10dp" />
+                            android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -86,10 +102,10 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="#765445367"
-                            android:textColor="@color/black"
+                            android:layout_marginBottom="14dp"
                             android:paddingTop="8dp"
-                            android:layout_marginBottom="14dp" />
+                            android:text="#765445367"
+                            android:textColor="@color/black" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -112,6 +128,7 @@
                                 android:textColor="@color/black"
                                 android:textSize="16dp" />
                         </LinearLayout>
+
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -128,17 +145,16 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginLeft="120dp"
-                                android:textSize="16dp"
                                 android:layout_marginBottom="8dp"
                                 android:text="Success"
-                                android:textColor="@color/black" />
+                                android:textColor="@color/black"
+                                android:textSize="16dp" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            >
+                            android:orientation="horizontal">
 
                             <TextView
                                 android:layout_width="wrap_content"
@@ -150,12 +166,11 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginLeft="130dp"
+                                android:layout_marginBottom="8dp"
                                 android:text="Vansh Mandanka"
                                 android:textColor="@color/black"
-                                android:textSize="16dp"
-                                android:layout_marginLeft="130dp"
-                                android:layout_marginBottom="8dp" />
-
+                                android:textSize="16dp" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -173,16 +188,15 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginLeft="110dp"
+                                android:layout_marginBottom="8dp"
                                 android:text="google pay"
                                 android:textColor="@color/black"
-                                android:textSize="15dp"
-                                android:layout_marginLeft="110dp"
-                                android:layout_marginBottom="8dp" />
+                                android:textSize="15dp" />
                         </LinearLayout>
+
                     </LinearLayout>
-
-
-                </LinearLayout>
+                </RelativeLayout>
             </androidx.cardview.widget.CardView>
 
             <!-- Payment Details Card -->
