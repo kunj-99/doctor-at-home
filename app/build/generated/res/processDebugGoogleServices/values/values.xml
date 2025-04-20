@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">821715212414</string>
+    <string name="google_api_key" translatable="false">AIzaSyA8mjkBvDlhTcipTVd90xvvNtO6ynI834I</string>
+    <string name="google_app_id" translatable="false">1:821715212414:android:2791929de01bfbac11202f</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyA8mjkBvDlhTcipTVd90xvvNtO6ynI834I</string>
+    <string name="google_storage_bucket" translatable="false">the-doctor-at-home-41f52.firebasestorage.app</string>
+    <string name="project_id" translatable="false">the-doctor-at-home-41f52</string>
+</resources>
