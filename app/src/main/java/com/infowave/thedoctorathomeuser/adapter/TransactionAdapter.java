@@ -1,40 +1,55 @@
 package com.infowave.thedoctorathomeuser.adapter;
 
 import android.content.Context;
-import android.view.*;
-import android.widget.*;
+import android.graphics.Color;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.infowave.thedoctorathomeuser.R;
-
+import java.util.ArrayList;
 import java.util.List;
 
 public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.ViewHolder> {
 
     private List<TransactionItem> list;
-    private Context context;
+    private final Context context;
+    private static final String TYPE_CREDIT = "credit";
+    private static final String DEFAULT_AMOUNT = "₹0.00";
+    private static final String DEFAULT_TYPE = "N/A";
+    private static final String DEFAULT_REASON = "No description";
+    private static final String DEFAULT_TIME = "--:--";
 
-    public TransactionAdapter(List<TransactionItem> list, Context context) {
-        this.list = list;
+    public TransactionAdapter(Context context) {
         this.context = context;
+        this.list = new ArrayList<>();
     }
 
-    // ✅ Embedded Model Class
+    public void updateTransactions(List<TransactionItem> newList) {
+        this.list = newList != null ? new ArrayList<>(newList) : new ArrayList<>();
+        notifyDataSetChanged();
+    }
+
     public static class TransactionItem {
-        public String amount, type, reason, timestamp;
+        public final String amount;
+        public final String type;
+        public final String reason;
+        public final String timestamp;
 
         public TransactionItem(String amount, String type, String reason, String timestamp) {
-            this.amount = amount;
-            this.type = type;
-            this.reason = reason;
-            this.timestamp = timestamp;
+            this.amount = amount != null ? amount : "0.00";
+            this.type = type != null ? type : "";
+            this.reason = reason != null ? reason : "";
+            this.timestamp = timestamp != null ? timestamp : "";
         }
+
     }
 
-    // ✅ ViewHolder
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView txtAmount, txtType, txtReason, txtTime;
+        final TextView txtAmount, txtType, txtReason, txtTime;
 
         public ViewHolder(View view) {
             super(view);
@@ -47,27 +62,75 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.transaction_item, parent, false);
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View v = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.transaction_item, parent, false);
         return new ViewHolder(v);
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int i) {
-        TransactionItem item = list.get(i);
-        holder.txtAmount.setText("₹" + item.amount);
-        holder.txtType.setText(item.type.toUpperCase());
-        holder.txtReason.setText(item.reason);
-        holder.txtTime.setText(item.timestamp);
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        try {
+            if (position < 0 || position >= list.size()) {
+                bindDefaultValues(holder);
+                return;
+            }
 
-        // Color based on type
-        holder.txtAmount.setTextColor(item.type.equalsIgnoreCase("credit") ?
-                context.getResources().getColor(android.R.color.holo_green_dark) :
-                context.getResources().getColor(android.R.color.holo_red_dark));
+            TransactionItem item = list.get(position);
+            if (item == null) {
+                bindDefaultValues(holder);
+                return;
+            }
+
+            holder.txtAmount.setText(formatAmount(item.amount));
+            holder.txtType.setText(formatType(item.type));
+            holder.txtReason.setText(formatReason(item.reason));
+            holder.txtTime.setText(formatTimestamp(item.timestamp));
+
+            int colorRes = item.type.equalsIgnoreCase(TYPE_CREDIT) ?
+                    R.color.success_green : R.color.error_red;
+
+            holder.txtAmount.setTextColor(ContextCompat.getColor(context, colorRes));
+        } catch (Exception e) {
+            bindDefaultValues(holder);
+        }
     }
 
     @Override
     public int getItemCount() {
         return list.size();
+    }
+
+    private void bindDefaultValues(ViewHolder holder) {
+        try {
+            holder.txtAmount.setText(DEFAULT_AMOUNT);
+            holder.txtType.setText(DEFAULT_TYPE);
+            holder.txtReason.setText(DEFAULT_REASON);
+            holder.txtTime.setText(DEFAULT_TIME);
+            holder.txtAmount.setTextColor(Color.BLACK);
+        } catch (Exception e) {
+            // Fall through
+        }
+    }
+
+    private String formatAmount(String amount) {
+        try {
+            double value = Double.parseDouble(amount);
+            return String.format("₹%,.2f", value);
+        } catch (NumberFormatException e) {
+            return DEFAULT_AMOUNT;
+        }
+    }
+
+    private String formatType(String type) {
+        return type != null && !type.isEmpty() ? type.toUpperCase() : DEFAULT_TYPE;
+    }
+
+    private String formatReason(String reason) {
+        return reason != null && !reason.isEmpty() ? reason : DEFAULT_REASON;
+    }
+
+    private String formatTimestamp(String timestamp) {
+        return timestamp != null && !timestamp.isEmpty() ? timestamp : DEFAULT_TIME;
     }
 }
