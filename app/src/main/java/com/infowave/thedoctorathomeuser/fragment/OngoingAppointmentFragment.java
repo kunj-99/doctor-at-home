@@ -1,6 +1,5 @@
 package com.infowave.thedoctorathomeuser.fragment;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -16,99 +15,110 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
+
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.infowave.thedoctorathomeuser.adapter.OngoingAdapter;
 import com.infowave.thedoctorathomeuser.MainActivity;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.adapter.OngoingAdapter;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class OngoingAppointmentFragment extends Fragment {
+    private static final String TAG = "OngoingAppointment";
+    private static final String API_URL = "http://sxm.a58.mytemp.website/getOngoingAppointment.php";
+    private static final int REFRESH_INTERVAL = 5000; // 5 seconds
+
     private ViewPager vp;
     private RecyclerView recyclerView;
     private Button bookAppointment;
     private OngoingAdapter adapter;
 
     private String patientId;
-    private static final String API_URL = "http://sxm.a58.mytemp.website/getOngoingAppointment.php";
-    private static final int REFRESH_INTERVAL = 5000; // 5 seconds
 
-    private final List<String> doctorNames = new ArrayList<>();
-    private final List<String> specialties = new ArrayList<>();
-    private final List<String> hospitals = new ArrayList<>();
-    private final List<Float> ratings = new ArrayList<>();
-    // New list to hold profile picture URLs (instead of resource ids)
+    private final List<String> doctorNames     = new ArrayList<>();
+    private final List<String> specialties     = new ArrayList<>();
+    private final List<String> hospitals       = new ArrayList<>();
+    private final List<Float>  ratings         = new ArrayList<>();
     private final List<String> profilePictures = new ArrayList<>();
     private final List<Integer> appointmentIds = new ArrayList<>();
-    private final List<String> statuses = new ArrayList<>(); // Appointment statuses
-    private final List<String> durations = new ArrayList<>(); // Experience duration
-    private final List<Integer> doctorIds = new ArrayList<>();
-
+    private final List<String> statuses        = new ArrayList<>();
+    private final List<String> durations       = new ArrayList<>();
+    private final List<Integer> doctorIds      = new ArrayList<>();
 
     private final Handler handler = new Handler();
-    private Runnable refreshRunnable;
+    private final Runnable refreshRunnable = new Runnable() {
+        @Override public void run() {
+            if (isAdded()) {
+                fetchOngoingAppointments();
+                handler.postDelayed(this, REFRESH_INTERVAL);
+            }
+        }
+    };
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_ongoing_appointment, container, false);
 
+        // ViewPager from parent activity
         if (getActivity() instanceof MainActivity) {
-            MainActivity mainActivity = (MainActivity) getActivity();
-            vp = mainActivity.findViewById(R.id.vp);
+            vp = ((MainActivity) getActivity()).findViewById(R.id.vp);
         }
 
-        // Retrieve patient_id from SharedPreferences
-        SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        // Retrieve patient_id
+        SharedPreferences sp = requireActivity()
+                .getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
         if (patientId.isEmpty()) {
-            Log.e("OngoingAppointmentFragment", "Patient ID not found in SharedPreferences");
+            Log.e(TAG, "Patient ID not found");
             Toast.makeText(getContext(), "Patient ID not available", Toast.LENGTH_SHORT).show();
-        } else {
-            Log.d("OngoingAppointmentFragment", "Patient ID retrieved: " + patientId);
         }
 
         bookAppointment = view.findViewById(R.id.bookButton);
-
-        recyclerView = view.findViewById(R.id.recyclerView);
+        recyclerView    = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // Pass all lists including statuses and durations to the adapter
-        adapter = new OngoingAdapter(requireContext(), doctorNames, specialties, hospitals, ratings, profilePictures, appointmentIds, statuses, durations, doctorIds);
-
+        adapter = new OngoingAdapter(
+                requireContext(),
+                doctorNames,
+                specialties,
+                hospitals,
+                ratings,
+                profilePictures,
+                appointmentIds,
+                statuses,
+                durations,
+                doctorIds
+        );
         recyclerView.setAdapter(adapter);
 
         fetchOngoingAppointments();
-
-        bookAppointment.setOnClickListener(v -> vp.setCurrentItem(1));
-
         startAutoRefresh();
+
+        bookAppointment.setOnClickListener(v -> {
+            if (vp != null) vp.setCurrentItem(1);
+        });
 
         return view;
     }
 
     private void fetchOngoingAppointments() {
-        @SuppressLint("NotifyDataSetChanged") StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL,
+        StringRequest req = new StringRequest(Request.Method.POST, API_URL,
                 response -> {
-                    Log.d("API_RESPONSE", "Response: " + response);
                     try {
-                        JSONObject jsonObject = new JSONObject(response);
-
-                        if (jsonObject.has("error")) {
-                            Toast.makeText(requireContext(), jsonObject.getString("error"), Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-
-                        if (jsonObject.getBoolean("success")) {
-                            JSONArray appointmentsArray = jsonObject.getJSONArray("appointments");
+                        JSONObject json = new JSONObject(response);
+                        if (json.optBoolean("success", false)) {
+                            JSONArray arr = json.getJSONArray("appointments");
 
                             doctorNames.clear();
                             specialties.clear();
@@ -117,77 +127,61 @@ public class OngoingAppointmentFragment extends Fragment {
                             profilePictures.clear();
                             appointmentIds.clear();
                             statuses.clear();
-                            doctorIds.clear();
                             durations.clear();
+                            doctorIds.clear();
 
-                            for (int i = 0; i < appointmentsArray.length(); i++) {
-                                JSONObject appointment = appointmentsArray.getJSONObject(i);
-                                Log.d("APPT_DEBUG", "Appointment: " + appointment.toString());
-
-                                doctorNames.add(appointment.getString("doctor_name"));
-                                specialties.add(appointment.getString("specialty"));
-                                hospitals.add(appointment.getString("hospital_name"));
-                                ratings.add((float) appointment.getDouble("experience"));
-                                statuses.add(appointment.getString("status"));
-                                appointmentIds.add(appointment.getInt("appointment_id"));
-                                durations.add(appointment.getString("experience_duration"));
-                                doctorIds.add(appointment.getInt("doctor_id"));
-
-
-                                // Retrieve the profile_picture URL from the API response
-                                String profilePicUrl = appointment.optString("profile_picture", "");
-                                profilePictures.add(profilePicUrl);
+                            for (int i = 0; i < arr.length(); i++) {
+                                JSONObject appt = arr.getJSONObject(i);
+                                doctorNames    .add(appt.getString("doctor_name"));
+                                specialties    .add(appt.getString("specialty"));
+                                hospitals      .add(appt.getString("hospital_name"));
+                                ratings        .add((float) appt.getDouble("experience"));
+                                statuses       .add(appt.getString("status"));
+                                appointmentIds .add(appt.getInt("appointment_id"));
+                                durations      .add(appt.getString("experience_duration"));
+                                doctorIds      .add(appt.getInt("doctor_id"));
+                                profilePictures.add(appt.optString("profile_picture", ""));
                             }
 
-                            if (isAdded()) {
-                                requireActivity().runOnUiThread(() -> {
-                                    adapter.notifyDataSetChanged();
-                                    Log.d("ADAPTER_UPDATE", "Adapter updated with " + doctorNames.size() + " items");
-                                });
-                            }
+                            adapter.notifyDataSetChanged();
+                            Log.d(TAG, "Loaded " + doctorNames.size() + " appointments");
                         } else {
-                            Toast.makeText(requireContext(), "No ongoing appointments found", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(),
+                                    "No ongoing appointments",
+                                    Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
-                        Log.e("JSON_ERROR", "Parsing Error: " + e.getMessage());
-                        Toast.makeText(requireContext(), "JSON Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "JSON parse error", e);
+                        Toast.makeText(requireContext(),
+                                "Data parse error",
+                                Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
-                    String errorMsg = (error.getMessage() != null) ? error.getMessage() : "Unknown Error";
-                    Log.e("VOLLEY_ERROR", "Error: " + errorMsg);
-                    Toast.makeText(requireContext(), "Volley Error: " + errorMsg, Toast.LENGTH_SHORT).show();
-                }) {
+                    Log.e(TAG, "Network error", error);
+                    Toast.makeText(requireContext(),
+                            "Failed to fetch appointments",
+                            Toast.LENGTH_SHORT).show();
+                }
+        ) {
             @Override
             protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("patient_id", patientId);
-                return params;
+                Map<String,String> p = new HashMap<>();
+                p.put("patient_id", patientId);
+                return p;
             }
         };
 
-        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-        requestQueue.add(stringRequest);
+        Volley.newRequestQueue(requireContext()).add(req);
     }
 
     private void startAutoRefresh() {
         stopAutoRefresh();
-        refreshRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (isAdded()) {
-                    fetchOngoingAppointments();
-                    handler.postDelayed(this, REFRESH_INTERVAL);
-                }
-            }
-        };
         handler.postDelayed(refreshRunnable, REFRESH_INTERVAL);
     }
 
     private void stopAutoRefresh() {
-        if (refreshRunnable != null) {
-            handler.removeCallbacks(refreshRunnable);
-        }
+        handler.removeCallbacks(refreshRunnable);
     }
 
     @Override

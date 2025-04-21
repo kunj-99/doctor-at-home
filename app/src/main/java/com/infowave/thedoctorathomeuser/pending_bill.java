@@ -1,6 +1,7 @@
 package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -11,12 +12,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.appcompat.app.AlertDialog;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -34,58 +34,45 @@ import java.util.Map;
 public class pending_bill extends AppCompatActivity {
 
     private static final String TAG = "PendingBill";
-
-    // UPI Payment Constants
     private static final int UPI_PAYMENT_REQUEST_CODE = 123;
-    private static final String MERCHANT_UPI_ID  = "mohitvatiya3333@oksbi";
-    private static final String MERCHANT_NAME    = "the doctor at home";
-    private static final String TRANSACTION_NOTE = "Payment for appointment";
-    private static final String CURRENCY         = "INR";
+
+    // Dynamically loaded from get_upi_config.php
+    private String merchantUpiId;
+    private String merchantName;
+    private String transactionNote;
+    private String currency;
+    private double baseDistance;
+    private double extraCostPerKm;
+    private double platformCharge;
 
     // Payment Base and Fees
-    private final double baseCost = 1.0;
+    private final double baseCost     = 1.0;
     private final double consultingFee = 0.0;
-    private final double gst = 0.0;
-    private double distanceCharge = 0.0;
-    private double distanceKm = 0.0;
-    private double finalCost = 0.0;
-
-    // Distance Charge Calculation
-    private static final double BASE_DISTANCE = 3.0;
-    private static final double EXTRA_COST_PER_KM = 7.0;
-
-    // Platform Charge
-    private static final double PLATFORM_CHARGE = 50.0;
+    private final double gst          = 0.0;
+    private double distanceCharge     = 0.0;
+    private double distanceKm         = 0.0;
+    private double finalCost          = 0.0;
 
     // Booking Data
     private String patientName, age, gender, problem, address, doctorId, doctorName, Status, selectedPaymentMethod = "";
-    private String patientId;
-    private String pincode;
+    private String patientId, pincode;
 
     // UI References
     private Button payButton, btnOnlinePayment, btnOfflinePayment, btnRechargeWallet;
     private TextView tvBillDate, tvBillTime, tvBillPatientName, tvBillDoctorName;
-    // Payment Details UI References
-    private TextView tvPaymentAmountValue, tvConsultingFeeValue, tvDistanceKmValue, tvDistanceChargeValue, tvGstValue, tvTotalPaidValue;
-    // New UI elements for wallet
-    private TextView tvWalletBalance;
-    private TextView tvPlatformCharge; // To display platform charge debited or added
+    private TextView tvPaymentAmountValue, tvConsultingFeeValue, tvDistanceKmValue,
+            tvDistanceChargeValue, tvGstValue, tvTotalPaidValue;
+    private TextView tvWalletBalance, tvPlatformCharge;
 
-    // Coordinates for Route Calculations
-    private double userLat;
-    private double userLng;
-    private double docLat;
-    private double docLng;
-
+    // Coordinates
+    private double userLat, userLng, docLat, docLng;
     private String googleMapsLink = "";
 
-    // Wallet Balance (fetched dynamically)
+    // Wallet Balance
     private double walletBalance = 0.0;
-
-    // To ensure that for online payment the platform charge is added only once
     private boolean platformChargeAdded = false;
 
-    // Handler for continuous wallet refresh (e.g., every 30 seconds)
+    // Handler for wallet refresh
     private final Handler walletHandler = new Handler();
     private Runnable walletRunnable;
 
@@ -95,37 +82,40 @@ public class pending_bill extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pending_bill);
 
-        // Retrieve data passed via Intent
+        // show loader for 3s on startup while we fetch config + other APIs
+        loaderutil.showLoader(this);
+        new Handler().postDelayed(loaderutil::hideLoader, 3000);
+
+        // 1) load everything (UPI + distances + platform) from DB
+        fetchUpiConfig();
+
+        // Retrieve Intent data
         Intent intent = getIntent();
         patientName = intent.getStringExtra("patient_name");
-        age = String.valueOf(intent.getIntExtra("age", 0));
-        gender = intent.getStringExtra("gender");
-        problem = intent.getStringExtra("problem");
-        address = intent.getStringExtra("address");
-        doctorId = intent.getStringExtra("doctor_id");
-        doctorName = intent.getStringExtra("doctorName");
-        Status = intent.getStringExtra("appointment_status");
-        pincode = intent.getStringExtra("pincode");
+        age         = String.valueOf(intent.getIntExtra("age", 0));
+        gender      = intent.getStringExtra("gender");
+        problem     = intent.getStringExtra("problem");
+        address     = intent.getStringExtra("address");
+        doctorId    = intent.getStringExtra("doctor_id");
+        doctorName  = intent.getStringExtra("doctorName");
+        Status      = intent.getStringExtra("appointment_status");
+        pincode     = intent.getStringExtra("pincode");
 
         if ("Request for visit".equals(Status)) {
             Status = "Requested";
         } else if ("Book Appointment".equals(Status)) {
             Status = "Confirmed";
         }
-        Log.d(TAG, "Booking details => patientName=" + patientName + ", age=" + age +
-                ", gender=" + gender + ", problem=" + problem +
-                ", address=" + address + ", doctorId=" + doctorId +
-                ", Status=" + Status);
 
-        // User Coordinates
+        // Coordinates
         userLat = intent.getDoubleExtra("latitude", 0.0);
         userLng = intent.getDoubleExtra("longitude", 0.0);
         if (userLat != 0.0 && userLng != 0.0) {
-            googleMapsLink = "https://www.google.com/maps/search/?api=1&query=" + userLat + "," + userLng;
+            googleMapsLink = "https://www.google.com/maps/search/?api=1&query="
+                    + userLat + "," + userLng;
         }
-        Log.d(TAG, "User lat,lng => " + userLat + "," + userLng);
 
-        // Retrieve Patient ID from SharedPreferences
+        // SharedPreferences for patient_id
         SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
         if (patientId.isEmpty()) {
@@ -134,552 +124,478 @@ public class pending_bill extends AppCompatActivity {
             return;
         }
 
-        // Link XML UI elements
-        tvBillPatientName = findViewById(R.id.tv_bill_patient_name);
-        tvBillDoctorName = findViewById(R.id.tv_bill_doctor_name);
-        tvBillDate = findViewById(R.id.tv_bill_date);
-        tvBillTime = findViewById(R.id.tv_bill_time);
-        tvWalletBalance = findViewById(R.id.tv_wallet_balance);
-        tvPlatformCharge = findViewById(R.id.tv_platform_charge);
+        // Bind UI
+        tvBillPatientName     = findViewById(R.id.tv_bill_patient_name);
+        tvBillDoctorName      = findViewById(R.id.tv_bill_doctor_name);
+        tvBillDate            = findViewById(R.id.tv_bill_date);
+        tvBillTime            = findViewById(R.id.tv_bill_time);
+        tvWalletBalance       = findViewById(R.id.tv_wallet_balance);
+        tvPlatformCharge      = findViewById(R.id.tv_platform_charge);
+        btnRechargeWallet     = findViewById(R.id.btn_recharge_wallet);
+        tvPaymentAmountValue  = findViewById(R.id.tv_payment_amount_value);
+        tvConsultingFeeValue  = findViewById(R.id.tv_consulting_fee_value);
+        tvDistanceKmValue     = findViewById(R.id.tv_distance_km_value);
+        tvDistanceChargeValue = findViewById(R.id.tv_distance_charge_value);
+        tvGstValue            = findViewById(R.id.tv_gst_value);
+        tvTotalPaidValue      = findViewById(R.id.tv_total_paid_value);
+        btnOnlinePayment      = findViewById(R.id.btn_online_payment);
+        btnOfflinePayment     = findViewById(R.id.btn_offline_payment);
+        payButton             = findViewById(R.id.pay_button);
 
-        // New button for wallet recharge (visible when offline payment is not possible)
-        btnRechargeWallet = findViewById(R.id.btn_recharge_wallet);
-        btnRechargeWallet.setVisibility(View.GONE); // Initially hidden
+        // Initial UI setup
+        btnRechargeWallet.setVisibility(View.GONE);
+        if (patientName != null) tvBillPatientName.setText(patientName);
+        if (doctorName  != null) tvBillDoctorName.setText(doctorName);
 
-        if (patientName != null) {
-            tvBillPatientName.setText(patientName);
-        }
-        if (doctorName != null) {
-            tvBillDoctorName.setText(doctorName);
-        }
-
-        // Set current date/time
-        String curDate = new SimpleDateFormat("dd MMMM, yyyy", Locale.getDefault()).format(new Date());
+        String curDate = new SimpleDateFormat("dd MMMM, yyyy", Locale.getDefault())
+                .format(new Date());
         tvBillDate.setText(curDate);
-        String curTime = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
+        String curTime = new SimpleDateFormat("hh:mm a", Locale.getDefault())
+                .format(new Date());
         tvBillTime.setText(curTime);
 
-        // Link Payment Details UI elements
-        tvPaymentAmountValue = findViewById(R.id.tv_payment_amount_value);
-        tvConsultingFeeValue = findViewById(R.id.tv_consulting_fee_value);
-        tvDistanceKmValue = findViewById(R.id.tv_distance_km_value);
-        tvDistanceChargeValue = findViewById(R.id.tv_distance_charge_value);
-        tvGstValue = findViewById(R.id.tv_gst_value);
-        tvTotalPaidValue = findViewById(R.id.tv_total_paid_value);
-
-        // Link Payment Method Buttons
-        btnOnlinePayment = findViewById(R.id.btn_online_payment);
-        btnOfflinePayment = findViewById(R.id.btn_offline_payment);
-
-        // Set initial button background colors using custom colors
-        btnOnlinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
+        btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.custom_gray));
         btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
-
-        // Initialize final cost calculation
-        finalCost = baseCost + consultingFee + gst + distanceCharge;
-        updatePaymentUI();
-
-        // Link the Proceed to Payment button and set initial background color.
-        payButton = findViewById(R.id.pay_button);
-        payButton.setBackgroundColor(getResources().getColor(R.color.custom_gray));
-
+        payButton        .setBackgroundColor(getResources().getColor(R.color.custom_gray));
         if (!areRequiredParametersPresent()) {
-            payButton.setEnabled(false);
-            payButton.setAlpha(0.5f);
+            disablePayButton();
             Toast.makeText(this, "Some booking details are missing.", Toast.LENGTH_LONG).show();
         }
 
-        // Fetch dynamic wallet balance immediately
-        fetchWalletBalance();
+        finalCost = baseCost + consultingFee + gst + distanceCharge;
+        updatePaymentUI();
 
-        // Start continuous wallet refresh (every 30 seconds)
-        walletRunnable = new Runnable() {
-            @Override
-            public void run() {
-                fetchWalletBalance();
-                walletHandler.postDelayed(this, 3000);
-            }
+        // Fetch wallet & start auto-refresh every 30s
+        fetchWalletBalance();
+        walletRunnable = () -> {
+            fetchWalletBalance();
+            walletHandler.postDelayed(walletRunnable, 30000);
         };
         walletHandler.post(walletRunnable);
 
-        // Button listeners
-
+        // Offline button
         btnOfflinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Offline";
             Toast.makeText(this, "Offline Payment selected", Toast.LENGTH_SHORT).show();
             btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_green));
-            btnOnlinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
-
-            // Remove platform charge if it was added for online payment
+            btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.custom_gray));
             if (platformChargeAdded) {
-                finalCost -= PLATFORM_CHARGE;
-                platformChargeAdded = false;  // Reset the flag
-                tvPlatformCharge.setText(""); // Clear the platform charge text
+                finalCost -= platformCharge;
+                platformChargeAdded = false;
+                tvPlatformCharge.setText("");
             }
-
-            // Check offline payment: if wallet balance is sufficient (>= PLATFORM_CHARGE)
-            if (walletBalance >= PLATFORM_CHARGE) {
-                payButton.setEnabled(true);
-                payButton.setAlpha(1.0f);
-                payButton.setBackgroundColor(getResources().getColor(R.color.custom_green));
-                btnRechargeWallet.setVisibility(View.GONE);
+            if (walletBalance >= platformCharge) {
+                enablePayButton();
             } else {
-                payButton.setEnabled(false);
-                payButton.setAlpha(0.5f);
-                payButton.setBackgroundColor(getResources().getColor(R.color.custom_gray));
-                Toast.makeText(this, "Insufficient wallet balance for offline payment.", Toast.LENGTH_SHORT).show();
-                // Show the recharge wallet button instead of immediately redirecting
+                disablePayButton();
                 btnRechargeWallet.setVisibility(View.VISIBLE);
             }
-
-            // Update the payment UI for offline payment (with platform charge removed)
             updatePaymentUI();
         });
 
+        // Online button
         btnOnlinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Online";
             Toast.makeText(this, "Online Payment selected", Toast.LENGTH_SHORT).show();
-            btnOnlinePayment.setBackgroundColor(getResources().getColor(R.color.custom_green));
+            btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.custom_green));
             btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
-
-            // If platform charge hasn't been added yet, add it now
             if (!platformChargeAdded) {
-                finalCost += PLATFORM_CHARGE;
+                finalCost += platformCharge;
                 platformChargeAdded = true;
-                tvPlatformCharge.setText("Platform Charge Added: ₹" + PLATFORM_CHARGE);
+                tvPlatformCharge.setText("Platform Charge Added: ₹" + platformCharge);
             }
-            // Always allow payButton click for online payment
-            payButton.setEnabled(true);
-            payButton.setAlpha(1.0f);
-            payButton.setBackgroundColor(getResources().getColor(R.color.custom_green));
+            enablePayButton();
         });
 
-        // Recharge Wallet Button listener (for offline if insufficient balance)
-        btnRechargeWallet.setOnClickListener(v -> {
-            // Redirect to the payments (recharge) activity/page.
-            Intent rechargeIntent = new Intent(pending_bill.this, payments.class);
-            startActivity(rechargeIntent);
-        });
+        btnRechargeWallet.setOnClickListener(v ->
+                startActivity(new Intent(pending_bill.this, payments.class))
+        );
 
-        // Fetch doctor's location and calculate driving distance
         fetchDoctorLocation(doctorId);
 
-        // Proceed button listener with wallet logic based on payment method
-        payButton.setOnClickListener(v -> {
-            if (selectedPaymentMethod == null || selectedPaymentMethod.isEmpty()) {
-                Toast.makeText(this, "Please select a payment method", Toast.LENGTH_SHORT).show();
-            } else if ("Offline".equals(selectedPaymentMethod)) {
-                // For offline payment, check again
-                if (walletBalance >= PLATFORM_CHARGE) {
-                    deductWalletCharge(PLATFORM_CHARGE, "Platform charge for offline appointment booking");
-                    // Show in platform charge text view
-                    tvPlatformCharge.setText("Platform Charge Debited: ₹" + PLATFORM_CHARGE);
-                    saveBookingData(googleMapsLink);
-                } else {
-                    Toast.makeText(this, "Insufficient balance for offline payment.", Toast.LENGTH_SHORT).show();
-                    btnRechargeWallet.setVisibility(View.VISIBLE);
-                }
-            } else if ("Online".equals(selectedPaymentMethod)) {
-                if (walletBalance >= PLATFORM_CHARGE) {
-                    deductWalletCharge(PLATFORM_CHARGE, "Platform charge for online appointment (wallet debit)");
-                    tvPlatformCharge.setText("Platform Charge Debited: ₹" + PLATFORM_CHARGE);
-                    startUpiPayment();
-                } else {
-                    // If insufficient wallet balance, add platform charge only once to final cost
-                    if (!platformChargeAdded) {
-                        finalCost = finalCost + PLATFORM_CHARGE;
-                        platformChargeAdded = true;
-                        tvPlatformCharge.setText("Platform Charge Added: ₹" + PLATFORM_CHARGE);
-                    }
-                    updatePaymentUI();
-                    startUpiPayment();
-                }
-            }
-        });
-    }
+        // Proceed – show loader, then save / pay
+        payButton.setOnClickListener(v -> new AlertDialog.Builder(pending_bill.this)
+                .setTitle("Confirm Appointment")
+                .setMessage("Are you sure?\n\nBooking appointment charge will be ₹"
+                        + platformCharge + " if you cancel.")
+                .setCancelable(false)
+                .setPositiveButton("Proceed", (dialog, which) -> {
+                    // show loader until everything finishes
+                    loaderutil.showLoader(pending_bill.this);
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        walletHandler.removeCallbacks(walletRunnable);
-    }
+                    if (selectedPaymentMethod.isEmpty()) {
+                        loaderutil.hideLoader();
+                        Toast.makeText(this, "Please select a payment method",
+                                Toast.LENGTH_SHORT).show();
 
-    // Check that all required parameters are present
-    private boolean areRequiredParametersPresent() {
-        return (patientName != null && !patientName.trim().isEmpty() &&
-                age != null && !age.trim().isEmpty() &&
-                gender != null && !gender.trim().isEmpty() &&
-                problem != null && !problem.trim().isEmpty() &&
-                address != null && !address.trim().isEmpty() &&
-                doctorId != null && !doctorId.trim().isEmpty() &&
-                doctorName != null && !doctorName.trim().isEmpty() &&
-                Status != null && !Status.trim().isEmpty());
-    }
-
-    // Fetch wallet balance using API
-    private void fetchWalletBalance() {
-        String url = "http://sxm.a58.mytemp.website/get_wallet_balance.php";
-
-        @SuppressLint("SetTextI18n") StringRequest stringRequest = new StringRequest(Request.Method.POST, url,
-                response -> {
-                    try {
-                        JSONObject obj = new JSONObject(response);
-                        if (obj.getString("status").equals("success")) {
-                            walletBalance = Double.parseDouble(obj.getString("wallet_balance"));
-                            Log.d(TAG, "Wallet balance fetched: ₹" + walletBalance);
-                            tvWalletBalance.setText("Wallet Balance: ₹" + String.format(Locale.getDefault(), "%.2f", walletBalance));
+                    } else if ("Offline".equals(selectedPaymentMethod)) {
+                        if (walletBalance >= platformCharge) {
+                            deductWalletCharge(platformCharge,
+                                    "Platform charge for offline appointment booking");
+                            tvPlatformCharge.setText("Platform Charge Debited: ₹" + platformCharge);
+                            saveBookingData(googleMapsLink);
                         } else {
-                            Toast.makeText(this, "Unable to fetch wallet balance", Toast.LENGTH_SHORT).show();
+                            loaderutil.hideLoader();
+                            Toast.makeText(this,
+                                    "Insufficient balance for offline payment.",
+                                    Toast.LENGTH_SHORT).show();
+                            btnRechargeWallet.setVisibility(View.VISIBLE);
                         }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        Toast.makeText(this, "Wallet fetch error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                },
-                error -> {
-                    Toast.makeText(this, "Network error while fetching wallet", Toast.LENGTH_SHORT).show();
-                    error.printStackTrace();
-                }
-        ) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("patient_id", patientId);
-                return params;
-            }
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/x-www-form-urlencoded");
-                return headers;
-            }
-        };
-        Volley.newRequestQueue(this).add(stringRequest);
-    }
 
-    // Fetch doctor's location using API
-    private void fetchDoctorLocation(String docId) {
-        String fetchUrl = "http://sxm.a58.mytemp.website/get_doctor_location.php?doctor_id=" + docId;
-        Log.d(TAG, "Fetching doctor location => " + fetchUrl);
-
-        RequestQueue queue = Volley.newRequestQueue(this);
-        JsonObjectRequest request = new JsonObjectRequest(
-                Request.Method.GET,
-                fetchUrl,
-                null,
-                response -> {
-                    Log.d(TAG, "Doctor location response => " + response);
-                    try {
-                        boolean success = response.getBoolean("success");
-                        if (success) {
-                            String docLocationUrl = response.getString("location");
-                            parseDoctorLatLng(docLocationUrl);
+                    } else { // Online
+                        if (walletBalance >= platformCharge) {
+                            deductWalletCharge(platformCharge,
+                                    "Platform charge for online appointment (wallet debit)");
+                            tvPlatformCharge.setText("Platform Charge Debited: ₹" + platformCharge);
+                            startUpiPayment();
                         } else {
-                            Log.e(TAG, "Doctor location not successful => " + response);
+                            if (!platformChargeAdded) {
+                                finalCost += platformCharge;
+                                platformChargeAdded = true;
+                                tvPlatformCharge.setText(
+                                        "Platform Charge Added: ₹" + platformCharge);
+                            }
                             updatePaymentUI();
+                            startUpiPayment();
                         }
-                    } catch (JSONException e) {
-                        Log.e(TAG, "JSON parse error => " + e.getMessage());
-                        updatePaymentUI();
                     }
-                },
-                error -> {
-                    Log.e(TAG, "Error fetching doctor location => " + error.getMessage());
-                    updatePaymentUI();
-                }
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Cancel", (d, w) -> d.dismiss())
+                .show()
         );
-        queue.add(request);
     }
 
-    // Parse doctor's latitude and longitude from URL
-    private void parseDoctorLatLng(String docUrl) {
-        Log.d(TAG, "Parsing doctor lat,lng => " + docUrl);
-        try {
-            Uri uri = Uri.parse(docUrl);
-            String qParam = uri.getQueryParameter("query");
-            if (qParam != null && qParam.contains(",")) {
-                String[] parts = qParam.split(",");
-                docLat = Double.parseDouble(parts[0]);
-                docLng = Double.parseDouble(parts[1]);
-                Log.d(TAG, "Doctor lat,lng => " + docLat + "," + docLng);
-                fetchDrivingDistance(userLat, userLng, docLat, docLng);
-            } else {
-                Log.e(TAG, "No valid lat,lng found => " + qParam);
-                updatePaymentUI();
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error parsing doctor lat,lng => " + e.getMessage());
-            updatePaymentUI();
-        }
-    }
-
-    // Fetch driving distance using Google Routes API
-    private void fetchDrivingDistance(double lat1, double lng1, double lat2, double lng2) {
-        // Construct the URL with your API key (replace with your own key)
-        String url = "https://maps.googleapis.com/maps/api/directions/json?origin=" + lat1 + "," + lng1 + "&destination=" + lat2 + "," + lng2 + "&key=" + getString(R.string.google_maps_key);
-
-        // Make the network request using Volley
-        RequestQueue queue = Volley.newRequestQueue(this);
-        JsonObjectRequest routeReq = new JsonObjectRequest(
-                Request.Method.GET,
-                url,
-                null,
-                response -> {
-                    Log.d(TAG, "Routes API response => " + response);
-                    parseRoutesResponse(response);  // Handle the response after the request
-                },
-                error -> {
-                    String errorMessage = error.getMessage();
-                    if (error.networkResponse != null && error.networkResponse.data != null) {
-                        errorMessage = new String(error.networkResponse.data);
-                    }
-                    Log.e(TAG, "Routes API error => " + errorMessage);
-                    updatePaymentUI();  // Handle errors
-                }
-        );
-        queue.add(routeReq);
-    }
-
-    // Parse Routes API response to extract driving distance and calculate charge
-    // Parse Routes API response to extract driving distance and calculate charge
-    private void parseRoutesResponse(JSONObject response) {
-        try {
-            // Extract the "routes" array from the response
-            JSONArray routes = response.getJSONArray("routes");
-
-            if (routes.length() > 0) {
-                JSONObject firstRoute = routes.getJSONObject(0);
-
-                // Extract the "legs" array from the first route
-                JSONArray legs = firstRoute.getJSONArray("legs");
-
-                if (legs.length() > 0) {
-                    JSONObject firstLeg = legs.getJSONObject(0);
-
-                    // Get the distance in meters from the first leg
-                    JSONObject distance = firstLeg.getJSONObject("distance");
-                    long distanceMeters = distance.getLong("value");
-
-                    // Convert the distance to kilometers
-                    distanceKm = distanceMeters / 1000.0;
-
-                    Log.d(TAG, "Driving distance (Routes API) => " + distanceKm + " km");
-
-                    // Calculate the charge based on the distance
-                    if (distanceKm > BASE_DISTANCE) {
-                        double extraDist = distanceKm - BASE_DISTANCE;
-                        distanceCharge = extraDist * EXTRA_COST_PER_KM;
+    // Load UPI + distance + platform config from your PHP
+    private void fetchUpiConfig() {
+        String url = "http://sxm.a58.mytemp.website/get_upi_config.php";
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
+                resp -> {
+                    if (resp.optBoolean("success")) {
+                        merchantUpiId   = resp.optString("upi_id");
+                        merchantName    = resp.optString("merchant_name");
+                        transactionNote = resp.optString("transaction_note");
+                        currency        = resp.optString("currency", "INR");
+                        baseDistance    = resp.optDouble("base_distance", 3.0);
+                        extraCostPerKm  = resp.optDouble("extra_cost_per_km", 7.0);
+                        platformCharge  = resp.optDouble("platform_charge", 50.0);
+                        Log.d(TAG, "Config loaded: baseDist=" + baseDistance +
+                                " extraKm=" + extraCostPerKm +
+                                " platChg=" + platformCharge);
                     } else {
-                        distanceCharge = 0.0;
+                        Log.e(TAG, "Config not found: " + resp.optString("message"));
                     }
-
-                    // Calculate the final cost
-                    finalCost = baseCost + consultingFee + gst + distanceCharge;
-                }
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "Error parsing Routes API response => " + e.getMessage());
-        }
-
-        // Update the UI with the parsed data
-        updatePaymentUI();
+                },
+                err -> Log.e(TAG, "Network error fetching config", err)
+        );
+        Volley.newRequestQueue(this).add(req);
     }
 
-
-    // Update Payment UI fields
-    @SuppressLint("SetTextI18n")
-    private void updatePaymentUI() {
-        Log.d(TAG, "Updating UI => distance: " + distanceKm + " km, charge: " + distanceCharge + ", final cost: " + finalCost);
-        tvPaymentAmountValue.setText("₹ " + String.format(Locale.getDefault(), "%.0f", baseCost));
-        tvConsultingFeeValue.setText("₹ " + String.format(Locale.getDefault(), "%.0f", consultingFee));
-        tvDistanceKmValue.setText(String.format(Locale.getDefault(), "%.1f km", distanceKm));
-        tvDistanceChargeValue.setText("₹ " + String.format(Locale.getDefault(), "%.0f", distanceCharge));
-        tvGstValue.setText("₹ " + String.format(Locale.getDefault(), "%.0f", gst));
-        tvTotalPaidValue.setText("₹ " + String.format(Locale.getDefault(), "%.0f", finalCost));
-    }
-
-    // Deduct the platform charge from wallet and record transaction
-    private void deductWalletCharge(double charge, String reason) {
-        walletBalance -= charge;
-        updateUserWallet(patientId, walletBalance);
-        addWalletTransaction(Integer.parseInt(patientId), charge, "debit", reason);
-    }
-
-    // Initiate UPI Payment flow
     private void startUpiPayment() {
-        String amtStr = String.format(Locale.getDefault(), "%.2f", finalCost);
-        String upiUri = "upi://pay?pa=" + MERCHANT_UPI_ID +
-                "&pn=" + Uri.encode(MERCHANT_NAME) +
-                "&tn=" + Uri.encode(TRANSACTION_NOTE) +
-                "&am=" + amtStr +
-                "&cu=" + CURRENCY;
-        Log.d(TAG, "UPI Payment URI => " + upiUri);
-        Intent upiIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(upiUri));
-        Intent chooser = Intent.createChooser(upiIntent, "Pay via UPI");
-        if (upiIntent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(chooser, UPI_PAYMENT_REQUEST_CODE);
-        } else {
-            Toast.makeText(this, "No UPI app found!", Toast.LENGTH_SHORT).show();
+        if (merchantUpiId == null) {
+            Toast.makeText(this, "Loading payment settings…", Toast.LENGTH_SHORT).show();
+            return;
         }
+        String amtStr = String.format(Locale.getDefault(), "%.2f", finalCost);
+        Uri upiUri = Uri.parse("upi://pay").buildUpon()
+                .appendQueryParameter("pa", merchantUpiId)
+                .appendQueryParameter("pn", merchantName)
+                .appendQueryParameter("tn", transactionNote)
+                .appendQueryParameter("am", amtStr)
+                .appendQueryParameter("cu", currency)
+                .build();
+
+        Intent intent = new Intent(Intent.ACTION_VIEW, upiUri);
+        startActivityForResult(Intent.createChooser(intent, "Pay via UPI"),
+                UPI_PAYMENT_REQUEST_CODE);
     }
 
     @Override
     protected void onActivityResult(int reqCode, int resCode, @Nullable Intent data) {
         super.onActivityResult(reqCode, resCode, data);
         if (reqCode == UPI_PAYMENT_REQUEST_CODE) {
-            String response = (data != null) ? data.getStringExtra("response") : null;
+            String response = data != null ? data.getStringExtra("response") : null;
             processUpiPaymentResponse(response);
         }
     }
 
-    // Process the response from UPI Payment intent
     private void processUpiPaymentResponse(String response) {
         if (response == null || response.trim().isEmpty()) {
+            loaderutil.hideLoader();
             Toast.makeText(this, "Payment cancelled or failed", Toast.LENGTH_SHORT).show();
             return;
         }
-        Log.d(TAG, "UPI Payment Response => " + response);
         String status = "";
-        String approvalRefNo = "";
         String[] arr = response.split("&");
         for (String part : arr) {
             String[] kv = part.split("=");
-            if (kv.length >= 2) {
-                String key = kv[0].toLowerCase();
-                String val = kv[1].toLowerCase();
-                if ("status".equals(key)) {
-                    status = val;
-                } else if ("txnref".equals(key) || "txnrefno".equals(key) || "approvalrefno".equals(key)) {
-                    approvalRefNo = val;
-                }
+            if (kv.length >= 2 && "status".equals(kv[0].toLowerCase())) {
+                status = kv[1].toLowerCase();
             }
         }
-        Log.d(TAG, "UPI Payment status => " + status + ", reference => " + approvalRefNo);
         if ("success".equals(status)) {
             Toast.makeText(this, "Payment successful!", Toast.LENGTH_SHORT).show();
             saveBookingData(googleMapsLink);
         } else {
+            loaderutil.hideLoader();
             Toast.makeText(this, "Payment failed or cancelled.", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // Save appointment data to the server
-    private void saveBookingData(String googleMapsLink) {
-        String url = "http://sxm.a58.mytemp.website/save_appointment.php";
-        Log.d(TAG, "Saving booking data => " + url);
+    @SuppressLint("SetTextI18n")
+    private void updatePaymentUI() {
+        tvPaymentAmountValue.setText("₹ " + String.format(Locale.getDefault(),"%.0f", baseCost));
+        tvConsultingFeeValue.setText("₹ " + String.format(Locale.getDefault(),"%.0f", consultingFee));
+        tvDistanceKmValue.setText(String.format(Locale.getDefault(),"%.1f km", distanceKm));
+        tvDistanceChargeValue.setText("₹ " + String.format(Locale.getDefault(),"%.0f", distanceCharge));
+        tvGstValue.setText("₹ " + String.format(Locale.getDefault(),"%.0f", gst));
+        tvTotalPaidValue.setText("₹ " + String.format(Locale.getDefault(),"%.0f", finalCost));
+    }
+
+    private boolean areRequiredParametersPresent() {
+        return patientName  != null && !patientName.trim().isEmpty()
+                && age          != null && !age.trim().isEmpty()
+                && gender       != null && !gender.trim().isEmpty()
+                && problem      != null && !problem.trim().isEmpty()
+                && address      != null && !address.trim().isEmpty()
+                && doctorId     != null && !doctorId.trim().isEmpty()
+                && doctorName   != null && !doctorName.trim().isEmpty()
+                && Status       != null && !Status.trim().isEmpty();
+    }
+
+    private void fetchWalletBalance() {
+        String url = "http://sxm.a58.mytemp.website/get_wallet_balance.php";
         StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> {
-                    Log.d(TAG, "Booking saved: " + resp);
-                    Toast.makeText(this, "Appointment saved successfully!", Toast.LENGTH_SHORT).show();
-                    onBookingSuccess();
+                    try {
+                        JSONObject obj = new JSONObject(resp);
+                        if ("success".equals(obj.getString("status"))) {
+                            walletBalance = obj.getDouble("wallet_balance");
+                            tvWalletBalance.setText(
+                                    "Wallet Balance: ₹" + String.format(Locale.getDefault(),"%.2f", walletBalance));
+                        }
+                    } catch (JSONException e) { /*…*/ }
+                },
+                err -> Log.e(TAG, "Wallet fetch error", err)
+        ) {
+            @Override
+            protected Map<String,String> getParams() {
+                Map<String,String> p = new HashMap<>();
+                p.put("patient_id", patientId);
+                return p;
+            }
+        };
+        Volley.newRequestQueue(this).add(req);
+    }
+
+    private void fetchDoctorLocation(String docId) {
+        String url = "http://sxm.a58.mytemp.website/get_doctor_location.php?doctor_id=" + docId;
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url,null,
+                resp -> {
+                    try {
+                        if (resp.getBoolean("success")) {
+                            parseDoctorLatLng(resp.getString("location"));
+                        } else updatePaymentUI();
+                    } catch (JSONException e) { updatePaymentUI(); }
+                },
+                err -> updatePaymentUI()
+        );
+        Volley.newRequestQueue(this).add(req);
+    }
+
+    private void parseDoctorLatLng(String docUrl) {
+        try {
+            Uri uri = Uri.parse(docUrl);
+            String q = uri.getQueryParameter("query");
+            if (q != null && q.contains(",")) {
+                String[] p = q.split(",");
+                docLat = Double.parseDouble(p[0]);
+                docLng = Double.parseDouble(p[1]);
+                fetchDrivingDistance(userLat, userLng, docLat, docLng);
+            } else {
+                updatePaymentUI();
+            }
+        } catch (Exception e) {
+            updatePaymentUI();
+        }
+    }
+
+    private void fetchDrivingDistance(double lat1, double lng1,
+                                      double lat2, double lng2) {
+        String url = "https://maps.googleapis.com/maps/api/directions/json?origin="
+                + lat1 + "," + lng1
+                + "&destination=" + lat2 + "," + lng2
+                + "&key=" + getString(R.string.google_maps_key);
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url,null,
+                resp -> parseRoutesResponse(resp),
+                err -> updatePaymentUI()
+        );
+        Volley.newRequestQueue(this).add(req);
+    }
+
+    private void parseRoutesResponse(JSONObject response) {
+        try {
+            JSONArray routes = response.getJSONArray("routes");
+            if (routes.length()>0) {
+                JSONObject leg = routes.getJSONObject(0)
+                        .getJSONArray("legs")
+                        .getJSONObject(0);
+                long meters = leg.getJSONObject("distance").getLong("value");
+                distanceKm   = meters/1000.0;
+                if (distanceKm > baseDistance) {
+                    distanceCharge = (distanceKm - baseDistance)*extraCostPerKm;
+                } else distanceCharge = 0.0;
+                finalCost = baseCost + consultingFee + gst + distanceCharge;
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Routes parse error", e);
+        }
+        updatePaymentUI();
+    }
+
+    private void deductWalletCharge(double charge, String reason) {
+        walletBalance -= charge;
+        updateUserWallet(patientId, walletBalance);
+        addWalletTransaction(Integer.parseInt(patientId), charge, "debit", reason);
+    }
+
+    private void saveBookingData(String googleMapsLink) {
+        String url = "http://sxm.a58.mytemp.website/save_appointment.php";
+        StringRequest req = new StringRequest(Request.Method.POST, url,
+                resp -> {
+                    try {
+                        JSONObject r = new JSONObject(resp);
+                        String appointmentId = r.optString("appointment_id","0");
+                        insertPaymentHistory(appointmentId);
+                    } catch (JSONException e) {
+                        loaderutil.hideLoader();
+                    }
+                    Toast.makeText(this,"Appointment saved successfully!",Toast.LENGTH_SHORT).show();
                 },
                 err -> {
-                    Log.e(TAG, "Error saving booking: " + err.getMessage());
-                    Toast.makeText(this, "Error saving appointment!", Toast.LENGTH_LONG).show();
+                    loaderutil.hideLoader();
+                    Toast.makeText(this,"Error saving appointment!",Toast.LENGTH_LONG).show();
                 }
         ) {
             @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> p = new HashMap<>();
-                p.put("patient_id", patientId);
-                p.put("patient_name", patientName);
-                p.put("age", age);
-                p.put("gender", gender);
-                p.put("address", address);
-                p.put("doctor_id", doctorId);
+            protected Map<String,String> getParams() {
+                Map<String,String> p = new HashMap<>();
+                p.put("patient_id",     patientId);
+                p.put("patient_name",   patientName);
+                p.put("age",            age);
+                p.put("gender",         gender);
+                p.put("address",        address);
+                p.put("doctor_id",      doctorId);
                 p.put("reason_for_visit", problem);
-                String apptDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-                p.put("appointment_date", apptDate);
-                p.put("time_slot", "10:00 AM");
-                p.put("pincode", pincode);
-                p.put("appointment_mode", "Online");
+                p.put("appointment_date",
+                        new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault())
+                                .format(new Date()));
+                p.put("time_slot",      "10:00 AM");
+                p.put("pincode",        pincode);
+                p.put("appointment_mode","Online");
                 p.put("payment_method", selectedPaymentMethod);
-                p.put("status", Status);
-                p.put("location", googleMapsLink);
-                String costStr = String.format(Locale.getDefault(), "%.2f", finalCost);
-                p.put("final_cost", costStr);
+                p.put("status",         Status);
+                p.put("location",       googleMapsLink);
+                p.put("final_cost",
+                        String.format(Locale.getDefault(),"%.2f", finalCost));
                 return p;
             }
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> h = new HashMap<>();
-                h.put("Content-Type", "application/x-www-form-urlencoded");
-                return h;
-            }
         };
-        RequestQueue q = Volley.newRequestQueue(this);
-        q.add(req);
+        Volley.newRequestQueue(this).add(req);
     }
 
-    // Update the wallet balance on the server
     private void updateUserWallet(String userId, double newBalance) {
         String url = "http://sxm.a58.mytemp.website/update_wallet.php";
         StringRequest req = new StringRequest(Request.Method.POST, url,
-                response -> {
-                    Log.d(TAG, "User wallet updated: " + response);
-                },
-                error -> {
-                    Log.e(TAG, "Error updating wallet: " + error.getMessage());
-                }
+                resp -> Log.d(TAG,"Wallet updated: "+resp),
+                err -> Log.e(TAG,"Wallet update error",err)
         ) {
             @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("user_id", userId);
-                params.put("wallet_balance", String.format(Locale.getDefault(), "%.2f", newBalance));
-                return params;
-            }
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/x-www-form-urlencoded");
-                return headers;
+            protected Map<String,String> getParams() {
+                Map<String,String> p = new HashMap<>();
+                p.put("user_id", userId);
+                p.put("wallet_balance",
+                        String.format(Locale.getDefault(),"%.2f",newBalance));
+                return p;
             }
         };
-        RequestQueue q = Volley.newRequestQueue(this);
-        q.add(req);
+        Volley.newRequestQueue(this).add(req);
     }
 
-    // Add a wallet transaction entry
-    private void addWalletTransaction(int patientId, double amount, String type, String reason) {
+    private void addWalletTransaction(int patientId, double amount,
+                                      String type, String reason) {
         String url = "http://sxm.a58.mytemp.website/add_wallet_transaction.php";
         StringRequest req = new StringRequest(Request.Method.POST, url,
-                response -> {
-                    Log.d(TAG, "Wallet transaction added: " + response);
-                    // Handle the response from the server, e.g., show a success message
+                resp -> Log.d(TAG,"Wallet txn added: "+resp),
+                err -> Log.e(TAG,"Wallet txn error",err)
+        ) {
+            @Override
+            protected Map<String,String> getParams() {
+                Map<String,String> p = new HashMap<>();
+                p.put("patient_id", String.valueOf(patientId));
+                p.put("amount",     String.format(Locale.getDefault(),"%.2f",amount));
+                p.put("type",       type);
+                p.put("reason",     reason);
+                return p;
+            }
+        };
+        Volley.newRequestQueue(this).add(req);
+    }
+
+    private void insertPaymentHistory(String appointmentId) {
+        String statusEnum = "Pending";
+        String url = "http://sxm.a58.mytemp.website/payment_history.php";
+        StringRequest req = new StringRequest(Request.Method.POST, url,
+                resp -> {
+                    loaderutil.hideLoader();
+                    Toast.makeText(this,"Payment recorded.",Toast.LENGTH_SHORT).show();
+                    Log.d(TAG,"Payment inserted => "+resp);
+                    onBookingSuccess();
                 },
-                error -> {
-                    Log.e(TAG, "Error adding wallet transaction: " + error.getMessage());
-                    // Handle the error, e.g., show an error message
+                err -> {
+                    loaderutil.hideLoader();
+                    Toast.makeText(this,"Failed to record payment.",Toast.LENGTH_SHORT).show();
                 }
         ) {
             @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("patient_id", String.valueOf(patientId));  // Use patientId here
-                params.put("amount", String.format(Locale.getDefault(), "%.2f", amount));
-                params.put("type", type);
-                params.put("reason", reason);
-                return params;
-            }
-
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> headers = new HashMap<>();
-                headers.put("Content-Type", "application/x-www-form-urlencoded");
-                return headers;
+            protected Map<String,String> getParams() {
+                Map<String,String> p = new HashMap<>();
+                p.put("patient_id",     patientId);
+                p.put("appointment_id", appointmentId);
+                p.put("doctor_id",      doctorId);
+                p.put("amount",
+                        String.format(Locale.getDefault(),"%.2f", finalCost));
+                p.put("payment_method", selectedPaymentMethod);
+                p.put("distance",
+                        String.format(Locale.getDefault(),"%.2f", distanceKm));
+                p.put("distance_charge",
+                        String.format(Locale.getDefault(),"%.2f", distanceCharge));
+                p.put("gst",
+                        String.format(Locale.getDefault(),"%.2f", gst));
+                p.put("payment_status", statusEnum);
+                p.put("refund_status",  "None");
+                p.put("notes",          "None");
+                return p;
             }
         };
-
-        RequestQueue q = Volley.newRequestQueue(this);
-        q.add(req);
+        Volley.newRequestQueue(this).add(req);
     }
 
-    // On successful booking, return to MainActivity
     private void onBookingSuccess() {
         Intent i = new Intent(this, MainActivity.class);
         i.putExtra("open_fragment", 2);
         startActivity(i);
         finish();
+    }
+
+    private void enablePayButton() {
+        payButton.setEnabled(true);
+        payButton.setAlpha(1f);
+        payButton.setBackgroundColor(getResources().getColor(R.color.custom_green));
+    }
+    private void disablePayButton() {
+        payButton.setEnabled(false);
+        payButton.setAlpha(0.5f);
+        payButton.setBackgroundColor(getResources().getColor(R.color.custom_gray));
     }
 }

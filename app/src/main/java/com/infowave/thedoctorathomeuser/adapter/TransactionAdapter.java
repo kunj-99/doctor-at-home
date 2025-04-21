@@ -23,7 +23,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
     private static final String DEFAULT_REASON = "No description";
     private static final String DEFAULT_TIME = "--:--";
 
-    public TransactionAdapter(Context context) {
+    public TransactionAdapter(List<TransactionItem> transactionList, Context context) {
         this.context = context;
         this.list = new ArrayList<>();
     }
