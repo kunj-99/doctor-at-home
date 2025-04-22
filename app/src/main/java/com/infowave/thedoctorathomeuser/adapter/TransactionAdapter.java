@@ -25,7 +25,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
 
     public TransactionAdapter(List<TransactionItem> transactionList, Context context) {
         this.context = context;
-        this.list = new ArrayList<>();
+        this.list = transactionList != null ? new ArrayList<>(transactionList) : new ArrayList<>();
     }
 
     public void updateTransactions(List<TransactionItem> newList) {
@@ -45,7 +45,6 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
             this.reason = reason != null ? reason : "";
             this.timestamp = timestamp != null ? timestamp : "";
         }
-
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -109,7 +108,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
             holder.txtTime.setText(DEFAULT_TIME);
             holder.txtAmount.setTextColor(Color.BLACK);
         } catch (Exception e) {
-            // Fall through
+            // fallback silently
         }
     }
 

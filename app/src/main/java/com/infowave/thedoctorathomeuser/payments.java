@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Log;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -29,7 +30,6 @@ public class payments extends AppCompatActivity {
     List<TransactionAdapter.TransactionItem> transactionList = new ArrayList<>();
     TransactionAdapter adapter;
 
-    // API endpoints
     String rechargeUrl = "http://sxm.a58.mytemp.website/rechargewallet.php";
     String fetchBalanceUrl = "http://sxm.a58.mytemp.website/get_wallet_balance.php";
     String fetchTransactionUrl = "http://sxm.a58.mytemp.website/fetch_wallet_transactions.php";
@@ -48,23 +48,22 @@ public class payments extends AppCompatActivity {
 
         tvWalletBalance.setText("₹0.00");
 
-        // Setup RecyclerView
-        adapter = new TransactionAdapter(transactionList, this);
-        rvTransactions.setLayoutManager(new LinearLayoutManager(this));
-        rvTransactions.setAdapter(adapter);
-
-        // Load balance and transaction history
-        fetchWalletBalance();
-        fetchTransactionHistory();
-
-        // Retrieve Patient ID from SharedPreferences
         SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
+        Log.d("DEBUG", "Loaded patient_id: " + patientId);
+
         if (patientId.isEmpty()) {
             Toast.makeText(this, "Patient ID not available", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+
+        adapter = new TransactionAdapter(transactionList, this);
+        rvTransactions.setLayoutManager(new LinearLayoutManager(this));
+        rvTransactions.setAdapter(adapter);
+
+        fetchWalletBalance();
+        fetchTransactionHistory();
 
         btnRecharge.setOnClickListener(view -> showRechargeDialog());
     }
@@ -100,12 +99,13 @@ public class payments extends AppCompatActivity {
                             String updatedBalance = obj.getString("wallet_balance");
                             tvWalletBalance.setText("₹" + updatedBalance);
                             Toast.makeText(this, "Wallet recharged successfully", Toast.LENGTH_SHORT).show();
-                            fetchTransactionHistory(); // Refresh transactions
+                            fetchTransactionHistory();
                         } else {
                             Toast.makeText(this, obj.getString("message"), Toast.LENGTH_SHORT).show();
                         }
                     } catch (Exception e) {
                         Toast.makeText(this, "Error parsing response", Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
                     }
                 },
                 error -> Toast.makeText(this, "Network error: " + error.getMessage(), Toast.LENGTH_SHORT).show()) {
@@ -135,6 +135,7 @@ public class payments extends AppCompatActivity {
                         }
                     } catch (Exception e) {
                         Toast.makeText(this, "Error parsing balance", Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
                     }
                 },
                 error -> Toast.makeText(this, "Error fetching balance", Toast.LENGTH_SHORT).show()) {
@@ -154,23 +155,25 @@ public class payments extends AppCompatActivity {
         StringRequest request = new StringRequest(Request.Method.POST, fetchTransactionUrl,
                 response -> {
                     try {
+                        Log.d("TRANSACTION_HISTORY", response);
                         JSONObject obj = new JSONObject(response);
                         if (obj.getString("status").equals("success")) {
-                            transactionList.clear();
+                            List<TransactionAdapter.TransactionItem> tempList = new ArrayList<>();
                             JSONArray arr = obj.getJSONArray("data");
                             for (int i = 0; i < arr.length(); i++) {
                                 JSONObject item = arr.getJSONObject(i);
-                                transactionList.add(new TransactionAdapter.TransactionItem(
+                                tempList.add(new TransactionAdapter.TransactionItem(
                                         item.getString("amount"),
                                         item.getString("type"),
                                         item.optString("reason", ""),
                                         item.getString("timestamp")
                                 ));
                             }
-                            adapter.notifyDataSetChanged();
+                            adapter.updateTransactions(tempList);
                         }
                     } catch (Exception e) {
                         Toast.makeText(this, "Error parsing transactions", Toast.LENGTH_SHORT).show();
+                        e.printStackTrace();
                     }
                 },
                 error -> Toast.makeText(this, "Error fetching transactions", Toast.LENGTH_SHORT).show()) {
