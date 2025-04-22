@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser.fragment;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -113,7 +114,7 @@ public class OngoingAppointmentFragment extends Fragment {
     }
 
     private void fetchOngoingAppointments() {
-        StringRequest req = new StringRequest(Request.Method.POST, API_URL,
+        @SuppressLint("NotifyDataSetChanged") StringRequest req = new StringRequest(Request.Method.POST, API_URL,
                 response -> {
                     try {
                         JSONObject json = new JSONObject(response);
