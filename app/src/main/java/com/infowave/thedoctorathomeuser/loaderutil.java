@@ -32,7 +32,7 @@ public class loaderutil {
         // Create the translucent, no‑title dialog
         loaderDialog = new Dialog(context, android.R.style.Theme_Translucent_NoTitleBar);
         if (loaderDialog.getWindow() != null) {
-            loaderDialog.getWindow().setBackgroundDrawable(new ColorDrawable(0));
+            loaderDialog.getWindow().setBackgroundDrawable(new ColorDrawable(2));
         }
         loaderDialog.setContentView(loaderView);
         loaderDialog.setCancelable(false);
