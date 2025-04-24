@@ -7,27 +7,50 @@
     android:background="@color/white"
     android:orientation="vertical">
 
-    <!-- Header Title -->
-    <TextView
+    <!-- HEADER: title centered + wallet + icon at end -->
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bottom_curve"
-        android:text="Your Bill"
-        android:textColor="#FFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:padding="16dp"
-        android:layout_marginBottom="16dp" />
-    <TextView
-        android:id="@+id/tv_wallet_balance"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Wallet Balance: ₹0.00"
-        android:textSize="16sp"
-        android:textColor="@color/black"
-        android:layout_margin="16dp"/>
+        android:padding="16dp">
 
+        <!-- Centered Title -->
+        <TextView
+            android:id="@+id/tv_header_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your Bill"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_centerInParent="true" />
+
+        <!-- Wallet balance + icon aligned to the right -->
+        <LinearLayout
+            android:id="@+id/header_wallet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_alignParentEnd="true"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/iv_wallet_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_wallet"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/tv_wallet_balance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="₹0.00"
+                android:textSize="16sp"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+    </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -218,9 +241,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/white"
                 android:radius="8dp"
-                android:elevation="4dp">
+                android:elevation="4dp"
+                app:cardBackgroundColor="@color/white">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -228,129 +251,104 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- Payment Amount -->
+                    <!-- Appointment Charge -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Payment Amount"
-                            android:layout_marginBottom="20dp"
+                            android:layout_weight="1"
+                            android:text="Appointment Charge"
                             android:textSize="15sp"
-                            android:textColor="@color/black" />
+                            android:textColor="@color/black"/>
 
                         <TextView
-                            android:id="@+id/tv_payment_amount_value"
+                            android:id="@+id/tv_appointment_charge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginLeft="140dp"
                             android:text="₹ 500"
-                            android:textColor="@color/black"
-                            android:textSize="20dp"/>
+                            android:textSize="18sp"
+                            android:textColor="@color/black"/>
                     </LinearLayout>
+
+                    <!-- Consultation Fee -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp">
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="platform charges"
-                            android:layout_marginBottom="20dp"
+                            android:layout_weight="1"
+                            android:text="Consultation Fee"
                             android:textSize="15sp"
-                            android:textColor="@color/black" />
+                            android:textColor="@color/black"/>
 
                         <TextView
-                            android:id="@+id/tv_pletformcharje"
+                            android:id="@+id/tv_consultation_fee"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginLeft="140dp"
+                            android:text="₹ 450"
+                            android:textSize="18sp"
+                            android:textColor="@color/black"/>
+                    </LinearLayout>
+
+                    <!-- Deposit -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp">
+
+                        <TextView
+
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Deposit"
+                            android:textSize="15sp"
+                            android:textColor="#FF0000"/>
+
+                        <TextView
+                            android:id="@+id/tv_deposit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             android:text="₹ 50"
-                            android:textColor="@color/black"
-                            android:textSize="20dp"/>
+                            android:textSize="18sp"
+                            android:textColor="@color/black"/>
                     </LinearLayout>
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="platform charges"
-                        android:layout_marginBottom="20dp"
-                        android:textSize="15sp"
-                        android:textColor="@color/black" />
-
-                    <TextView
-                        android:id="@+id/tv_platform_charge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Platform Charge: ₹0.00"
-                        android:textSize="16sp"
-                        android:textColor="#FF0000"
-                        android:paddingTop="8dp"/>
-                </LinearLayout>
-
-                    <!-- Consulting Fee -->
+                    <!-- Distance -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
+                        android:gravity="center_vertical"
                         android:layout_marginTop="8dp">
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Consulting Fee"
-                            android:textSize="15sp"
-                            android:textColor="@color/black" />
-
-                        <TextView
-                            android:id="@+id/tv_consulting_fee_value"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="₹ 40"
-                            android:textSize="20dp"
-                            android:textColor="@color/black"
-                            android:layout_marginLeft="160dp" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="(₹7 per kilometers)"
-                        android:textSize="12sp"
-                        android:layout_marginBottom="10dp"
-                        android:textColor="@color/black"
-                        android:layout_marginLeft="16dp" />
-
-                    <!-- Distance (KM) -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="8dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:text="Distance"
                             android:textSize="15sp"
-                            android:textColor="@color/black" />
+                            android:textColor="@color/black"/>
 
                         <TextView
                             android:id="@+id/tv_distance_km_value"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="0.0 km"
-                            android:textSize="20dp"
-                            android:textColor="@color/black"
-                            android:layout_marginLeft="203dp"/>
+                            android:textSize="18sp"
+                            android:textColor="@color/black"/>
                     </LinearLayout>
 
                     <!-- Distance Charge -->
@@ -358,85 +356,101 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
+                        android:gravity="center_vertical"
                         android:layout_marginTop="8dp">
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:text="Distance Charge"
                             android:textSize="15sp"
-                            android:textColor="@color/black" />
+                            android:textColor="@color/black"/>
 
                         <TextView
                             android:id="@+id/tv_distance_charge_value"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₹ 0"
-                            android:textSize="20dp"
-                            android:textColor="@color/black"
-                            android:layout_marginLeft="145dp"/>
+                            android:textSize="18sp"
+                            android:textColor="@color/black"/>
                     </LinearLayout>
+
+                    <!-- Info: ₹7 per kilometer -->
+                    <TextView
+                        android:id="@+id/price_km"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="(₹7 per kilometer)"
+                        android:textSize="12sp"
+                        android:textColor="@color/black"/>
 
                     <!-- GST -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
+                        android:gravity="center_vertical"
                         android:layout_marginTop="8dp">
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:text="GST"
-                            android:layout_marginBottom="20dp"
                             android:textSize="15sp"
-                            android:textColor="@color/black" />
+                            android:textColor="@color/black"/>
 
                         <TextView
                             android:id="@+id/tv_gst_value"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₹ 20"
-                            android:textSize="20dp"
-                            android:textColor="@color/black"
-                            android:layout_marginLeft="235dp"/>
+                            android:textSize="18sp"
+                            android:textColor="@color/black"/>
                     </LinearLayout>
 
                     <!-- Divider -->
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="                                                 - - - - - - - - - - -"
+                        android:layout_marginTop="8dp"
+                        android:text="-------------------------------------------"
                         android:textSize="18sp"
-                        android:textColor="@color/black" />
+                        android:textColor="@color/black"
+                        android:gravity="center"/>
 
-                    <!-- Total Paid -->
+                    <!-- Total Pay -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
+                        android:gravity="center_vertical"
                         android:layout_marginTop="16dp">
 
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="Total Paid"
-                            android:textColor="@color/black"
+                            android:layout_weight="1"
+                            android:text="Total Pay"
                             android:textSize="18sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:textColor="@color/black"/>
 
                         <TextView
                             android:id="@+id/tv_total_paid_value"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₹ 560"
-                            android:textSize="25dp"
-                            android:textColor="@color/black"
-                            android:layout_marginLeft="165dp"
-                            android:textStyle="bold" />
+                            android:textSize="25sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black"/>
                     </LinearLayout>
+
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
+
 
             <!-- Two Payment Method Buttons (replacing the old RadioGroup) -->
 
