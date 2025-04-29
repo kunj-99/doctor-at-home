@@ -175,11 +175,14 @@ public class pending_bill extends AppCompatActivity {
 
 
 
-        finalCost = consultingFee + gstAmount+ distanceCharge;
+
 
         gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
 
         consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
+
+
+        finalCost = consultingFee + gstAmount+ distanceCharge;
 
 
 
@@ -643,15 +646,35 @@ public class pending_bill extends AppCompatActivity {
                 p.put("patient_id",     patientId);
                 p.put("appointment_id", appointmentId);
                 p.put("doctor_id",      doctorId);
-                p.put("amount",
-                        String.format(Locale.getDefault(),"%.2f", finalCost));
+                p.put("patient_name",   patientName);
+
+                p.put("amount", String.format(Locale.getDefault(),"%.2f", finalCost));
+                p.put("consultation_fee", String.format(Locale.getDefault(),"%.2f", consultingFee));
+                p.put("deposit", String.format(Locale.getDefault(),"%.2f", DEPOSIT));
+
+                if (selectedPaymentMethod.equals("Online")) {
+                    if (walletBalance >= DEPOSIT) {
+                        p.put("deposit_status", "Wallet Debited");
+                    } else {
+                        p.put("deposit_status", "Added in Bill");
+                    }
+                } else {
+                    p.put("deposit_status", "Wallet Debited");
+                }
+
                 p.put("payment_method", selectedPaymentMethod);
-                p.put("distance",
-                        String.format(Locale.getDefault(),"%.2f", distanceKm));
-                p.put("distance_charge",
-                        String.format(Locale.getDefault(),"%.2f", distanceCharge));
-                p.put("gst",
-                        String.format(Locale.getDefault(),"%.2f",gstAmount ));
+
+                p.put("distance", String.format(Locale.getDefault(),"%.2f", distanceKm));
+                p.put("distance_charge", String.format(Locale.getDefault(),"%.2f", distanceCharge));
+                p.put("gst", String.format(Locale.getDefault(),"%.2f", gstAmount));
+
+                // Total payment
+                p.put("total_payment", String.format(Locale.getDefault(),"%.2f", finalCost));
+
+                // Dummy values now for commission, earning (you can calculate if you want)
+                p.put("admin_commission", "0.00");
+                p.put("doctor_earning", "0.00");
+
                 p.put("payment_status", statusEnum);
                 p.put("refund_status",  "None");
                 p.put("notes",          "None");
