@@ -45,17 +45,14 @@ public class available_doctor extends AppCompatActivity {
     private final ArrayList<String> Duration = new ArrayList<>();
     private final ArrayList<String> autoStatuses = new ArrayList<>();
 
-
     private EditText edtPincode;
     private ImageButton btnSearch;
     private TextView tvNoDoctors;
     private ImageButton btnBack;
-    // Removed static loader layout
-    // private View loaderLayout;
 
     private String categoryId, categoryName;
-    private String userPincode = "";      // This is used to perform the search
-    private String defaultPincode = "";   // This stores the default pincode fetched from the server
+    private String userPincode = "";
+    private String defaultPincode = "";
 
     private final Handler handler = new Handler();
     private static final int DOCTOR_STATUS_REFRESH_INTERVAL = 2000;
@@ -89,14 +86,12 @@ public class available_doctor extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_available_doctor);
 
-        // Instead of using a static loader layout, show our custom loader using loaderutil.
         loaderutil.showLoader(available_doctor.this);
 
         btnBack = findViewById(R.id.btn_back);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         edtPincode = findViewById(R.id.edt_pincode);
-        // Limit the pincode input to a maximum of 6 digits
         edtPincode.setFilters(new InputFilter[]{new InputFilter.LengthFilter(6)});
         btnSearch = findViewById(R.id.btn_search);
         tvNoDoctors = findViewById(R.id.tv_no_doctors);
@@ -104,7 +99,6 @@ public class available_doctor extends AppCompatActivity {
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
-        // On back button click, navigate to MainActivity with fragment 1.
         btnBack.setOnClickListener(v -> {
             Intent intent = new Intent(available_doctor.this, MainActivity.class);
             intent.putExtra("open_fragment", 1);
@@ -112,31 +106,18 @@ public class available_doctor extends AppCompatActivity {
             finish();
         });
 
-        // Attach a TextWatcher to handle auto search when 6 digits are entered and revert on clear.
         edtPincode.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                // No action needed.
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                // When 6 digits are entered, trigger the search and hide the keyboard.
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.length() == 6) {
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null) {
-                        imm.hideSoftInputFromWindow(edtPincode.getWindowToken(), 0);
-                    }
+                    hideKeyboard();
                     userPincode = s.toString();
                     if (categoryId != null && !userPincode.isEmpty()) {
                         fetchDoctorsByPincodeAndCategory(userPincode, categoryId, true);
                     }
                 }
             }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                // When the pincode is cleared, revert to the default search.
+            @Override public void afterTextChanged(Editable s) {
                 if (s.toString().trim().isEmpty()) {
                     if (!defaultPincode.isEmpty()) {
                         userPincode = defaultPincode;
@@ -146,40 +127,32 @@ public class available_doctor extends AppCompatActivity {
             }
         });
 
-        // Manual search button click listener (optional if you still want the manual search)
         btnSearch.setOnClickListener(v -> {
             String pincode = edtPincode.getText().toString().trim();
             if (!pincode.isEmpty() && categoryId != null) {
                 userPincode = pincode;
                 fetchDoctorsByPincodeAndCategory(pincode, categoryId, true);
             } else {
-                if (isActivityVisible) {
-                    Toast.makeText(available_doctor.this, "Please enter a valid pincode", Toast.LENGTH_SHORT).show();
-                }
+                Toast.makeText(available_doctor.this, "Please enter a valid pincode", Toast.LENGTH_SHORT).show();
             }
         });
 
-        // Update doctor status and load the initial UI.
-        updateDoctorAutoStatus(new Runnable() {
-            @Override
-            public void run() {
-                SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-                String userId = sp.getString("user_id", "");
+        updateDoctorAutoStatus(() -> {
+            SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+            String userId = sp.getString("user_id", "");
 
-                if (!userId.isEmpty()) {
-                    fetchUserPincode(userId);
-                } else {
-                    Toast.makeText(available_doctor.this, "User ID not found. Please log in.", Toast.LENGTH_SHORT).show();
-                }
-
-                // Hide loader and show the doctor list when the update completes.
-                loaderutil.hideLoader();
-                recyclerView.setVisibility(View.VISIBLE);
-
-                isActivityVisible = true;
-                handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
-                handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
+            if (!userId.isEmpty()) {
+                fetchUserPincode(userId);
+            } else {
+                Toast.makeText(available_doctor.this, "User ID not found. Please log in.", Toast.LENGTH_SHORT).show();
             }
+
+            loaderutil.hideLoader();
+            recyclerView.setVisibility(View.VISIBLE);
+
+            isActivityVisible = true;
+            handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
+            handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
         });
     }
 
@@ -188,7 +161,7 @@ public class available_doctor extends AppCompatActivity {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
-                        if (response.has("pincode") && !response.getString("pincode").isEmpty()) { // Save the pincode as default and current pincode.
+                        if (response.has("pincode") && !response.getString("pincode").isEmpty()) {
                             defaultPincode = response.getString("pincode");
                             userPincode = defaultPincode;
                         } else {
@@ -203,111 +176,107 @@ public class available_doctor extends AppCompatActivity {
                 },
                 error -> Toast.makeText(available_doctor.this, "Error fetching pincode", Toast.LENGTH_SHORT).show()
         );
-        RequestQueue queue = Volley.newRequestQueue(this);
-        queue.add(request);
+        Volley.newRequestQueue(this).add(request);
     }
 
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
         String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode=" + pincode + "&category_id=" + categoryId;
+
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {
-                    doctorIds.clear();
-                    names.clear();
-                    specialties.clear();
-                    hospitals.clear();
-                    ratings.clear();
-                    imageUrls.clear();
-                    Duration.clear();
-
-                    if (response.length() == 0) {
-                        tvNoDoctors.setVisibility(View.VISIBLE);
-                        recyclerView.setVisibility(View.GONE);
-                        if (isActivityVisible) {
-                            if (!userSearch) {
-                                Toast.makeText(available_doctor.this,
-                                        "No doctors found in your location. Try another pincode.",
-                                        Toast.LENGTH_LONG).show();
-                            } else {
-                                Toast.makeText(available_doctor.this,
-                                        "No doctors found for this pincode",
-                                        Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                        return;
-                    } else {
-                        tvNoDoctors.setVisibility(View.GONE);
-                        recyclerView.setVisibility(View.VISIBLE);
-                    }
+                    ArrayList<String> newDoctorIds = new ArrayList<>();
+                    ArrayList<String> newNames = new ArrayList<>();
+                    ArrayList<String> newSpecialties = new ArrayList<>();
+                    ArrayList<String> newHospitals = new ArrayList<>();
+                    ArrayList<Float> newRatings = new ArrayList<>();
+                    ArrayList<String> newImageUrls = new ArrayList<>();
+                    ArrayList<String> newDuration = new ArrayList<>();
+                    ArrayList<String> newAutoStatuses = new ArrayList<>();
 
                     try {
                         for (int i = 0; i < response.length(); i++) {
                             JSONObject doctor = response.getJSONObject(i);
-                            doctorIds.add(doctor.getString("doctor_id"));
-                            names.add(doctor.getString("full_name"));
-                            specialties.add(doctor.getString("specialization"));
-                            hospitals.add(doctor.getString("hospital_affiliation"));
-                            ratings.add((float) doctor.getDouble("rating"));
+                            newDoctorIds.add(doctor.getString("doctor_id"));
+                            newNames.add(doctor.getString("full_name"));
+                            newSpecialties.add(doctor.getString("specialization"));
+                            newHospitals.add(doctor.getString("hospital_affiliation"));
+                            newRatings.add((float) doctor.getDouble("rating"));
 
                             String profilePicUrl = doctor.optString("profile_picture", "");
                             if (profilePicUrl.isEmpty() || profilePicUrl.equals("null")) {
                                 profilePicUrl = "http://sxm.a58.mytemp.website/doctor_images/default.png";
                             }
-                            imageUrls.add(profilePicUrl);
-
-                            Duration.add(doctor.getString("experience_duration"));
-                            autoStatuses.add(doctor.optString("auto_status", "Inactive")); // NEW
+                            newImageUrls.add(profilePicUrl);
+                            newDuration.add(doctor.getString("experience_duration"));
+                            newAutoStatuses.add(doctor.optString("auto_status", "Inactive"));
                         }
 
-                        adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties, hospitals,
-                                ratings, imageUrls, Duration, autoStatuses
-                        );
+                        if (!newDoctorIds.equals(doctorIds) || !newAutoStatuses.equals(autoStatuses)) {
+                            doctorIds.clear(); doctorIds.addAll(newDoctorIds);
+                            names.clear(); names.addAll(newNames);
+                            specialties.clear(); specialties.addAll(newSpecialties);
+                            hospitals.clear(); hospitals.addAll(newHospitals);
+                            ratings.clear(); ratings.addAll(newRatings);
+                            imageUrls.clear(); imageUrls.addAll(newImageUrls);
+                            Duration.clear(); Duration.addAll(newDuration);
+                            autoStatuses.clear(); autoStatuses.addAll(newAutoStatuses);
 
-                        recyclerView.setAdapter(adapter);
+                            if (adapter == null) {
+                                adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties,
+                                        hospitals, ratings, imageUrls, Duration, autoStatuses);
+                                recyclerView.setAdapter(adapter);
+                            } else {
+                                adapter.notifyDataSetChanged();
+                            }
+
+                            recyclerView.setAlpha(0f);
+                            recyclerView.animate().alpha(1f).setDuration(400).start();
+                        }
+
+                        tvNoDoctors.setVisibility(doctorIds.isEmpty() ? View.VISIBLE : View.GONE);
+                        recyclerView.setVisibility(doctorIds.isEmpty() ? View.GONE : View.VISIBLE);
+
                     } catch (JSONException e) {
-                        e.printStackTrace();
-                        if (isActivityVisible) {
-                            Toast.makeText(available_doctor.this, "Data parsing error", Toast.LENGTH_SHORT).show();
-                        }
+                        Toast.makeText(available_doctor.this, "Data parsing error", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
                     tvNoDoctors.setVisibility(View.VISIBLE);
                     recyclerView.setVisibility(View.GONE);
-                    if (isActivityVisible) {
-                        Toast.makeText(available_doctor.this, "No Doctor available, try another pincode", Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(available_doctor.this, "Error fetching doctors.", Toast.LENGTH_SHORT).show();
                 }
         );
-        RequestQueue queue = Volley.newRequestQueue(this);
-        queue.add(request);
+
+        request.setShouldCache(false);
+        Volley.newRequestQueue(this).add(request);
     }
 
-    /**
-     * Updates doctor status and executes the onComplete callback after the request finishes.
-     * If onComplete is null, the callback is simply ignored.
-     */
     private void updateDoctorAutoStatus(final Runnable onComplete) {
         String updateUrl = "http://sxm.a58.mytemp.website/update_doctor_status.php";
         StringRequest updateRequest = new StringRequest(Request.Method.GET, updateUrl,
                 response -> {
-                    if (onComplete != null) {
-                        onComplete.run();
-                    }
+                    if (onComplete != null) onComplete.run();
                 },
                 error -> {
-                    if (onComplete != null) {
-                        onComplete.run();
-                    }
+                    if (onComplete != null) onComplete.run();
                 }
         );
-        RequestQueue queue = Volley.newRequestQueue(this);
-        queue.add(updateRequest);
+        Volley.newRequestQueue(this).add(updateRequest);
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.hideSoftInputFromWindow(edtPincode.getWindowToken(), 0);
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         isActivityVisible = true;
+        handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
+        handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
     }
 
     @Override
@@ -325,7 +294,6 @@ public class available_doctor extends AppCompatActivity {
         handler.removeCallbacks(autoRefreshDoctorsRunnable);
     }
 
-    // Override back press to navigate to MainActivity with fragment 1.
     @Override
     public void onBackPressed() {
         super.onBackPressed();
