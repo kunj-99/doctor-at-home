@@ -43,6 +43,8 @@ public class available_doctor extends AppCompatActivity {
     private final ArrayList<Float> ratings = new ArrayList<>();
     private final ArrayList<String> imageUrls = new ArrayList<>();
     private final ArrayList<String> Duration = new ArrayList<>();
+    private final ArrayList<String> autoStatuses = new ArrayList<>();
+
 
     private EditText edtPincode;
     private ImageButton btnSearch;
@@ -253,8 +255,13 @@ public class available_doctor extends AppCompatActivity {
                             imageUrls.add(profilePicUrl);
 
                             Duration.add(doctor.getString("experience_duration"));
+                            autoStatuses.add(doctor.optString("auto_status", "Inactive")); // NEW
                         }
-                        adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties, hospitals, ratings, imageUrls, Duration);
+
+                        adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties, hospitals,
+                                ratings, imageUrls, Duration, autoStatuses
+                        );
+
                         recyclerView.setAdapter(adapter);
                     } catch (JSONException e) {
                         e.printStackTrace();

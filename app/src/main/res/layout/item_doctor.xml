@@ -12,27 +12,24 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="12dp">
 
-        <!-- Doctor's Details Layout -->
+        <!-- Top row: image + info -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:paddingBottom="8dp">
 
-            <!-- Doctor Image -->
             <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/civ_profile"
-                android:layout_width="110dp"
-                android:layout_height="110dp"
-                android:src="@drawable/main1"
-                android:layout_marginStart="10dp"
-                android:layout_marginEnd="20dp"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:layout_marginEnd="16dp"
                 app:civ_border_color="@color/blue"
-                app:civ_border_width="2dp" />
+                app:civ_border_width="2dp"/>
 
-            <!-- Doctor Info -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -44,86 +41,107 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Dr. Tranquilli"
-                    android:textColor="@color/black"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"/>
 
                 <TextView
                     android:id="@+id/doctor_specialty"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="2dp"
                     android:text="Specialist Medicine"
-                    android:textColor="@color/black"
-                    android:textSize="15sp" />
+                    android:textSize="14sp"
+                    android:textColor="@color/gray_text"/>
 
                 <TextView
                     android:id="@+id/doctor_availability"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
                     android:text="Available"
-                    android:textColor="@color/black"
-                    android:textSize="15sp" />
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/green"/>
 
-                <!-- New Experience Duration TextView -->
+                <!-- ETA with an emoji clock -->
+                <TextView
+                    android:id="@+id/tv_eta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="⏳ ETA: 15m"
+                    android:textSize="13sp"
+                    android:textStyle="italic"
+                    android:textColor="@color/blue"
+                    android:visibility="gone"/>
+
                 <TextView
                     android:id="@+id/doctor_experience_duration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="6dp"
                     android:text="Experience: 5 years"
-                    android:textColor="@color/black"
-                    android:textSize="15sp" />
+                    android:textSize="14sp"
+                    android:textColor="@color/gray_text"/>
 
-                <TextView
-                    android:id="@+id/request_count"
+                <!-- badges -->
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Requests: 0"
-                    android:textColor="#FF0000"
-                    android:textSize="14sp"
-                    android:layout_marginTop="5dp"
-                    android:visibility="gone"/>
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp">
 
-                <TextView
-                    android:id="@+id/pending_count"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Pending: 0"
-                    android:textColor="#FFA500"
-                    android:textSize="14sp"
-                    android:layout_marginTop="5dp"
-                    android:visibility="gone"/>
+                    <TextView
+                        android:id="@+id/request_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="4dp"
+                        android:background="@android:color/holo_red_light"
+                        android:text="Requests: 0"
+                        android:textSize="12sp"
+                        android:textColor="@android:color/white"
+                        android:visibility="gone"/>
 
-                <!-- RatingBar -->
+                    <TextView
+                        android:id="@+id/pending_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:padding="4dp"
+                        android:layout_marginStart="6dp"
+                        android:background="@android:color/holo_orange_light"
+                        android:text="Pending: 0"
+                        android:textSize="12sp"
+                        android:textColor="@android:color/white"
+                        android:visibility="gone"/>
+                </LinearLayout>
+
                 <RatingBar
                     android:id="@+id/doctor_rating"
                     style="@style/Widget.AppCompat.RatingBar.Small"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:numStars="5"
                     android:stepSize="0.5"
-                    android:rating="4"
-                    android:layout_marginTop="8dp"
                     android:progressTint="@color/blue"/>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Book Appointment Button -->
-        <LinearLayout
+        <!-- divider -->
+        <View
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:layout_marginTop="6dp">
+            android:layout_height="1dp"
+            android:background="@color/light_gray"
+            android:layout_marginBottom="8dp"/>
 
-            <Button
-                android:id="@+id/schedule_button"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:text="Book Appointment"
-                android:backgroundTint="@color/blue"
-                android:textColor="@android:color/white" />
-        </LinearLayout>
+        <!-- button -->
+        <Button
+            android:id="@+id/schedule_button"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Book Appointment"
+            android:backgroundTint="@color/blue"
+            android:textColor="@android:color/white"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

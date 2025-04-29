@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
@@ -31,170 +32,214 @@ import java.util.List;
 
 public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorViewHolder> {
 
-    private final Context context;
-    private final List<String> doctorIds;
-    private final List<String> names;
-    private final List<String> specialties;
-    private final List<String> hospitals;
-    private final List<Float> ratings;
-    // List for profile picture URLs
-    private final List<String> imageUrls;
-    // List for experience duration
-    private final List<String> durations;
+    private final Context      context;
+    private final List<String> doctorIds, names, specialties, hospitals, imageUrls, durations, autoStatuses;
+    private final List<Float>  ratings;
 
-    public DoctorAdapter(Context context, List<String> doctorIds, List<String> names, List<String> specialties,
-                         List<String> hospitals, List<Float> ratings, List<String> imageUrls, List<String> durations) {
-        this.context = context;
-        this.doctorIds = doctorIds;
-        this.names = names;
-        this.specialties = specialties;
-        this.hospitals = hospitals;
-        this.ratings = ratings;
-        this.imageUrls = imageUrls;
-        this.durations = durations;
+    public DoctorAdapter(Context ctx,
+                         List<String> doctorIds,
+                         List<String> names,
+                         List<String> specialties,
+                         List<String> hospitals,
+                         List<Float> ratings,
+                         List<String> imageUrls,
+                         List<String> durations,
+                         List<String> autoStatuses) {
+        this.context      = ctx;
+        this.doctorIds    = doctorIds;
+        this.names        = names;
+        this.specialties  = specialties;
+        this.hospitals    = hospitals;
+        this.ratings      = ratings;
+        this.imageUrls    = imageUrls;
+        this.durations    = durations;
+        this.autoStatuses = autoStatuses;
     }
 
     @NonNull
     @Override
     public DoctorViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_doctor, parent, false);
-        return new DoctorViewHolder(view);
+        View v = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_doctor, parent, false);
+        return new DoctorViewHolder(v);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
-    public void onBindViewHolder(@NonNull DoctorViewHolder holder, int position) {
-        String doctorId = doctorIds.get(position);
+    public void onBindViewHolder(@NonNull DoctorViewHolder holder, int pos) {
+        holder.itemView.setVisibility(View.VISIBLE);
 
-        holder.name.setText(names.get(position));
-        holder.specialty.setText(specialties.get(position));
-        holder.hospital.setText(hospitals.get(position));
-        holder.ratingBar.setRating(ratings.get(position));
-        holder.experienceDuration.setText("Experience: " + durations.get(position));
+        String id        = doctorIds.get(pos);
+        String autoStat  = autoStatuses.get(pos);
 
-        // Load doctor profile image from URL using Glide
+        // ★ Store autoStatus in the holder so polling can know it:
+        holder.autoStatus = autoStat;
+
+        // static binds
+        holder.name.setText(names.get(pos));
+        holder.specialty.setText(specialties.get(pos));
+        holder.hospital.setText(hospitals.get(pos));
+        holder.ratingBar.setRating(ratings.get(pos));
+        holder.experienceDuration.setText("Experience: " + durations.get(pos));
         Glide.with(context)
-                .load(imageUrls.get(position))
+                .load(imageUrls.get(pos))
                 .placeholder(R.drawable.plasholder)
                 .error(R.drawable.plaseholder_error)
                 .into(holder.image);
 
-        // Start auto-refresh for appointment status every 5 seconds
-        holder.startAutoRefresh(doctorId);
-
-        // Open doctor details when item is clicked
+        // detail click
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, doctor_details.class);
-            intent.putExtra("doctor_id", doctorId);
-            intent.putExtra("doctor_image", imageUrls.get(position));
-            context.startActivity(intent);
+            Intent i = new Intent(context, doctor_details.class);
+            i.putExtra("doctor_id", id);
+            i.putExtra("doctor_image", imageUrls.get(pos));
+            context.startActivity(i);
         });
 
-        // Open book form when button is clicked
+        // book/request click
         holder.bookButton.setOnClickListener(v -> {
-            Intent intent = new Intent(context, book_form.class);
-            intent.putExtra("doctor_id", doctorId);
-            intent.putExtra("doctorName", names.get(position));
-            intent.putExtra("appointment_status", holder.bookButton.getText().toString());
-            context.startActivity(intent);
+            Intent i = new Intent(context, book_form.class);
+            i.putExtra("doctor_id", id);
+            i.putExtra("doctorName", names.get(pos));
+            i.putExtra("appointment_status", holder.bookButton.getText().toString());
+            context.startActivity(i);
         });
+
+        // always start polling (to fill badges & ETA)
+        holder.startAutoRefresh(id);
+
+        // ★ immediately disable if inactive so initial state shows:
+        if (autoStat.equalsIgnoreCase("inactive")) {
+            holder.bookButton.setText("Currently Not Accepting");
+            holder.bookButton.setEnabled(false);
+            holder.bookButton.setBackgroundColor(
+                    context.getResources().getColor(android.R.color.darker_gray)
+            );
+        }
     }
 
-    @Override
-    public int getItemCount() {
-        return names.size();
-    }
+    @Override public int getItemCount() { return names.size(); }
 
     static class DoctorViewHolder extends RecyclerView.ViewHolder {
-        TextView name, specialty, hospital, requestCount, pendingCount, experienceDuration;
+        TextView  name, specialty, hospital,
+                requestCount, pendingCount,
+                experienceDuration, tvEta;
         RatingBar ratingBar;
         ImageView image;
-        Button bookButton;
+        Button    bookButton;
+        String    autoStatus;
         private final Handler handler = new Handler(Looper.getMainLooper());
-        private Runnable refreshRunnable;
+        private Runnable     refreshRunnable;
 
-        public DoctorViewHolder(@NonNull View itemView) {
-            super(itemView);
-            name = itemView.findViewById(R.id.doctor_name);
-            specialty = itemView.findViewById(R.id.doctor_specialty);
-            hospital = itemView.findViewById(R.id.doctor_availability);
-            ratingBar = itemView.findViewById(R.id.doctor_rating);
-            image = itemView.findViewById(R.id.civ_profile);
-            bookButton = itemView.findViewById(R.id.schedule_button);
-            requestCount = itemView.findViewById(R.id.request_count);
-            pendingCount = itemView.findViewById(R.id.pending_count);
-            experienceDuration = itemView.findViewById(R.id.doctor_experience_duration);
+        public DoctorViewHolder(@NonNull View iv) {
+            super(iv);
+            name               = iv.findViewById(R.id.doctor_name);
+            specialty          = iv.findViewById(R.id.doctor_specialty);
+            hospital           = iv.findViewById(R.id.doctor_availability);
+            ratingBar          = iv.findViewById(R.id.doctor_rating);
+            image              = iv.findViewById(R.id.civ_profile);
+            bookButton         = iv.findViewById(R.id.schedule_button);
+            requestCount       = iv.findViewById(R.id.request_count);
+            pendingCount       = iv.findViewById(R.id.pending_count);
+            experienceDuration = iv.findViewById(R.id.doctor_experience_duration);
+            tvEta              = iv.findViewById(R.id.tv_eta);
         }
 
         public void startAutoRefresh(String doctorId) {
-            stopAutoRefresh(); // Remove any existing refresh callbacks
-
-            refreshRunnable = new Runnable() {
-                @Override
-                public void run() {
-                    checkDoctorAppointmentStatus(doctorId);
-                    handler.postDelayed(this, 5000);
-                }
+            stopAutoRefresh();
+            refreshRunnable = () -> {
+                checkDoctorAppointmentStatus(doctorId);
+                handler.postDelayed(refreshRunnable, 5000);
             };
             handler.post(refreshRunnable);
         }
 
         public void stopAutoRefresh() {
-            if (refreshRunnable != null) {
-                handler.removeCallbacks(refreshRunnable);
-            }
+            if (refreshRunnable != null) handler.removeCallbacks(refreshRunnable);
         }
 
         private void checkDoctorAppointmentStatus(String doctorId) {
             String url = "http://sxm.a58.mytemp.website/checkDoctorAppointment.php?doctor_id=" + doctorId;
 
-            JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+            @SuppressLint("SetTextI18n") JsonObjectRequest req = new JsonObjectRequest(
+                    Request.Method.GET, url, null,
                     response -> {
+                        itemView.setVisibility(View.VISIBLE);
                         try {
-                            boolean hasActiveAppointment = response.getBoolean("has_active_appointment");
-                            int requestNumber = response.getInt("request_count");
-                            int pendingNumber = response.getInt("pending_count");
+                            boolean hasActive    = response.getBoolean("has_active_appointment");
+                            int reqNum           = response.getInt("request_count");
+                            int pendNum          = response.getInt("pending_count");
+                            int totalEtaMinutes  = response.optInt("total_eta", 0);
 
-                            if (requestNumber > 0) {
-                                requestCount.setVisibility(View.VISIBLE);
-                                requestCount.setText("Requests: " + requestNumber);
-                            } else {
-                                requestCount.setVisibility(View.GONE);
-                            }
+                            // ★ Always show request count
+                            requestCount.setVisibility(View.VISIBLE);
+                            requestCount.setText("Requests: " + reqNum);
 
-                            if (pendingNumber > 0) {
+                            // pending badge
+                            if (pendNum > 0) {
                                 pendingCount.setVisibility(View.VISIBLE);
-                                pendingCount.setText("Pending: " + pendingNumber);
+                                pendingCount.setText("Pending: " + pendNum);
                             } else {
                                 pendingCount.setVisibility(View.GONE);
                             }
 
-                            if (hasActiveAppointment) {
+                            // ETA
+                            if (totalEtaMinutes > 0) {
+                                tvEta.setVisibility(View.VISIBLE);
+                                // user friendly text
+                                String friendly;
+                                if (totalEtaMinutes < 60) {
+                                    friendly = "Next slot in ~" + totalEtaMinutes + " min";
+                                } else {
+                                    int hrs = totalEtaMinutes / 60;
+                                    int mins = totalEtaMinutes % 60;
+                                    if (mins == 0) {
+                                        friendly = "Next slot in ~" + hrs + " hr";
+                                    } else {
+                                        friendly = "Next slot in ~" + hrs + "h " + mins + "m";
+                                    }
+                                }
+                                tvEta.setText(friendly);
+                            } else {
+                                tvEta.setVisibility(View.GONE);
+                            }
+
+                            // ★ If autoStatus is inactive, override button & return:
+                            if ("inactive".equalsIgnoreCase(autoStatus)) {
+                                bookButton.setText("Currently Not Accepting");
+                                bookButton.setEnabled(false);
+                                bookButton.setBackgroundColor(
+                                        itemView.getResources().getColor(android.R.color.darker_gray)
+                                );
+                                return;
+                            }
+
+                            // otherwise normal booking logic:
+                            if (hasActive) {
                                 bookButton.setText("Request for visit");
                             } else {
                                 bookButton.setText("Book Appointment");
                             }
+                            bookButton.setEnabled(reqNum < 2);
+
                         } catch (JSONException e) {
-                            Log.e("DoctorAdapter", "JSON Parsing error: " + e.getMessage());
-                            bookButton.setText("Book Appointment");
-                            requestCount.setVisibility(View.GONE);
-                            pendingCount.setVisibility(View.GONE);
+                            resetUI();
                         }
                     },
-                    error -> {
-                        Log.e("DoctorAdapter", "Volley Error: " + error.getMessage());
-                        bookButton.setText("Book Appointment");
-                        requestCount.setVisibility(View.GONE);
-                        pendingCount.setVisibility(View.GONE);
-                    });
+                    error -> resetUI()
+            );
 
-            RequestQueue queue = VolleySingleton.getInstance(itemView.getContext()).getRequestQueue();
-            queue.add(request);
+            RequestQueue q = VolleySingleton.getInstance(itemView.getContext()).getRequestQueue();
+            q.add(req);
         }
-    }
 
-    @Override
-    public void onViewRecycled(@NonNull DoctorViewHolder holder) {
-        super.onViewRecycled(holder);
-        holder.stopAutoRefresh();
+        @SuppressLint("SetTextI18n")
+        private void resetUI() {
+            itemView.setVisibility(View.VISIBLE);
+            requestCount.setVisibility(View.GONE);
+            pendingCount.setVisibility(View.GONE);
+            tvEta.setVisibility(View.GONE);
+            bookButton.setText("Book Appointment");
+            bookButton.setEnabled(true);
+        }
     }
 }

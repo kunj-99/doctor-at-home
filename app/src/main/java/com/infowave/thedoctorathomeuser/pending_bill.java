@@ -168,10 +168,10 @@ public class pending_bill extends AppCompatActivity {
         btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.custom_gray));
         btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
         payButton        .setBackgroundColor(getResources().getColor(R.color.custom_gray));
-        if (!areRequiredParametersPresent()) {
-            disablePayButton();
-            Toast.makeText(this, "Some booking details are missing.", Toast.LENGTH_LONG).show();
-        }
+//        if (!areRequiredParametersPresent()) {
+//            disablePayButton();
+//            Toast.makeText(this, "Some booking details are missing.", Toast.LENGTH_LONG).show();
+//        }
 
 
 
@@ -283,7 +283,7 @@ public class pending_bill extends AppCompatActivity {
                     } else { // Online
                         if (walletBalance >=DEPOSIT) {
 
-                            tvDeposit   .setText("Platform Charge Debited: ₹" + DEPOSIT);
+                            tvDeposit.setText("Platform Charge Debited: ₹" + DEPOSIT);
                             startUpiPayment();
                         } else {
                             if (!platformChargeAdded) {
@@ -372,7 +372,7 @@ public class pending_bill extends AppCompatActivity {
         }
 
         if ("success".equals(status)) {
-            // **1) Deduct deposit from wallet**
+            // *1) Deduct deposit from wallet*
             if (walletBalance >= DEPOSIT) {
                 deductWalletCharge(DEPOSIT,
                         "Platform charge for online appointment (wallet debit)");
@@ -382,31 +382,17 @@ public class pending_bill extends AppCompatActivity {
                 return;
             }
 
-            // **2) Refresh UI so new wallet balance and deposit-line appear**
+            // *2) Refresh UI so new wallet balance and deposit-line appear*
             tvDeposit.setText("Deposit Debited: ₹" + String.format(Locale.getDefault(),"%.0f", DEPOSIT));
             updatePaymentUI();
 
-            // **3) Then save the booking & record payment history**
+            // *3) Then save the booking & record payment history*
             Toast.makeText(this, "Payment successful!", Toast.LENGTH_SHORT).show();
             saveBookingData(googleMapsLink);
 
         } else {
             Toast.makeText(this, "Payment failed or cancelled.", Toast.LENGTH_SHORT).show();
         }
-    }
-
-
-
-
-    private boolean areRequiredParametersPresent() {
-        return patientName  != null && !patientName.trim().isEmpty()
-                && age          != null && !age.trim().isEmpty()
-                && gender       != null && !gender.trim().isEmpty()
-                && problem      != null && !problem.trim().isEmpty()
-                && address      != null && !address.trim().isEmpty()
-                && doctorId     != null && !doctorId.trim().isEmpty()
-                && doctorName   != null && !doctorName.trim().isEmpty()
-                && Status       != null && !Status.trim().isEmpty();
     }
 
     private void fetchWalletBalance() {
@@ -420,7 +406,7 @@ public class pending_bill extends AppCompatActivity {
                             tvWalletBalance.setText(
                                     "₹" + String.format(Locale.getDefault(),"%.2f", walletBalance));
                         }
-                    } catch (JSONException e) { /*…*/ }
+                    } catch (JSONException e) { /*...*/ }
                 },
                 err -> Log.e(TAG, "Wallet fetch error", err)
         ) {
@@ -627,60 +613,60 @@ public class pending_bill extends AppCompatActivity {
 
     private void insertPaymentHistory(String appointmentId) {
         String statusEnum = "Pending";
-        String url = "http://sxm.a58.mytemp.website/payment_history.php";
-        StringRequest req = new StringRequest(Request.Method.POST, url,
-                resp -> {
-                    loaderutil.hideLoader();
-                    Toast.makeText(this,"Payment recorded.",Toast.LENGTH_SHORT).show();
-                    Log.d(TAG,"Payment inserted => "+resp);
-                    onBookingSuccess();
-                },
-                err -> {
-                    loaderutil.hideLoader();
-                    Toast.makeText(this,"Failed to record payment.",Toast.LENGTH_SHORT).show();
-                }
-        ) {
-            @Override
-            protected Map<String,String> getParams() {
-                Map<String,String> p = new HashMap<>();
-                p.put("patient_id",     patientId);
-                p.put("appointment_id", appointmentId);
-                p.put("doctor_id",      doctorId);
-                p.put("patient_name",   patientName);
-
-                p.put("amount", String.format(Locale.getDefault(),"%.2f", finalCost));
-                p.put("consultation_fee", String.format(Locale.getDefault(),"%.2f", consultingFee));
-                p.put("deposit", String.format(Locale.getDefault(),"%.2f", DEPOSIT));
-
-                if (selectedPaymentMethod.equals("Online")) {
-                    if (walletBalance >= DEPOSIT) {
-                        p.put("deposit_status", "Wallet Debited");
-                    } else {
-                        p.put("deposit_status", "Added in Bill");
+            String url = "http://sxm.a58.mytemp.website/payment_history.php";
+            StringRequest req = new StringRequest(Request.Method.POST, url,
+                    resp -> {
+                        loaderutil.hideLoader();
+                        Toast.makeText(this,"Payment recorded.",Toast.LENGTH_SHORT).show();
+                        Log.d(TAG,"Payment inserted => "+resp);
+                        onBookingSuccess();
+                    },
+                    err -> {
+                        loaderutil.hideLoader();
+                        Toast.makeText(this,"Failed to record payment.",Toast.LENGTH_SHORT).show();
                     }
-                } else {
-                    p.put("deposit_status", "Wallet Debited");
+            ) {
+                @Override
+                protected Map<String,String> getParams() {
+                    Map<String,String> p = new HashMap<>();
+                    p.put("patient_id",     patientId);
+                    p.put("appointment_id", appointmentId);
+                    p.put("doctor_id",      doctorId);
+                    p.put("patient_name",   patientName);
+
+                    p.put("amount", String.format(Locale.getDefault(),"%.2f", finalCost));
+                    p.put("consultation_fee", String.format(Locale.getDefault(),"%.2f", consultingFee));
+                    p.put("deposit", String.format(Locale.getDefault(),"%.2f", DEPOSIT));
+
+                    if (selectedPaymentMethod.equals("Online")) {
+                        if (walletBalance >= DEPOSIT) {
+                            p.put("deposit_status", "Wallet Debited");
+                        } else {
+                            p.put("deposit_status", "Added in Bill");
+                        }
+                    } else {
+                        p.put("deposit_status", "Wallet Debited");
+                    }
+
+                    p.put("payment_method", selectedPaymentMethod);
+
+                    p.put("distance", String.format(Locale.getDefault(),"%.2f", distanceKm));
+                    p.put("distance_charge", String.format(Locale.getDefault(),"%.2f", distanceCharge));
+                    p.put("gst", String.format(Locale.getDefault(),"%.2f", gstAmount));
+
+                    // Total payment
+                    p.put("total_payment", String.format(Locale.getDefault(),"%.2f", finalCost));
+
+                    // Dummy values now for commission, earning (you can calculate if you want)
+                    p.put("admin_commission", "0.00");
+                    p.put("doctor_earning", "0.00");
+
+                    p.put("payment_status", statusEnum);
+                    p.put("refund_status",  "None");
+                    p.put("notes",          "None");
+                    return p;
                 }
-
-                p.put("payment_method", selectedPaymentMethod);
-
-                p.put("distance", String.format(Locale.getDefault(),"%.2f", distanceKm));
-                p.put("distance_charge", String.format(Locale.getDefault(),"%.2f", distanceCharge));
-                p.put("gst", String.format(Locale.getDefault(),"%.2f", gstAmount));
-
-                // Total payment
-                p.put("total_payment", String.format(Locale.getDefault(),"%.2f", finalCost));
-
-                // Dummy values now for commission, earning (you can calculate if you want)
-                p.put("admin_commission", "0.00");
-                p.put("doctor_earning", "0.00");
-
-                p.put("payment_status", statusEnum);
-                p.put("refund_status",  "None");
-                p.put("notes",          "None");
-                return p;
-            }
-        };
+            };
         Volley.newRequestQueue(this).add(req);
     }
 

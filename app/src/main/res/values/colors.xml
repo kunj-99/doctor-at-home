@@ -70,6 +70,11 @@
     <color name="primaryText">#212121</color>
     <color name="secondaryText">#757575</color>
 
+<!--    <color name="blue">#2196F3</color>         &lt;!&ndash; Material Blue 500 &ndash;&gt;-->
+    <color name="gray_text">#757575</color>   <!-- Medium Gray for secondary text -->
+    <color name="green">#4CAF50</color>       <!-- Material Green 500 -->
+<!--    <color name="light_gray">#E0E0E0</color>-->
+
     <color name="card_stroke">#33000000</color> <!-- 20% black opacity -->
 <!--    <color name="white">#FFFFFF</color>-->
 </resources>
