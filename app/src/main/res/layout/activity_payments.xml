@@ -5,75 +5,71 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5"
+    android:background="@drawable/blue_gradient_bg"
     tools:context=".payments">
 
-    <!-- Main Balance Card with Recharge Button -->
+    <!-- Main Floating Balance Card -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/balanceCard"
         android:layout_width="0dp"
         android:layout_height="180dp"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="24dp"
-        app:cardBackgroundColor="#FFFFFF"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:translationZ="12dp"
+        android:elevation="8dp"
+        app:cardBackgroundColor="#FAFAFA"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="24dp">
 
-            <!-- Balance Label -->
             <TextView
                 android:id="@+id/tvBalanceLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Total Balance"
-                android:textColor="#666666"
+                android:textColor="#1E88E5"
                 android:textSize="14sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"/>
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"/>
 
-            <!-- Balance Amount -->
             <TextView
                 android:id="@+id/tvTotalBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="₹85,248"
-                android:textColor="#2B2B2B"
+                android:textColor="#0D47A1"
                 android:textSize="32sp"
                 android:textStyle="bold"
-                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginTop="8dp"
                 app:layout_constraintTop_toBottomOf="@id/tvBalanceLabel"
-                android:layout_marginTop="8dp"/>
+                app:layout_constraintStart_toStartOf="parent"/>
 
-            <!-- Recharge Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRecharge"
-                android:backgroundTint="#085036"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
-                android:layout_marginTop="16dp"
                 android:text="Recharge Wallet"
-                android:textColor="@color/white"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1E88E5"
                 app:icon="@drawable/add"
-                app:iconTint="#2E7D32"
-                app:strokeColor="#2E7D32"
-                app:strokeWidth="1dp"
-                app:cornerRadius="12dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:iconTint="#BBDEFB"
+                app:cornerRadius="16dp"
+                android:layout_marginTop="16dp"
+                app:layout_constraintTop_toBottomOf="@id/tvTotalBalance"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvTotalBalance"/>
-
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Earned/Spent Row -->
+    <!-- Earned & Spent Cards -->
     <LinearLayout
         android:id="@+id/linearLayout2"
         android:layout_width="0dp"
@@ -82,33 +78,33 @@
         android:layout_marginTop="16dp"
         android:orientation="horizontal"
         android:weightSum="2"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/balanceCard"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/balanceCard">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Earned Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="100dp"
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:translationZ="6dp"
+            app:cardBackgroundColor="#bbdefb"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
                 android:orientation="vertical"
+                android:gravity="center"
                 android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Total Deposit"
-                    android:textColor="#666666"
-                    android:textSize="14sp" />
+                    android:textColor="#1565C0"
+                    android:textSize="14sp"/>
 
                 <TextView
                     android:id="@+id/tvEarned"
@@ -116,36 +112,35 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="₹7,692.10"
-                    android:textColor="#4CAF50"
+                    android:textColor="#1B5E20"
                     android:textSize="18sp"
-                    android:textStyle="bold" />
-
+                    android:textStyle="bold"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Spent Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="100dp"
             android:layout_marginStart="4dp"
             android:layout_weight="1"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="2dp">
+            android:translationZ="6dp"
+            app:cardBackgroundColor="#ffcdd2"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:gravity="center"
                 android:orientation="vertical"
+                android:gravity="center"
                 android:padding="16dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Spent"
-                    android:textColor="#666666"
-                    android:textSize="14sp" />
+                    android:textColor="#C62828"
+                    android:textSize="14sp"/>
 
                 <TextView
                     android:id="@+id/tvSpent"
@@ -153,37 +148,37 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="₹5,841.26"
-                    android:textColor="#F44336"
+                    android:textColor="#B71C1C"
                     android:textSize="18sp"
-                    android:textStyle="bold" />
-
+                    android:textStyle="bold"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
-    <!-- Transactions Header -->
+    <!-- Transactions Label -->
     <TextView
         android:id="@+id/tvTransactions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:text="Recent Transactions"
-        android:textColor="#2B2B2B"
+        android:textColor="#0D47A1"
         android:textSize="18sp"
-        android:paddingTop="10dp"
         android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout2" />
+        android:paddingTop="10dp"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
+        app:layout_constraintStart_toStartOf="parent"/>
 
-    <!-- Transactions List -->
+    <!-- RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvTransactions"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:paddingHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:paddingHorizontal="5dp"
+        android:background="#3DB2DBF8"
+        app:layout_constraintTop_toBottomOf="@id/tvTransactions"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvTransactions"
-        app:layout_constraintVertical_bias="0.0"
-        tools:layout_editor_absoluteX="0dp" />
-
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
