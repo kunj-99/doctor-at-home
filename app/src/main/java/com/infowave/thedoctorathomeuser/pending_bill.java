@@ -175,12 +175,13 @@ public class pending_bill extends AppCompatActivity {
 //        }
 
 
-        gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
+//        gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
+//
+//        consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
+//
+//
+//        finalCost = consultingFee + gstAmount+ distanceCharge;
 
-        consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
-
-
-        finalCost = consultingFee + gstAmount+ distanceCharge;
 
 
         updatePaymentUI();
@@ -308,8 +309,16 @@ public class pending_bill extends AppCompatActivity {
                         FREE_DISTANCE_KM = resp.optDouble("base_distance", 3.0);
                         PER_KM_CHARGE    = resp.optDouble("extra_cost_per_km", 7.0);
                         DEPOSIT          = resp.optDouble("platform_charge", 50.0);
-                        APPOINTMENT_CHARGE = resp.optDouble("appointment_charge", 100.0);
+                        APPOINTMENT_CHARGE = resp.optDouble("appointment_charge", 250.0);
                         GST_PERCENT      = resp.optDouble("gst_percent", 10.0);
+
+                        // Now calculate GST and others here 👇
+                        gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
+                        consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
+                        finalCost     = consultingFee + gstAmount + distanceCharge;
+
+// Then update the UI after fetching and computing values
+                        updatePaymentUI();
 
                         Log.d(TAG, "UPI Config loaded: " +
                                 "Distance base=" + FREE_DISTANCE_KM +
