@@ -37,11 +37,11 @@ public class pending_bill extends AppCompatActivity {
     private static final int UPI_PAYMENT_REQUEST_CODE = 123;
 
     // ─── STATIC CHARGES (TEMP) ────────────────────────────────────────────────────
-    private static final double APPOINTMENT_CHARGE = 100.0;  // ₹100 flat
-    private static double DEPOSIT            = 50.0;   // ₹50 deposit
-    private static final double PER_KM_CHARGE      = 7.0;    // ₹7 per extra km
-    private static final double GST_PERCENT        = 10.0;    // 0% GST
-    private static final double FREE_DISTANCE_KM   = 3.0;    // first 3 km free
+    private static  double APPOINTMENT_CHARGE ;  // ₹100 flat
+    private static double DEPOSIT           ;   // ₹50 deposit
+    private static  double PER_KM_CHARGE     ;    // ₹7 per extra km
+    private static  double GST_PERCENT      ;    // 0% GST
+    private static  double FREE_DISTANCE_KM  ;    // first 3 km free
 
     // Calculated fees
 
@@ -60,7 +60,7 @@ public class pending_bill extends AppCompatActivity {
 
     // Booking Data
     private String patientName, age, gender, problem, address,
-            doctorId, doctorName, Status, selectedPaymentMethod = "";
+            doctorId, doctorName, Status, selectedPaymentMethod;
     private String patientId, pincode;
 
     // UI References
@@ -168,13 +168,11 @@ public class pending_bill extends AppCompatActivity {
         btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.custom_gray));
         btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
         payButton        .setBackgroundColor(getResources().getColor(R.color.custom_gray));
+
 //        if (!areRequiredParametersPresent()) {
 //            disablePayButton();
 //            Toast.makeText(this, "Some booking details are missing.", Toast.LENGTH_LONG).show();
 //        }
-
-
-
 
 
         gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
@@ -185,12 +183,7 @@ public class pending_bill extends AppCompatActivity {
         finalCost = consultingFee + gstAmount+ distanceCharge;
 
 
-
-
         updatePaymentUI();
-
-
-
 
         // Fetch wallet & start auto-refresh every 30s
         fetchWalletBalance();
@@ -237,8 +230,6 @@ public class pending_bill extends AppCompatActivity {
                     tvDeposit   .setText(
                             " Charge Added in bill : ₹ +" + DEPOSIT);
                 }
-
-
             }
             enablePayButton();
             updatePaymentUI();
@@ -313,14 +304,21 @@ public class pending_bill extends AppCompatActivity {
                         merchantName    = resp.optString("merchant_name");
                         transactionNote = resp.optString("transaction_note");
                         currency        = resp.optString("currency", "INR");
-                        baseDistance    = resp.optDouble("base_distance", 3.0);
-                        extraCostPerKm  = resp.optDouble("extra_cost_per_km", 7.0);
-                        DEPOSIT  = resp.optDouble("platform_charge", 50.0);
-                        Log.d(TAG, "Config loaded: baseDist=" + baseDistance +
-                                " extraKm=" + extraCostPerKm +
-                                " platChg=" + DEPOSIT);
+
+                        FREE_DISTANCE_KM = resp.optDouble("base_distance", 3.0);
+                        PER_KM_CHARGE    = resp.optDouble("extra_cost_per_km", 7.0);
+                        DEPOSIT          = resp.optDouble("platform_charge", 50.0);
+                        APPOINTMENT_CHARGE = resp.optDouble("appointment_charge", 100.0);
+                        GST_PERCENT      = resp.optDouble("gst_percent", 10.0);
+
+                        Log.d(TAG, "UPI Config loaded: " +
+                                "Distance base=" + FREE_DISTANCE_KM +
+                                ", Extra/Km=" + PER_KM_CHARGE +
+                                ", Deposit=" + DEPOSIT +
+                                ", AppCharge=" + APPOINTMENT_CHARGE +
+                                ", GST=" + GST_PERCENT);
                     } else {
-                        Log.e(TAG, "Config not found: " + resp.optString("message"));
+                        Log.e(TAG, "Config fetch failed: " + resp.optString("message"));
                     }
                 },
                 err -> Log.e(TAG, "Network error fetching config", err)
@@ -328,11 +326,13 @@ public class pending_bill extends AppCompatActivity {
         Volley.newRequestQueue(this).add(req);
     }
 
+
     private void startUpiPayment() {
         if (merchantUpiId == null) {
             Toast.makeText(this, "Loading payment settings…", Toast.LENGTH_SHORT).show();
             return;
         }
+
         String amtStr = String.format(Locale.getDefault(), "%.2f", finalCost);
         Uri upiUri = Uri.parse("upi://pay").buildUpon()
                 .appendQueryParameter("pa", merchantUpiId)
@@ -356,6 +356,7 @@ public class pending_bill extends AppCompatActivity {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private void processUpiPaymentResponse(String response) {
         loaderutil.hideLoader();
         if (response == null || response.trim().isEmpty()) {
@@ -397,7 +398,7 @@ public class pending_bill extends AppCompatActivity {
 
     private void fetchWalletBalance() {
         String url = "http://sxm.a58.mytemp.website/get_wallet_balance.php";
-        StringRequest req = new StringRequest(Request.Method.POST, url,
+        @SuppressLint("SetTextI18n") StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> {
                     try {
                         JSONObject obj = new JSONObject(resp);
@@ -465,6 +466,7 @@ public class pending_bill extends AppCompatActivity {
         Volley.newRequestQueue(this).add(req);
     }
 
+    @SuppressLint("SetTextI18n")
     private void parseRoutesResponse(JSONObject response) {
         try {
             JSONArray routes = response.getJSONArray("routes");
@@ -486,8 +488,6 @@ public class pending_bill extends AppCompatActivity {
                     tvDistanceChargeValue.setText(
                             String.format(Locale.getDefault(), "₹ %.0f", distanceCharge));
                 }
-
-
 
                 updatePaymentUI();
 
@@ -655,7 +655,7 @@ public class pending_bill extends AppCompatActivity {
                     p.put("gst", String.format(Locale.getDefault(),"%.2f", gstAmount));
 
                     // Total payment
-                    p.put("total_payment", String.format(Locale.getDefault(),"%.2f", finalCost));
+                    p.put("total_payment", String.format(Locale.getDefault(),"%.2f",APPOINTMENT_CHARGE));
 
                     // Dummy values now for commission, earning (you can calculate if you want)
                     p.put("admin_commission", "0.00");

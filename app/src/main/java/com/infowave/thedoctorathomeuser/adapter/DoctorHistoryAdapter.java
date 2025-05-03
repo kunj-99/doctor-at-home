@@ -182,8 +182,10 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             viewHolder.btnViewBill.setOnClickListener(v -> {
                 Intent in = new Intent(context, complet_bill.class);
+                in.putExtra("appointment_id", appointmentIds.get(position));  // Pass appointment ID here
                 context.startActivity(in);
             });
+
 
             viewHolder.btnViewReport.setOnClickListener(v -> {
                 Intent in = new Intent(context, medical_riport.class);

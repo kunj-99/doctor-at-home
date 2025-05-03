@@ -9,6 +9,10 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.Intent;
+import android.view.View;
+import android.widget.Button;
+
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -53,7 +57,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     private Marker doctorMarker;
     private Marker userMarker;  // New marker for the user's location
     private Polyline currentPolyline;
-    private Handler handler = new Handler();
+    private final Handler handler = new Handler();
     private Runnable updateRunnable;
 
     private String doctorId;
@@ -104,6 +108,25 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         mapView.getMapAsync(this);
 
         requestQueue = Volley.newRequestQueue(this);
+
+        Button buttonBill = findViewById(R.id.button_bill);
+        Button buttonDone = findViewById(R.id.button_done);
+
+// Redirect to CompleteBill Activity with appointment_id
+        buttonBill.setOnClickListener(v -> {
+            Intent intent = new Intent(track_doctor.this, complet_bill.class);
+            intent.putExtra("appointment_id", Integer.parseInt(appointmentId));
+            startActivity(intent);
+        });
+
+// Redirect to HomeActivity with open_fragment = 2
+        buttonDone.setOnClickListener(v -> {
+            Intent intent = new Intent(track_doctor.this, MainActivity.class);
+            intent.putExtra("open_fragment", 2);  // Assuming 2 = Appointment Fragment
+            startActivity(intent);
+            finish();
+        });
+
     }
 
     @Override
@@ -217,7 +240,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         String output = "json";
         String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters;
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        @SuppressLint("SetTextI18n") JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
                         JSONArray routes = response.getJSONArray("routes");
