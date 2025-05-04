@@ -17,6 +17,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class cancle_appintment extends AppCompatActivity {
 
@@ -75,7 +76,7 @@ public class cancle_appintment extends AppCompatActivity {
             StringBuilder errorBuilder = new StringBuilder();
 
             // Validate cancellation reason
-            String reason = reasonInput.getText().toString().trim();
+            String reason = Objects.requireNonNull(reasonInput.getText()).toString().trim();
             if (TextUtils.isEmpty(reason)) {
                 reasonInput.setError("Enter a cancellation reason");
                 errorBuilder.append("Enter a cancellation reason\n");

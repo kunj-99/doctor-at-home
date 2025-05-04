@@ -173,16 +173,9 @@ public class pending_bill extends AppCompatActivity {
 //            disablePayButton();
 //            Toast.makeText(this, "Some booking details are missing.", Toast.LENGTH_LONG).show();
 //        }
-
-
-//        gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
-//
+//        gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0)
 //        consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
-//
-//
 //        finalCost = consultingFee + gstAmount+ distanceCharge;
-
-
 
         updatePaymentUI();
 

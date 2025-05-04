@@ -21,6 +21,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.RefundStatus;
 import com.infowave.thedoctorathomeuser.complet_bill;
 import com.infowave.thedoctorathomeuser.doctor_details;
 import com.infowave.thedoctorathomeuser.medical_riport;
@@ -102,104 +103,108 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof EmptyViewHolder) {
-            // Bind the empty state view
             EmptyViewHolder emptyHolder = (EmptyViewHolder) holder;
             Glide.with(context)
-                    .load(R.drawable.nodataimg)  // Use your empty state image resource here
+                    .load(R.drawable.nodataimg)
                     .into(emptyHolder.emptyImage);
             emptyHolder.emptyText.setText("No Appointment History Available");
         } else {
-            // Bind the regular data
             ViewHolder viewHolder = (ViewHolder) holder;
             viewHolder.doctorName.setText(doctorNames.get(position));
             viewHolder.doctorSpecialty.setText(doctorSpecialties.get(position));
             viewHolder.appointmentDate.setText(appointmentDates.get(position));
             viewHolder.appointmentPrice.setText(appointmentPrices.get(position));
+
             Glide.with(context)
                     .load(doctorProfilePictures.get(position))
                     .placeholder(R.drawable.plasholder)
                     .into(viewHolder.doctorImage);
 
             String status = appointmentStatuses.get(position);
+
+            // Reset all button visibility
+            viewHolder.detailsLayout.setVisibility(View.GONE);
+            viewHolder.statusMessage.setVisibility(View.GONE);
+            viewHolder.btnViewBill.setVisibility(View.GONE);
+            viewHolder.btnViewReport.setVisibility(View.GONE);
+            viewHolder.btnViewProfile.setVisibility(View.GONE);
+            viewHolder.btnRefundDetails.setVisibility(View.GONE);
+
             if (status.equalsIgnoreCase("cancelled") || status.equalsIgnoreCase("cancelled_by_doctor")) {
-                String cancelText;
-                if (status.equalsIgnoreCase("cancelled_by_doctor")) {
-                    cancelText = "Cancelled By Doctor";
-                } else {
-                    cancelText = "Cancelled By User";
-                }
-                viewHolder.viewDetailsButton.setEnabled(false);
+                String cancelText = status.equalsIgnoreCase("cancelled_by_doctor") ? "Cancelled By Doctor" : "Cancelled By User";
+
+                viewHolder.viewDetailsButton.setEnabled(true);
                 viewHolder.viewDetailsButton.setText(cancelText);
                 viewHolder.viewDetailsButton.setBackgroundColor(Color.RED);
 
-                viewHolder.btnViewBill.setEnabled(false);
-                viewHolder.btnViewBill.setText("Cancelled");
+                // On click, show only the refund button inside detailsLayout
+                viewHolder.viewDetailsButton.setOnClickListener(v -> {
+                    if (viewHolder.detailsLayout.getVisibility() == View.GONE) {
+                        viewHolder.detailsLayout.setVisibility(View.VISIBLE);
+                        viewHolder.btnRefundDetails.setVisibility(View.VISIBLE);
+                        viewHolder.viewDetailsButton.setText("Hide Refund Info");
+                    } else {
+                        viewHolder.detailsLayout.setVisibility(View.GONE);
+                        viewHolder.btnRefundDetails.setVisibility(View.GONE);
+                        viewHolder.viewDetailsButton.setText(cancelText);
+                    }
+                });
 
-                viewHolder.btnViewReport.setEnabled(false);
-                viewHolder.btnViewReport.setText("Cancelled");
+                viewHolder.btnRefundDetails.setOnClickListener(v -> {
+                    Intent intent = new Intent(context, RefundStatus.class);
+                    intent.putExtra("appointment_id", appointmentIds.get(position));
+                    context.startActivity(intent);
+                });
 
-                viewHolder.btnViewProfile.setEnabled(false);
-                viewHolder.btnViewProfile.setText("Cancelled");
-
-                viewHolder.detailsLayout.setVisibility(View.GONE);
-                viewHolder.statusMessage.setVisibility(View.GONE);
             } else {
+                // For non-cancelled appointments: show View Details button normally
                 viewHolder.viewDetailsButton.setEnabled(true);
                 viewHolder.viewDetailsButton.setText("View Details");
+                viewHolder.viewDetailsButton.setBackgroundColor(ContextCompat.getColor(context, R.color.blue));
 
-                viewHolder.btnViewBill.setEnabled(true);
-                viewHolder.btnViewBill.setText("View Bill");
+                viewHolder.btnViewBill.setVisibility(View.VISIBLE);
+                viewHolder.btnViewReport.setVisibility(View.VISIBLE);
+                viewHolder.btnViewProfile.setVisibility(View.VISIBLE);
 
-                viewHolder.btnViewReport.setEnabled(true);
-                viewHolder.btnViewReport.setText("View Report");
+                viewHolder.viewDetailsButton.setOnClickListener(v -> {
+                    if (viewHolder.detailsLayout.getVisibility() == View.GONE) {
+                        viewHolder.detailsLayout.setVisibility(View.VISIBLE);
+                        viewHolder.viewDetailsButton.setText("Hide Details");
+                    } else {
+                        viewHolder.detailsLayout.setVisibility(View.GONE);
+                        viewHolder.viewDetailsButton.setText("View Details");
+                    }
+                });
 
-                viewHolder.btnViewProfile.setEnabled(true);
-                viewHolder.btnViewProfile.setText("View Profile");
+                viewHolder.btnViewBill.setOnClickListener(v -> {
+                    Intent in = new Intent(context, complet_bill.class);
+                    in.putExtra("appointment_id", appointmentIds.get(position));
+                    context.startActivity(in);
+                });
 
-                viewHolder.viewDetailsButton.setVisibility(View.VISIBLE);
+                viewHolder.btnViewReport.setOnClickListener(v -> {
+                    Intent in = new Intent(context, medical_riport.class);
+                    in.putExtra("appointment_id", String.valueOf(appointmentIds.get(position)));
+                    context.startActivity(in);
+                });
+
+                viewHolder.btnViewProfile.setOnClickListener(v -> {
+                    Intent intent = new Intent(context, doctor_details.class);
+                    intent.putExtra("doctor_id", String.valueOf(doctorIds.get(position)));
+                    context.startActivity(intent);
+                });
             }
 
-            if (appointmentStatuses.get(position).equalsIgnoreCase("Completed")) {
+            if (status.equalsIgnoreCase("Completed")) {
                 int docId = doctorIds.get(position);
                 int appId = appointmentIds.get(position);
-                Log.d(TAG, "Appointment " + appId + " is Completed. Checking review status for doctorId " + docId);
                 if (!reviewPopupShown.contains(docId)) {
                     checkAndPromptForReview(docId, appId);
-                } else {
-                    Log.d(TAG, "Review popup already shown for doctorId " + docId + ". Skipping.");
                 }
             }
-
-            viewHolder.viewDetailsButton.setOnClickListener(v -> {
-                if (viewHolder.detailsLayout.getVisibility() == View.GONE) {
-                    viewHolder.detailsLayout.setVisibility(View.VISIBLE);
-                    viewHolder.viewDetailsButton.setText("Hide Details");
-                } else {
-                    viewHolder.detailsLayout.setVisibility(View.GONE);
-                    viewHolder.viewDetailsButton.setText("View Details");
-                }
-            });
-
-            viewHolder.btnViewBill.setOnClickListener(v -> {
-                Intent in = new Intent(context, complet_bill.class);
-                in.putExtra("appointment_id", appointmentIds.get(position));  // Pass appointment ID here
-                context.startActivity(in);
-            });
-
-
-            viewHolder.btnViewReport.setOnClickListener(v -> {
-                Intent in = new Intent(context, medical_riport.class);
-                in.putExtra("appointment_id", String.valueOf(appointmentIds.get(position)));
-                context.startActivity(in);
-            });
-
-            viewHolder.btnViewProfile.setOnClickListener(v -> {
-                Intent intent = new Intent(context, doctor_details.class);
-                intent.putExtra("doctor_id", String.valueOf(doctorIds.get(position)));
-                context.startActivity(intent);
-            });
         }
     }
+
 
     // Unified getItemCount() implementation
     @Override
@@ -322,6 +327,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
         ImageView doctorImage;
         TextView doctorName, doctorSpecialty, appointmentDate, appointmentPrice, statusMessage;
         Button viewDetailsButton, btnViewBill, btnViewReport, btnViewProfile;
+        Button btnRefundDetails;
         LinearLayout detailsLayout;
 
         public ViewHolder(@NonNull View itemView) {
@@ -336,6 +342,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
             btnViewBill = itemView.findViewById(R.id.btnViewBill);
             btnViewReport = itemView.findViewById(R.id.btnViewReport);
             btnViewProfile = itemView.findViewById(R.id.btnViewProfile);
+            btnRefundDetails = itemView.findViewById(R.id.btnRefundDetails); // ✅ CORRECT LINE
             statusMessage = itemView.findViewById(R.id.statusMessage);
         }
     }

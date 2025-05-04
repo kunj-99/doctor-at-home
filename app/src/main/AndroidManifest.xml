@@ -31,7 +31,9 @@
         android:usesCleartextTraffic="true"
         tools:ignore="WrongManifestParent"
         tools:targetApi="n">
-
+        <activity
+            android:name=".RefundStatus"
+            android:exported="false" />
         <activity
             android:name=".aboutus"
             android:exported="false" />
@@ -115,11 +117,10 @@
         <activity
             android:name=".MainActivity"
             android:exported="false" /> <!-- <meta-data -->
-
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key"
-            tools:replace="android:value"/>
+            tools:replace="android:value" />
 
         <uses-library
             android:name="org.apache.http.legacy"

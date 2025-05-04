@@ -101,6 +101,17 @@
             android:layout_marginTop="12dp">
 
             <Button
+                android:id="@+id/btnRefundDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="View Refund"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="@color/blue"
+                android:textColor="@android:color/white"
+                android:visibility="gone" />
+
+
+            <Button
                 android:id="@+id/btnViewBill"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
