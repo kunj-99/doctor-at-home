@@ -561,10 +561,14 @@ public class pending_bill extends AppCompatActivity {
                 p.put("address",        address);
                 p.put("doctor_id",      doctorId);
                 p.put("reason_for_visit", problem);
-                p.put("appointment_date",
-                        new SimpleDateFormat("yyyy-MM-dd",Locale.getDefault())
-                                .format(new Date()));
-                p.put("time_slot",      "10:00 AM");
+
+                Date now = new Date();
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", Locale.getDefault());
+
+                p.put("appointment_date", dateFormat.format(now));
+                p.put("time_slot", timeFormat.format(now));
+
                 p.put("pincode",        pincode);
                 p.put("appointment_mode","Online");
                 p.put("payment_method", selectedPaymentMethod);
