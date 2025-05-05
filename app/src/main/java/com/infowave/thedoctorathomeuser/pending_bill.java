@@ -60,7 +60,7 @@ public class pending_bill extends AppCompatActivity {
 
     // Booking Data
     private String patientName, age, gender, problem, address,
-            doctorId, doctorName, Status, selectedPaymentMethod;
+            doctorId, doctorName, Status, selectedPaymentMethod = "";
     private String patientId, pincode;
 
     // UI References
@@ -99,21 +99,23 @@ public class pending_bill extends AppCompatActivity {
         loaderutil.showLoader(this);
         new Handler().postDelayed(loaderutil::hideLoader, 3000);
 
-        // 1) load everything (UPI + distances + platform) from DB
-        fetchUpiConfig();
-
-        // Retrieve Intent data
         Intent intent = getIntent();
         patientName = intent.getStringExtra("patient_name");
         age         = String.valueOf(intent.getIntExtra("age", 0));
         gender      = intent.getStringExtra("gender");
         problem     = intent.getStringExtra("problem");
         address     = intent.getStringExtra("address");
-        doctorId    = intent.getStringExtra("doctor_id");
+        doctorId = intent.getStringExtra("doctor_id");
+        if (doctorId == null || doctorId.isEmpty()) {
+            Toast.makeText(this, "Doctor ID not passed", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
         doctorName  = intent.getStringExtra("doctorName");
         Status      = intent.getStringExtra("appointment_status");
         pincode     = intent.getStringExtra("pincode");
 
+        fetchUpiConfig(doctorId);
 
         if ("Request for visit".equals(Status)) {
             Status = "Requested";
@@ -128,11 +130,6 @@ public class pending_bill extends AppCompatActivity {
             googleMapsLink = "https://www.google.com/maps/search/?api=1&query="
                     + userLat + "," + userLng;
         }
-
-
-
-
-
         // Bind UI
         tvBillPatientName     = findViewById(R.id.tv_bill_patient_name);
         tvBillDoctorName      = findViewById(R.id.tv_bill_doctor_name);
@@ -169,16 +166,7 @@ public class pending_bill extends AppCompatActivity {
         btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
         payButton        .setBackgroundColor(getResources().getColor(R.color.custom_gray));
 
-//        if (!areRequiredParametersPresent()) {
-//            disablePayButton();
-//            Toast.makeText(this, "Some booking details are missing.", Toast.LENGTH_LONG).show();
-//        }
-//        gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0)
-//        consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
-//        finalCost = consultingFee + gstAmount+ distanceCharge;
-
         updatePaymentUI();
-
         // Fetch wallet & start auto-refresh every 30s
         fetchWalletBalance();
         walletRunnable = () -> {
@@ -186,7 +174,6 @@ public class pending_bill extends AppCompatActivity {
             walletHandler.postDelayed(walletRunnable, 3000);
         };
         walletHandler.post(walletRunnable);
-
 
         // Offline button
         btnOfflinePayment.setOnClickListener(v -> {
@@ -289,8 +276,10 @@ public class pending_bill extends AppCompatActivity {
     }
 
     // Load UPI + distance + platform config from your PHP
-    private void fetchUpiConfig() {
+
+    private void fetchUpiConfig(String doctorId) {
         String url = "http://sxm.a58.mytemp.website/get_upi_config.php";
+
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
                     if (resp.optBoolean("success")) {
@@ -302,29 +291,43 @@ public class pending_bill extends AppCompatActivity {
                         FREE_DISTANCE_KM = resp.optDouble("base_distance", 3.0);
                         PER_KM_CHARGE    = resp.optDouble("extra_cost_per_km", 7.0);
                         DEPOSIT          = resp.optDouble("platform_charge", 50.0);
-                        APPOINTMENT_CHARGE = resp.optDouble("appointment_charge", 250.0);
                         GST_PERCENT      = resp.optDouble("gst_percent", 10.0);
 
-                        // Now calculate GST and others here 👇
-                        gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
-                        consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
-                        finalCost     = consultingFee + gstAmount + distanceCharge;
+                        // Now that required configs are loaded, fetch the doctor-specific charge
+                        fetchAppointmentCharge(doctorId);
 
-// Then update the UI after fetching and computing values
-                        updatePaymentUI();
-
-                        Log.d(TAG, "UPI Config loaded: " +
-                                "Distance base=" + FREE_DISTANCE_KM +
-                                ", Extra/Km=" + PER_KM_CHARGE +
-                                ", Deposit=" + DEPOSIT +
-                                ", AppCharge=" + APPOINTMENT_CHARGE +
-                                ", GST=" + GST_PERCENT);
                     } else {
                         Log.e(TAG, "Config fetch failed: " + resp.optString("message"));
                     }
                 },
                 err -> Log.e(TAG, "Network error fetching config", err)
         );
+
+        Volley.newRequestQueue(this).add(req);
+    }
+
+    private void fetchAppointmentCharge(String doctorId) {
+        String url = "http://sxm.a58.mytemp.website/get_appointment_charge.php?doctor_id=" + doctorId;
+
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
+                response -> {
+                    if (response.optBoolean("success")) {
+                        APPOINTMENT_CHARGE = response.optDouble("appointment_charge", 250.0);
+
+                        // Calculate charges using already-loaded UPI config
+                        gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
+                        consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
+                        finalCost     = consultingFee + gstAmount + distanceCharge;
+
+                        updatePaymentUI();
+                        Log.d(TAG, "Doctor-wise appointment charge: ₹" + APPOINTMENT_CHARGE);
+                    } else {
+                        Log.e(TAG, "Charge fetch error: " + response.optString("message"));
+                    }
+                },
+                error -> Log.e(TAG, "Volley error fetching doctor charge", error)
+        );
+
         Volley.newRequestQueue(this).add(req);
     }
 
