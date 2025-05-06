@@ -3,6 +3,7 @@ package com.infowave.thedoctorathomeuser.adapter;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -216,6 +217,8 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                             // otherwise normal booking logic:
                             if (hasActive) {
                                 bookButton.setText("Request for visit");
+                                bookButton.setBackgroundColor(Color.parseColor("#5494DA"));
+
                             } else {
                                 bookButton.setText("Book Appointment");
                             }
