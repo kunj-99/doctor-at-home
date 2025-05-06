@@ -52,7 +52,7 @@ public class Profile extends AppCompatActivity {
     private static final int PICK_IMAGE = 1;
     private static final String TAG = "Profile";
 
-    private CircleImageView civProfile;
+    private ImageView civProfile;
     private EditText etFullName, etDOB, etAddress, etMobile, etEmail, etMedicalHistory,
             etAllergies, etCurrentMedications, etEmergencyName, etEmergencyNumber;
     private Spinner spinnerGender, spinnerBloodGroup;

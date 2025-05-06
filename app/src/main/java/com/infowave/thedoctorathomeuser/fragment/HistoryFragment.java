@@ -112,6 +112,7 @@ public class HistoryFragment extends Fragment {
                             List<String> newDoctorProfilePictures = new ArrayList<>();
                             List<String> newAppointmentStatuses = new ArrayList<>();
 
+                            
                             for (int i = 0; i < appointments.length(); i++) {
                                 JSONObject obj = appointments.getJSONObject(i);
                                 newAppointmentIds.add(obj.getInt("appointment_id"));

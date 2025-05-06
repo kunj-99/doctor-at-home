@@ -23,13 +23,23 @@
             android:gravity="center_vertical">
 
             <!-- Doctor Image -->
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/doctorImage"
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="100dp"
                 android:layout_height="100dp"
-                android:src="@drawable/main1"
-                app:civ_border_color="@color/blue"
-                app:civ_border_width="2dp" />
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/blue"
+                app:strokeWidth="2dp">
+
+                <ImageView
+                    android:id="@+id/doctorImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/main1" />
+            </com.google.android.material.card.MaterialCardView>
+
+
 
             <!-- Doctor Details -->
             <LinearLayout
@@ -150,7 +160,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Appointment is cancelled by user"
-            android:textColor="@android:color/holo_red_dark"
+            android:textColor="@color/error"
             android:textSize="14sp"
             android:gravity="center"
             android:padding="12dp"
