@@ -3,41 +3,48 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="10dp"
-    app:cardElevation="4dp"
-    app:cardCornerRadius="12dp"
+    android:layout_margin="12dp"
+    app:cardElevation="6dp"
+    app:cardCornerRadius="16dp"
     app:cardBackgroundColor="@android:color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="16dp">
 
-        <!-- Doctor's Details Layout -->
+        <!-- Doctor Info Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="top|start">
 
-            <!-- Doctor Image -->
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/civ_profile"
-                android:layout_width="110dp"
-                android:layout_height="110dp"
-                android:layout_marginStart="20dp"
-                android:src="@drawable/main1"
-                app:civ_border_color="@color/blue"
-                app:civ_border_width="2dp" />
+            <!-- Image -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                app:cardCornerRadius="16dp"
+                app:strokeColor="@color/blue"
+                app:strokeWidth="2dp"
+                app:cardElevation="0dp"
+                android:layout_marginEnd="16dp">
 
-            <!-- Doctor Info -->
+                <ImageView
+                    android:id="@+id/civ_profile"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/main1" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Info -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginHorizontal="25dp"
-                android:orientation="vertical"
-                android:padding="10dp">
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/doctor_name"
@@ -52,37 +59,35 @@
                     android:id="@+id/doctor_specialty"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="2dp"
                     android:text="Specialist Medicine"
                     android:textColor="@color/black"
-                    android:textSize="15sp" />
+                    android:textSize="14sp" />
 
                 <TextView
                     android:id="@+id/doctor_availability"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="2dp"
                     android:text="Available"
                     android:textColor="@color/black"
-                    android:textSize="15sp" />
+                    android:textSize="14sp" />
 
-                <!-- New Experience Duration TextView -->
                 <TextView
                     android:id="@+id/doctor_experience_duration"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="2dp"
                     android:text="Experience: 5 years"
                     android:textColor="@color/black"
-                    android:textSize="15sp" />
+                    android:textSize="14sp" />
 
-                <!-- RatingBar -->
                 <RatingBar
                     android:id="@+id/doctor_rating"
                     style="@style/Widget.AppCompat.RatingBar.Small"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:isIndicator="true"
                     android:numStars="5"
                     android:rating="2.0"
@@ -91,31 +96,38 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Buttons Layout -->
+        <!-- Buttons Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginHorizontal="10dp"
-            android:layout_marginTop="6dp">
+            android:layout_marginTop="16dp">
 
             <Button
                 android:id="@+id/Track_button"
-                android:layout_width="200dp"
-                android:layout_height="50dp"
-                android:text="track"
-                android:backgroundTint="@color/blue"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Track"
+                android:background="@drawable/rounded_blue_btn"
                 android:textColor="@android:color/white"
-                android:layout_marginEnd="10dp" />
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                android:layout_marginEnd="8dp"
+                android:elevation="2dp" />
 
             <Button
                 android:id="@+id/Cancel_button"
-                android:layout_width="100dp"
-                android:layout_height="50dp"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
                 android:text="Cancel"
-                android:backgroundTint="@color/error_red"
-                android:textColor="@android:color/white" />
+                android:background="@drawable/rounded_red_btn"
+                android:textColor="@android:color/white"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                android:elevation="2dp" />
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

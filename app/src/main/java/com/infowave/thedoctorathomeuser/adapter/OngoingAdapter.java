@@ -110,6 +110,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             viewHolder.cancel.setVisibility(View.VISIBLE);
             viewHolder.cancel.setEnabled(true);
+            viewHolder.cancel.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.error_red));
 
             String status = statuses.get(position);
             if (status != null) {
