@@ -184,7 +184,7 @@ public class pending_bill extends AppCompatActivity {
             if (platformChargeAdded) {
                 finalCost -= DEPOSIT;
                 platformChargeAdded = false;
-                tvDeposit   .setText("-"+DEPOSIT);
+                tvDeposit.setText("-"+DEPOSIT);
             }
             if (walletBalance >= DEPOSIT) {
                 enablePayButton();
@@ -525,8 +525,6 @@ public class pending_bill extends AppCompatActivity {
         tvWalletBalance.setText("₹" + String.format(Locale.getDefault(),"%.2f", walletBalance));
     }
 
-
-
     private void deductWalletCharge(double charge, String reason) {
         walletBalance -= charge;
         updateUserWallet(patientId, walletBalance);
@@ -665,8 +663,6 @@ public class pending_bill extends AppCompatActivity {
 
                     // Total payment
                     p.put("total_payment", String.format(Locale.getDefault(),"%.2f",APPOINTMENT_CHARGE));
-
-                    // Dummy values now for commission, earning (you can calculate if you want)
                     p.put("admin_commission", "0.00");
                     p.put("doctor_earning", "0.00");
 
