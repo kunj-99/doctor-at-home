@@ -24,7 +24,7 @@ public class home_slaider extends RecyclerView.Adapter<home_slaider.ImageViewHol
 
         public ImageViewHolder(View itemView) {
             super(itemView);
-            imageView = itemView.findViewById(R.id.item_image);
+            imageView = itemView.findViewById(R.id.bannerImage);
         }
     }
 

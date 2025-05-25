@@ -175,7 +175,6 @@ public class pending_bill extends AppCompatActivity {
         };
         walletHandler.post(walletRunnable);
 
-        // Offline button
         btnOfflinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Offline";
             Toast.makeText(this, "Offline Payment selected", Toast.LENGTH_SHORT).show();
@@ -194,8 +193,6 @@ public class pending_bill extends AppCompatActivity {
             }
             updatePaymentUI();
         });
-
-        // Online button
         btnOnlinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Online";
             Toast.makeText(this, "Online Payment selected", Toast.LENGTH_SHORT).show();
@@ -218,11 +215,8 @@ public class pending_bill extends AppCompatActivity {
 
         btnRechargeWallet.setOnClickListener(v ->
                 startActivity(new Intent(pending_bill.this, payments.class))
-
         );
-
         fetchDoctorLocation(doctorId);
-
         // Proceed – show loader, then save / pay
         payButton.setOnClickListener(v -> new AlertDialog.Builder(pending_bill.this)
                 .setTitle("Confirm Appointment")
@@ -305,7 +299,6 @@ public class pending_bill extends AppCompatActivity {
 
         Volley.newRequestQueue(this).add(req);
     }
-
     private void fetchAppointmentCharge(String doctorId) {
         String url = "http://sxm.a58.mytemp.website/get_appointment_charge.php?doctor_id=" + doctorId;
 
@@ -330,7 +323,6 @@ public class pending_bill extends AppCompatActivity {
 
         Volley.newRequestQueue(this).add(req);
     }
-
 
     private void startUpiPayment() {
         if (merchantUpiId == null) {
@@ -360,7 +352,6 @@ public class pending_bill extends AppCompatActivity {
             processUpiPaymentResponse(response);
         }
     }
-
     @SuppressLint("SetTextI18n")
     private void processUpiPaymentResponse(String response) {
         loaderutil.hideLoader();
@@ -470,7 +461,6 @@ public class pending_bill extends AppCompatActivity {
         );
         Volley.newRequestQueue(this).add(req);
     }
-
     @SuppressLint("SetTextI18n")
     private void parseRoutesResponse(JSONObject response) {
         try {
@@ -597,7 +587,6 @@ public class pending_bill extends AppCompatActivity {
         };
         Volley.newRequestQueue(this).add(req);
     }
-
     private void addWalletTransaction(int patientId, double amount,
                                       String type, String reason) {
         String url = "http://sxm.a58.mytemp.website/add_wallet_transaction.php";
@@ -617,7 +606,6 @@ public class pending_bill extends AppCompatActivity {
         };
         Volley.newRequestQueue(this).add(req);
     }
-
     private void insertPaymentHistory(String appointmentId) {
         String statusEnum = "Pending";
             String url = "http://sxm.a58.mytemp.website/payment_history.php";
@@ -674,7 +662,6 @@ public class pending_bill extends AppCompatActivity {
             };
         Volley.newRequestQueue(this).add(req);
     }
-
     private void onBookingSuccess() {
         Intent i = new Intent(this, MainActivity.class);
         i.putExtra("open_fragment", 2);

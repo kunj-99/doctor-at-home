@@ -11,9 +11,12 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.PagerSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.SnapHelper;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -111,10 +114,25 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupImageSlider() {
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
+        recyclerView.setLayoutManager(layoutManager);
+
+        // Add smooth snapping behavior like a ViewPager
+        SnapHelper snapHelper = new PagerSnapHelper();
+        snapHelper.attachToRecyclerView(recyclerView);
+
+        // Optional: spacing between items
+        int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.slider_spacing); // e.g., 12dp
+        recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
+
+        recyclerView.setPadding(8, 0, 8, 0); // extra left-right padding
+        recyclerView.setClipToPadding(false);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+
         sliderAdapter = new home_slaider(imageList);
         recyclerView.setAdapter(sliderAdapter);
     }
+
 
     private void setupHealthTips() {
         // Increment pending request count.

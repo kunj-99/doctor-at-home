@@ -4,58 +4,59 @@
     android:orientation="vertical"
     android:padding="16dp"
     android:layout_margin="8dp"
-    android:background="@drawable/rounded_card_bg"
-    android:elevation="4dp"
-    android:gravity="center_horizontal">
+    android:background="@drawable/service_card_bg"
+    android:elevation="5dp"
+    android:gravity="center_horizontal"
+    android:layout_gravity="center"
+    android:clipToPadding="false">
 
     <!-- Icon -->
     <ImageView
         android:id="@+id/serviceImage"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:layout_gravity="center"
-        android:layout_marginBottom="12dp"
-        android:scaleType="centerInside"
+        android:layout_marginBottom="14dp"
+
+        android:padding="8dp"
+        android:scaleType="fitCenter"
         android:contentDescription="Service Icon" />
 
-    <!-- Content that can grow -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
+    <!-- Title & Subtitle -->
+    <TextView
+        android:id="@+id/serviceTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Service Title"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#212121"
+        android:layout_marginBottom="2dp"
+        android:textAlignment="center" />
 
-        <TextView
-            android:id="@+id/serviceTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Service Title"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textAlignment="center"
-            android:layout_marginBottom="4dp" />
+    <TextView
+        android:id="@+id/serviceSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Service Subtitle"
+        android:textColor="#757575"
+        android:textSize="13sp"
+        android:textAlignment="center"
+        android:layout_marginBottom="10dp" />
 
-        <TextView
-            android:id="@+id/serviceSubtitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Service Subtitle"
-            android:textColor="@android:color/darker_gray"
-            android:textSize="14sp"
-            android:textAlignment="center"
-            android:layout_marginBottom="8dp" />
-    </LinearLayout>
-
-    <!-- Fixed Bottom Button -->
+    <!-- Book Button -->
     <Button
         android:id="@+id/bookNowButton"
         android:layout_width="wrap_content"
         android:layout_height="40dp"
-        android:text="Book Now"
+        android:text="Coming Soon"
         android:textColor="@android:color/white"
         android:textAllCaps="false"
-        android:backgroundTint="@color/blue"
-        android:elevation="2dp"
-        android:layout_gravity="center_horizontal" />
+        android:textStyle="bold"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:backgroundTint="#B0BEC5"
+    android:elevation="3dp"
+    android:enabled="false" />
+
 </LinearLayout>
