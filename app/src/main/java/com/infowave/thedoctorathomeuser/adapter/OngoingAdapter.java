@@ -106,11 +106,11 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             viewHolder.track.setVisibility(View.VISIBLE);
             viewHolder.track.setEnabled(true);
             viewHolder.track.setText("Track");
-            viewHolder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.dgreen));
+            viewHolder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.navy_blue));
 
             viewHolder.cancel.setVisibility(View.VISIBLE);
             viewHolder.cancel.setEnabled(true);
-            viewHolder.cancel.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.error_red));
+            viewHolder.cancel.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.error));
 
             String status = statuses.get(position);
             if (status != null) {

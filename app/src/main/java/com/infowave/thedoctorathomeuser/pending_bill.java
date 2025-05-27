@@ -178,7 +178,7 @@ public class pending_bill extends AppCompatActivity {
         btnOfflinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Offline";
             Toast.makeText(this, "Offline Payment selected", Toast.LENGTH_SHORT).show();
-            btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_green));
+            btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.dark_cyan));
             btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.custom_gray));
             if (platformChargeAdded) {
                 finalCost -= DEPOSIT;
@@ -196,7 +196,7 @@ public class pending_bill extends AppCompatActivity {
         btnOnlinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Online";
             Toast.makeText(this, "Online Payment selected", Toast.LENGTH_SHORT).show();
-            btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.custom_green));
+            btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.dark_cyan));
             btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
             if (walletBalance >=DEPOSIT) {
                 tvDeposit   .setText(" debite in wallet: ₹ -" + DEPOSIT);
@@ -672,7 +672,7 @@ public class pending_bill extends AppCompatActivity {
     private void enablePayButton() {
         payButton.setEnabled(true);
         payButton.setAlpha(1f);
-        payButton.setBackgroundColor(getResources().getColor(R.color.custom_green));
+        payButton.setBackgroundColor(getResources().getColor(R.color.navy_blue));
     }
     private void disablePayButton() {
         payButton.setEnabled(false);

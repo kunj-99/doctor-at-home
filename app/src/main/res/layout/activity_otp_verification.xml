@@ -20,7 +20,7 @@
             android:gravity="center"
             android:paddingTop="80dp"
             android:text="OTP"
-            android:textColor="@color/blue"
+            android:textColor="@color/navy_blue"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
             android:text="send otp "
-            android:textColor="@color/blue"
+            android:textColor="@color/navy_blue"
             android:textSize="24sp" />
 
         <EditText
@@ -52,7 +52,7 @@
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_marginTop="24dp"
-            android:backgroundTint="@color/blue"
+            android:backgroundTint="@color/navy_blue"
             android:elevation="4dp"
             android:gravity="center"
             android:text="Continue"

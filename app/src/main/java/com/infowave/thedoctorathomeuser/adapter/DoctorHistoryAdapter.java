@@ -135,7 +135,8 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
                 viewHolder.viewDetailsButton.setEnabled(true);
                 viewHolder.viewDetailsButton.setText(cancelText);
-                viewHolder.viewDetailsButton.setBackgroundColor(Color.RED);
+//                viewHolder.viewDetailsButton.setBackgroundColor(Color.RED);
+                viewHolder.viewDetailsButton.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.error));
 
                 // On click, show only the refund button inside detailsLayout
                 viewHolder.viewDetailsButton.setOnClickListener(v -> {
@@ -160,7 +161,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
                 // For non-cancelled appointments: show View Details button normally
                 viewHolder.viewDetailsButton.setEnabled(true);
                 viewHolder.viewDetailsButton.setText("View Details");
-                viewHolder.viewDetailsButton.setBackgroundColor(ContextCompat.getColor(context, R.color.blue));
+                viewHolder.viewDetailsButton.setBackgroundColor(ContextCompat.getColor(context, R.color.navy_blue));
 
                 viewHolder.btnViewBill.setVisibility(View.VISIBLE);
                 viewHolder.btnViewReport.setVisibility(View.VISIBLE);

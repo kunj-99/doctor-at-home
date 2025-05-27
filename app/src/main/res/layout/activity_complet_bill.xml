@@ -427,7 +427,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
                 android:layout_marginTop="20dp"
-                android:backgroundTint="@color/blue"
+                android:backgroundTint="@color/cyan"
                 android:text="Download"
                 android:textColor="#FFF"
                 android:textSize="20sp"

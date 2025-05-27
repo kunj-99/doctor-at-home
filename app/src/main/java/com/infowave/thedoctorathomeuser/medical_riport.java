@@ -128,7 +128,7 @@ public class medical_riport extends AppCompatActivity {
 
         // Fetch the medical report data using the appointment ID
         fetchMedicalReport();
-
+        btnDownload.setBackgroundColor(getResources().getColor(R.color.navy_blue));
         // Set click listener for download button
         btnDownload.setOnClickListener(new View.OnClickListener() {
             @Override

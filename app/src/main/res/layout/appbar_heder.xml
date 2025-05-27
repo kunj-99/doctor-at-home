@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="110dp"
     android:orientation="vertical"
-    android:background="@color/lgreen"
+    android:background="#A902C39A"
     android:padding="8dp">
 
     <!-- Profile Header -->

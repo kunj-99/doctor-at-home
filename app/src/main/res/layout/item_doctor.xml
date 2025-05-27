@@ -29,7 +29,7 @@
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="2dp"
-                app:strokeColor="@color/blue">
+                app:strokeColor="@color/navy_blue">
 
                 <ImageView
                     android:id="@+id/civ_profile"
@@ -65,7 +65,7 @@
                     android:text="Dr. Tranquilli"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@color/black"/>
+                    android:textColor="@color/cyan"/>
 
                 <TextView
                     android:id="@+id/doctor_specialty"
@@ -163,7 +163,7 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:text="Book Appointment"
-            android:backgroundTint="@color/blue"
+            android:backgroundTint="@color/acqua_green"
             android:textColor="@android:color/white"/>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

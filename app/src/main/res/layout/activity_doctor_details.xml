@@ -34,7 +34,7 @@
                 android:text="Doctor Details"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000000" />
+                android:textColor="@color/black" />
         </LinearLayout>
 
         <!-- Doctor Information Card -->
@@ -74,7 +74,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Dr. Pediatrician"
-                        android:textColor="#000000"
+                        android:textColor="@color/cyan"
                         android:textSize="20sp"
                         android:textStyle="bold" />
 
@@ -130,7 +130,7 @@
                 android:text="Hospital Affiliation"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000000" />
+                android:textColor="@color/cyan" />
 
             <TextView
                 android:id="@+id/doctor_hospital"
@@ -155,7 +155,7 @@
                 android:text="Experience"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000000" />
+                android:textColor="@color/cyan" />
 
             <TextView
                 android:id="@+id/experienceDetails"
@@ -180,7 +180,7 @@
                 android:text="Degree  University"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000000" />
+                android:textColor="@color/cyan" />
 
             <TextView
                 android:id="@+id/degreeDetails"
@@ -205,7 +205,7 @@
                 android:text="Consultation Fee"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000000" />
+                android:textColor="@color/cyan" />
 
             <TextView
                 android:id="@+id/doctor_fee"
@@ -230,7 +230,7 @@
                 android:text="Availability"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#000000" />
+                android:textColor="@color/cyan" />
 
             <TextView
                 android:id="@+id/doctor_availability"
