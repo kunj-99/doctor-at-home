@@ -8,11 +8,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.media.RingtoneManager;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
-
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
@@ -93,6 +92,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage rm) {
         super.onMessageReceived(rm);
 
+        // Always recreate the channel (safe, won't cause duplicate after reinstall)
         createChannelIfNeeded();
 
         String title = "Doctor At Home";
@@ -110,7 +110,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             if (rm.getNotification().getBody() != null)  body  = rm.getNotification().getBody();
         }
 
-        Intent i = new Intent(this, MainActivity.class); // Change if your main activity is different
+        Intent i = new Intent(this, MainActivity.class);
         i.putExtra("open_notification", true);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
@@ -118,16 +118,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 this, 0, i,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        NotificationCompat.Builder nb = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.app_logo)   // use your app's notification icon
+        // Do NOT set sound here; it will use channel's sound automatically.
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.app_logo)
                 .setContentTitle(title)
                 .setContentText(body)
+                .setAutoCancel(true)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setSound(sound)
                 .setContentIntent(pi);
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
@@ -136,22 +134,34 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             return;
         }
 
-        NotificationManagerCompat.from(this).notify(1001, nb.build());
+        NotificationManagerCompat.from(this).notify(1001, builder.build());
     }
 
     private void createChannelIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = getSystemService(NotificationManager.class);
-            if (nm.getNotificationChannel(CHANNEL_ID) == null) {
-                NotificationChannel ch = new NotificationChannel(
-                        CHANNEL_ID,
-                        "Patient App Notifications",
-                        NotificationManager.IMPORTANCE_HIGH);
-                ch.setDescription("Doctor At Home notifications for patients");
-                nm.createNotificationChannel(ch);
-            }
+
+            // Delete existing channel to apply new sound (mostly needed for dev/testing)
+            nm.deleteNotificationChannel(CHANNEL_ID);
+
+            // Only .mp3 or .ogg, NOT .wav!
+            Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.sound);
+            AudioAttributes attrs = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+
+            NotificationChannel ch = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Patient App Notifications",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            ch.setDescription("Doctor At Home notifications for patients");
+            ch.setSound(soundUri, attrs); // <-- set custom sound
+            nm.createNotificationChannel(ch);
         }
     }
+
 
     // ======================= ANDROID 13+ PERMISSION REQUEST =========================
     public static void requestNotificationPermissionIfNeeded(Activity activity) {
