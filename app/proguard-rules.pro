@@ -36,3 +36,7 @@
 -dontwarn androidx.window.sidecar.SidecarWindowLayoutInfo
 -dontwarn proguard.annotation.Keep
 -dontwarn proguard.annotation.KeepClassMembers
+
+# Suppress Conscrypt warnings (auto-generated)
+-dontwarn org.conscrypt.Conscrypt
+-dontwarn org.conscrypt.OpenSSLProvider

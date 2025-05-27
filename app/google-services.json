@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "821715212414",
-    "project_id": "the-doctor-at-home-41f52",
-    "storage_bucket": "the-doctor-at-home-41f52.firebasestorage.app"
+    "project_number": "995427218019",
+    "project_id": "doctor-at-home-patient",
+    "storage_bucket": "doctor-at-home-patient.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:821715212414:android:2791929de01bfbac11202f",
+        "mobilesdk_app_id": "1:995427218019:android:9306fcf1f266fe38a67e56",
         "android_client_info": {
           "package_name": "com.infowave.thedoctorathomeuser"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA8mjkBvDlhTcipTVd90xvvNtO6ynI834I"
+          "current_key": "AIzaSyBhAbVhpJ281QMB--8HdQpn6ZMnSSiULG0"
         }
       ],
       "services": {

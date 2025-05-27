@@ -16,6 +16,8 @@
         tools:ignore="CoarseFineLocation" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
 
     <application
         android:name=".MyApp"
@@ -33,7 +35,8 @@
         tools:targetApi="n" >
         <activity
             android:name=".SpacesItemDecoration"
-            android:exported="false" />
+            android:exported="false"
+            tools:ignore="MissingClass" />
         <activity
             android:name=".RefundStatus"
             android:exported="false" />
@@ -128,6 +131,16 @@
         <uses-library
             android:name="org.apache.http.legacy"
             android:required="false" />
+
+
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

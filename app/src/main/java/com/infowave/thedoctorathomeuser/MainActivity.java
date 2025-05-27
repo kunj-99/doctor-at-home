@@ -268,6 +268,10 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, Profile.class);
             startActivity(intent);
         });
+
+        MyFirebaseMessagingService.requestNotificationPermissionIfNeeded(this);
+        MyFirebaseMessagingService.refreshTokenIfNeeded(this);
+
     }
 
     private void rateApp() {

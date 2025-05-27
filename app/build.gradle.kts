@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.google.gms.google.services)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -64,11 +64,11 @@ dependencies {
 //    implementation ("com.google.android.gms:play-services-maps:18.1.0")
 
 
-    implementation ("com.google.firebase:firebase-auth:23.2.0")
-
-    implementation ("com.google.firebase:firebase-core:21.1.1")
-
-    implementation(platform("com.google.firebase:firebase-bom:33.9.0"))
+//    implementation ("com.google.firebase:firebase-auth:23.2.0")
+//
+//    implementation ("com.google.firebase:firebase-core:21.1.1")
+//
+//    implementation(platform("com.google.firebase:firebase-bom:33.9.0"))
 
 
     implementation ("com.android.volley:volley:1.2.1")
@@ -91,6 +91,15 @@ dependencies {
     implementation ("com.github.bumptech.glide:okhttp3-integration:4.15.1")
 
         implementation ("pl.droidsonroids.gif:android-gif-drawable:1.2.23")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+
+    // Messaging (must-have for notifications)
+    implementation("com.google.firebase:firebase-messaging")
+
+
+    // Optional: Analytics (if you use in doctor app)
+     implementation("com.google.firebase:firebase-analytics")
 
 
 
