@@ -1,11 +1,10 @@
 package com.infowave.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,15 +25,14 @@ public class doctor_details extends AppCompatActivity {
     private TextView doctorName, doctorSpecialty, doctorHospital, doctorExperience, doctorFee, doctorAvailability, doctorQualification;
     private RatingBar doctorRating;
     private ImageView doctorImage, backButton;
-    private Button bookButton;
-    private ProgressBar progressBar;
 
     private static final String API_URL = "http://sxm.a58.mytemp.website/fetch_doctor.php?doctor_id=";
 
+//    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_doctor_details);
+        setContentView(R.layout.activity_doctor_details); // Make sure this matches your XML file
 
         // Initialize UI elements
         doctorName = findViewById(R.id.doctorName);
@@ -46,10 +44,8 @@ public class doctor_details extends AppCompatActivity {
         doctorQualification = findViewById(R.id.degreeDetails);
         doctorRating = findViewById(R.id.doctor_rating);
         doctorImage = findViewById(R.id.doctorImage);
-        progressBar = findViewById(R.id.progressBar);
-        backButton = findViewById(R.id.backButton);
+        backButton = findViewById(R.id.backButton); // Optional
 
-        // Get doctor_id from Intent
         String doctorId = getIntent().getStringExtra("doctor_id");
 
         if (doctorId == null || doctorId.trim().isEmpty()) {
@@ -61,27 +57,18 @@ public class doctor_details extends AppCompatActivity {
             fetchDoctorDetails(doctorId);
         }
 
-        // Back button functionality
-        backButton.setOnClickListener(v -> finish());
-
-//        // Handle Book Appointment button click
-//        bookButton.setOnClickListener(v -> {
-//            Intent intent = new Intent(doctor_details.this, book_form.class);
-//            intent.putExtra("doctor_id", doctorId);
-//            startActivity(intent);
-//        });
+        // Back button (optional)
+        if (backButton != null) {
+            backButton.setOnClickListener(v -> finish());
+        }
     }
 
-    // Fetch doctor details from API
     private void fetchDoctorDetails(String doctorId) {
-        progressBar.setVisibility(View.VISIBLE);
-
         String url = API_URL + doctorId;
         Log.d("API_REQUEST", "Fetching data from: " + url);
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
-                    progressBar.setVisibility(View.GONE);
                     Log.d("API_RESPONSE", "Full response: " + response.toString());
 
                     if (response.optBoolean("success")) {
@@ -97,10 +84,9 @@ public class doctor_details extends AppCompatActivity {
                             doctorQualification.setText(doctorData.optString("qualification", "Not Provided"));
                             doctorRating.setRating((float) doctorData.optDouble("rating", 0.0));
 
-                            // Load doctor profile image using Glide
                             String imageUrl = doctorData.optString("profile_picture", "");
                             if (imageUrl.isEmpty() || imageUrl.equals("null")) {
-                                doctorImage.setImageResource(R.drawable.main5); // Default image
+                                doctorImage.setImageResource(R.drawable.main5);
                             } else {
                                 Glide.with(this)
                                         .load(imageUrl)
@@ -117,12 +103,10 @@ public class doctor_details extends AppCompatActivity {
                     }
                 },
                 error -> {
-                    progressBar.setVisibility(View.GONE);
                     Log.e("API_ERROR", "Request failed: " + error.getMessage());
                     Toast.makeText(this, "Failed to load doctor details. Please try again.", Toast.LENGTH_SHORT).show();
                 });
 
-        // Set timeout policy to avoid slow responses causing errors
         request.setRetryPolicy(new DefaultRetryPolicy(
                 5000,
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
