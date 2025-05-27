@@ -308,7 +308,7 @@ public class medical_riport extends AppCompatActivity {
         View content = findViewById(R.id.content_container);
 
         // Temporarily hide the download button so it doesn't appear in the PDF
-        btnDownload.setVisibility(View.GONE);
+        btnDownload.setVisibility(View.GONE);   
 
         // Capture the bitmap from the view
         Bitmap bitmap = getBitmapFromView(content);
