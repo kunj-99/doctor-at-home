@@ -1,24 +1,27 @@
 package com.infowave.thedoctorathomeuser.adapter;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.bumptech.glide.Glide;
 import com.infowave.thedoctorathomeuser.R;
+import java.util.List;
 
 public class home_slaider extends RecyclerView.Adapter<home_slaider.ImageViewHolder> {
 
-    private int[] imageList;
+    private List<String> imageUrlList;
+    private Context context;
 
-    // Constructor to receive the image list
-    public home_slaider(int[] imageList) {
-        this.imageList = imageList;
+    // Constructor for URLs
+    public home_slaider(Context context, List<String> imageUrlList) {
+        this.context = context;
+        this.imageUrlList = imageUrlList;
     }
 
-    // ViewHolder class for images
     public static class ImageViewHolder extends RecyclerView.ViewHolder {
         public ImageView imageView;
 
@@ -36,13 +39,15 @@ public class home_slaider extends RecyclerView.Adapter<home_slaider.ImageViewHol
 
     @Override
     public void onBindViewHolder(ImageViewHolder holder, int position) {
-        holder.imageView.setImageResource(imageList[position]);
+        String url = imageUrlList.get(position);
+        Glide.with(holder.imageView.getContext())
+                .load(url)
+                .placeholder(R.drawable.plasholder) // Make sure you have this image in your drawables!
+                .into(holder.imageView);
     }
 
     @Override
     public int getItemCount() {
-        return imageList.length;
+        return imageUrlList.size();
     }
 }
-
-

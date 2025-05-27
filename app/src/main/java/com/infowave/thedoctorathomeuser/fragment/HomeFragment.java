@@ -54,21 +54,14 @@ public class HomeFragment extends Fragment {
     private Runnable runnable;
     private int currentPosition = 0;
 
+    // Dynamic slider image URLs
+    private List<String> imageUrls = new ArrayList<>();
+
     // Loader-related fields
     private Handler loaderHandler = new Handler();
     private Runnable loaderRunnable;
-    // Counter to track the number of pending network requests
     private int pendingRequestCount = 0;
-    // Delay (in ms) after which the loader will be shown if network calls haven't finished.
     private final int LOADER_DELAY = 300;
-
-    private final int[] imageList = {
-            R.drawable.main1,
-            R.drawable.main2,
-            R.drawable.main3,
-            R.drawable.main4,
-            R.drawable.main5
-    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -78,7 +71,6 @@ public class HomeFragment extends Fragment {
         // Bind all RecyclerViews
         recyclerView = view.findViewById(R.id.recyclerView);
         tipRecyclerView = view.findViewById(R.id.tipRecyclerView);
-        //        doctorRecyclerView = view.findViewById(R.id.topDoctorsRecyclerView);
         appointmentStatRecyclerView = view.findViewById(R.id.appointmentStatRecyclerView);
         servicesRecyclerView = view.findViewById(R.id.servicesRecyclerView);
         articlesRecyclerView = view.findViewById(R.id.articlesRecyclerView);
@@ -94,7 +86,6 @@ public class HomeFragment extends Fragment {
         loaderRunnable = new Runnable() {
             @Override
             public void run() {
-                // If there are any pending network calls, show the custom loader.
                 if (pendingRequestCount > 0) {
                     loaderutil.showLoader(getContext());
                 }
@@ -108,7 +99,6 @@ public class HomeFragment extends Fragment {
         setupAppointmentStats();
         setupServices();
         setupArticles();
-        setupAutoRotation();
 
         return view;
     }
@@ -117,29 +107,58 @@ public class HomeFragment extends Fragment {
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false);
         recyclerView.setLayoutManager(layoutManager);
 
-        // Add smooth snapping behavior like a ViewPager
         SnapHelper snapHelper = new PagerSnapHelper();
         snapHelper.attachToRecyclerView(recyclerView);
 
-        // Optional: spacing between items
-        int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.slider_spacing); // e.g., 12dp
-        recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
-
-        recyclerView.setPadding(8, 0, 8, 0); // extra left-right padding
+        // Optional: Only add if you have this class & dimen
+        // int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.slider_spacing);
+        // recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
+        recyclerView.setPadding(8, 0, 8, 0);
         recyclerView.setClipToPadding(false);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        sliderAdapter = new home_slaider(imageList);
-        recyclerView.setAdapter(sliderAdapter);
+        // Fetch images from the PHP API
+        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
+        String url = "http://sxm.a58.mytemp.website/get_slider_images.php"; // Your PHP endpoint
+
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            if (response.getString("status").equals("success")) {
+                                JSONArray sliderImages = response.getJSONArray("slider_images");
+                                imageUrls.clear();
+                                for (int i = 0; i < sliderImages.length(); i++) {
+                                    JSONObject obj = sliderImages.getJSONObject(i);
+                                    imageUrls.add(obj.getString("image_url"));
+                                }
+                                sliderAdapter = new home_slaider(getContext(), imageUrls);
+                                recyclerView.setAdapter(sliderAdapter);
+                                setupAutoRotation(imageUrls.size());
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                    }
+                }
+        );
+        requestQueue.add(jsonObjectRequest);
     }
 
-
     private void setupHealthTips() {
-        // Increment pending request count.
         pendingRequestCount++;
 
         RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-        // Replace with your API endpoint URL.
         String url = "http://sxm.a58.mytemp.website/healthtip.php";
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
@@ -150,28 +169,20 @@ public class HomeFragment extends Fragment {
                     @Override
                     public void onResponse(JSONArray response) {
                         List<HealthTip> tipList = new ArrayList<>();
-
                         try {
-                            // Loop through the JSON array and parse each object.
                             for (int i = 0; i < response.length(); i++) {
                                 JSONObject jsonObject = response.getJSONObject(i);
                                 String title = jsonObject.getString("title");
                                 String description = jsonObject.getString("description");
-
-                                // Use a static image resource for now.
                                 int imageResId = R.drawable.food;
-
                                 tipList.add(new HealthTip(title, description, imageResId));
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
-
-                        // Create and set the adapter with the fetched data.
                         HealthTipAdapter tipAdapter = new HealthTipAdapter(getContext(), tipList);
                         tipRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
                         tipRecyclerView.setAdapter(tipAdapter);
-
                         decrementAndDismissLoader();
                     }
                 },
@@ -183,71 +194,15 @@ public class HomeFragment extends Fragment {
                     }
                 }
         );
-
-        // Add the request to the Volley queue.
         requestQueue.add(jsonArrayRequest);
     }
 
-    //    private void setupTopDoctors() {
-    //        // Create a Volley request queue using the fragment's context.
-    //        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-    //
-    //        // Replace with your actual API endpoint URL that returns top doctor data.
-    //        String url = "http://sxm.a58.mytemp.website/topdoctor.php";
-    //
-    //        // Create a JsonArrayRequest assuming the API returns a JSON array.
-    //        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
-    //                Request.Method.GET,
-    //                url,
-    //                null,
-    //                new Response.Listener<JSONArray>() {
-    //                    @Override
-    //                    public void onResponse(JSONArray response) {
-    //                        List<TopDoctor> doctors = new ArrayList<>();
-    //
-    //                        try {
-    //                            // Loop through the JSON array and parse each object.
-    //                            for (int i = 0; i < response.length(); i++) {
-    //                                JSONObject jsonObject = response.getJSONObject(i);
-    //                                String fullName = jsonObject.getString("full_name");
-    //                                String specialty = jsonObject.getString("category_name"); // assuming API returns category_name as specialty
-    //
-    //                                // Use a static image resource for now.
-    //                                int imageResId = R.drawable.doctor_avatar;
-    //
-    //                                doctors.add(new TopDoctor(fullName, specialty, imageResId));
-    //                            }
-    //                        } catch (JSONException e) {
-    //                            e.printStackTrace();
-    //                        }
-    //
-    //                        // Create and set the adapter with the fetched data.
-    //                        TopDoctorAdapter doctorAdapter = new TopDoctorAdapter(getContext(), doctors);
-    //                        doctorRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
-    //                        doctorRecyclerView.setAdapter(doctorAdapter);
-    //                    }
-    //                },
-    //                new Response.ErrorListener() {
-    //                    @Override
-    //                    public void onErrorResponse(VolleyError error) {
-    //                        error.printStackTrace();
-    //                    }
-    //                }
-    //        );
-    //
-    //        // Add the request to the Volley request queue.
-    //        requestQueue.add(jsonArrayRequest);
-    //    }
-
     private void setupAppointmentStats() {
-        // Increment pending request count.
         pendingRequestCount++;
 
         RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-        // Replace with your API endpoint URL for completed appointment count.
         String url = "http://sxm.a58.mytemp.website/completed_appointment.php";
 
-        // Create a JsonObjectRequest since the API returns a JSON object.
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.GET,
                 url,
@@ -259,7 +214,6 @@ public class HomeFragment extends Fragment {
                             int count = response.getInt("completed_count");
                             List<AppointmentStat> stats = new ArrayList<>();
                             stats.add(new AppointmentStat("Appointments Completed", count, R.drawable.ic_check_circle));
-
                             AppointmentStatAdapter statAdapter = new AppointmentStatAdapter(getContext(), stats);
                             appointmentStatRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
                             appointmentStatRecyclerView.setAdapter(statAdapter);
@@ -282,19 +236,14 @@ public class HomeFragment extends Fragment {
 
     private void setupServices() {
         List<ServiceItem> services = new ArrayList<>();
-//        services.add(new ServiceItem("Doctor Home Visit", "Specialist Doctor at your Doorstep", R.drawable.ic_doctor_home));
         services.add(new ServiceItem("Medicine Delivery", "Order medicines easily", R.drawable.ic_medicine));
         services.add(new ServiceItem("Pathology Lab Test", "Book lab tests from home", R.drawable.ic_lab));
-
         servicesRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
         servicesRecyclerView.setAdapter(new ServiceAdapter(getContext(), services));
     }
 
     private void setupArticles() {
-        // Increment pending request count.
         pendingRequestCount++;
-
-        // URL of your PHP endpoint that returns articles in JSON format.
         String url = "http://sxm.a58.mytemp.website/get_articles.php";
         RequestQueue requestQueue = Volley.newRequestQueue(getContext());
 
@@ -307,22 +256,18 @@ public class HomeFragment extends Fragment {
                     public void onResponse(JSONArray response) {
                         List<ArticleItem> articles = new ArrayList<>();
                         try {
-                            // Loop through each JSON object in the array.
                             for (int i = 0; i < response.length(); i++) {
                                 JSONObject articleObject = response.getJSONObject(i);
                                 int id = articleObject.getInt("id");
                                 String title = articleObject.getString("title");
-                                // If "subtitle" is provided in the JSON, use it; otherwise, default to an empty string.
-                                String subtitle = articleObject.optString("title", "");
-                                String cover = articleObject.getString("cover"); // full URL provided by PHP
-                                String pdf = articleObject.getString("pdf");     // full URL provided by PHP
-
+                                String subtitle = articleObject.optString("subtitle", "");
+                                String cover = articleObject.getString("cover");
+                                String pdf = articleObject.getString("pdf");
                                 articles.add(new ArticleItem(id, title, subtitle, cover, pdf));
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
-
                         articlesRecyclerView.setLayoutManager(
                                 new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false)
                         );
@@ -342,39 +287,34 @@ public class HomeFragment extends Fragment {
         requestQueue.add(jsonArrayRequest);
     }
 
-    private void setupAutoRotation() {
+    private void setupAutoRotation(int imageCount) {
+        if (handler != null && runnable != null) {
+            handler.removeCallbacks(runnable);
+        }
         handler = new Handler();
-
+        currentPosition = 0;
         runnable = new Runnable() {
             @Override
             public void run() {
-                if (currentPosition == imageList.length) {
+                if (imageCount == 0) return;
+                if (currentPosition == imageCount) {
                     currentPosition = 0;
                 }
                 recyclerView.smoothScrollToPosition(currentPosition++);
                 handler.postDelayed(this, 3000);
             }
         };
-
         handler.postDelayed(runnable, 3000);
     }
 
-    /**
-     * Utility method to decrement the counter and dismiss the loader if all network requests are done.
-     * If there's no connectivity, keep checking until the network is back before hiding the loader.
-     */
     private void decrementAndDismissLoader() {
         pendingRequestCount--;
         if (pendingRequestCount <= 0) {
-            // Remove the loader runnable if it hasn't executed yet.
             loaderHandler.removeCallbacks(loaderRunnable);
             attemptHideLoader();
         }
     }
 
-    /**
-     * Checks if the network is available.
-     */
     private boolean isNetworkAvailable() {
         ConnectivityManager cm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
@@ -384,14 +324,10 @@ public class HomeFragment extends Fragment {
         return false;
     }
 
-    /**
-     * Attempts to hide the loader. If the network is still not available, checks again after a delay.
-     */
     private void attemptHideLoader() {
         if (isNetworkAvailable()) {
             loaderutil.hideLoader();
         } else {
-            // Retry after 1 second until the network is available.
             loaderHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
