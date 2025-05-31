@@ -5,7 +5,8 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="@android:color/white"
+
+    android:background="@drawable/bg_review_container"
     android:gravity="center_horizontal">
 
     <!-- Title -->
@@ -26,6 +27,7 @@
         android:layout_height="wrap_content"
         android:numStars="5"
         android:stepSize="1.0"
+        android:backgroundTint="@color/acqua_green"
         android:rating="0"
         android:layout_marginBottom="16dp"
         android:isIndicator="false" />
