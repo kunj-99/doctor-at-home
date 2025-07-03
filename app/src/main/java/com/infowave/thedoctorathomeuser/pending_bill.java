@@ -274,7 +274,7 @@ public class pending_bill extends AppCompatActivity {
     private void fetchUpiConfig(String doctorId) {
         String url = "http://sxm.a58.mytemp.website/get_upi_config.php";
 
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
+        @SuppressLint("DefaultLocale") JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
                     if (resp.optBoolean("success")) {
                         merchantUpiId   = resp.optString("upi_id");
@@ -283,9 +283,13 @@ public class pending_bill extends AppCompatActivity {
                         currency        = resp.optString("currency", "INR");
 
                         FREE_DISTANCE_KM = resp.optDouble("base_distance", 3.0);
-                        PER_KM_CHARGE    = resp.optDouble("extra_cost_per_km", 7.0);
+                        PER_KM_CHARGE    = resp.optDouble("extra_cost_per_km", 7.0);  // Dynamic value fetched
                         DEPOSIT          = resp.optDouble("platform_charge", 50.0);
                         GST_PERCENT      = resp.optDouble("gst_percent", 10.0);
+
+                        // Update the UI with the dynamic per km charge
+                        TextView priceKmTextView = findViewById(R.id.price_km);
+                        priceKmTextView.setText(String.format("(₹%.2f per kilometer)", PER_KM_CHARGE));
 
                         // Now that required configs are loaded, fetch the doctor-specific charge
                         fetchAppointmentCharge(doctorId);
@@ -299,6 +303,7 @@ public class pending_bill extends AppCompatActivity {
 
         Volley.newRequestQueue(this).add(req);
     }
+
     private void fetchAppointmentCharge(String doctorId) {
         String url = "http://sxm.a58.mytemp.website/get_appointment_charge.php?doctor_id=" + doctorId;
 
