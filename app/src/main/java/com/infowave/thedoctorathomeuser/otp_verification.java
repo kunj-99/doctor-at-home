@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -30,7 +29,6 @@ import java.util.Map;
 
 public class otp_verification extends AppCompatActivity {
 
-    private static final String TAG = "OTPVerification";
     private static final String VERIFY_OTP_URL = "http://sxm.a58.mytemp.website/verify_otp.php"; // API URL
 
     private Button continu, resend_otp;
@@ -46,7 +44,6 @@ public class otp_verification extends AppCompatActivity {
 
         // Initialize SharedPreferences
         sharedPreferences = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
-        Log.d(TAG, "SharedPreferences 'UserPrefs' initialized.");
 
         // Initialize views
         continu = findViewById(R.id.continu);
@@ -57,11 +54,9 @@ public class otp_verification extends AppCompatActivity {
         mobileNumber = getIntent().getStringExtra("mobile");
 
         if (mobileNumber == null || mobileNumber.isEmpty()) {
-            Log.e(TAG, "Error: Mobile number is missing in intent!");
+            Toast.makeText(this, "Something went wrong. Please try logging in again.", Toast.LENGTH_SHORT).show();
             finish();
             return;
-        } else {
-            Log.d(TAG, "Mobile number received: " + mobileNumber);
         }
 
         // Disable the resend button initially and start timer
@@ -80,7 +75,6 @@ public class otp_verification extends AppCompatActivity {
         continu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "Continue button clicked.");
                 verifyOtp();
             }
         });
@@ -120,33 +114,25 @@ public class otp_verification extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d(TAG, "Server Response for resend OTP: " + response);
                         try {
                             JSONObject jsonObject = new JSONObject(response);
                             boolean success = jsonObject.getBoolean("success");
                             String message = jsonObject.getString("message");
 
                             if (success) {
-                                Toast.makeText(otp_verification.this, "OTP sent! Check your messages.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(otp_verification.this, "A new OTP has been sent. Please check your SMS.", Toast.LENGTH_SHORT).show();
                             } else {
-                                Toast.makeText(otp_verification.this, message, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(otp_verification.this, "Unable to send OTP. Please try again later.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (JSONException e) {
-                            Log.e(TAG, "JSON Parsing Error: " + e.getMessage());
+                            Toast.makeText(otp_verification.this, "Unexpected error. Please try again.", Toast.LENGTH_SHORT).show();
                         }
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        String errorMsg = "Volley Error: " + error.toString();
-                        NetworkResponse networkResponse = error.networkResponse;
-                        if (networkResponse != null) {
-                            errorMsg += ", Status Code: " + networkResponse.statusCode;
-                            Log.e(TAG, "Network Response Data: " + new String(networkResponse.data));
-                        }
-                        Log.e(TAG, errorMsg);
-                        Toast.makeText(otp_verification.this, "Server error! Try again.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(otp_verification.this, "Network error. Please check your connection and try again.", Toast.LENGTH_SHORT).show();
                     }
                 }) {
             @Override
@@ -165,24 +151,20 @@ public class otp_verification extends AppCompatActivity {
         final String enteredOtp = etOtp.getText().toString().trim();
 
         if (enteredOtp.isEmpty()) {
-            Log.w(TAG, "OTP field is empty.");
+            Toast.makeText(otp_verification.this, "Please enter the OTP sent to your mobile number.", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        Log.d(TAG, "Entered OTP: " + enteredOtp + " | Sending to API for verification");
 
         StringRequest request = new StringRequest(Request.Method.POST, VERIFY_OTP_URL,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d(TAG, "Server Response: " + response);
                         try {
                             JSONObject jsonObject = new JSONObject(response);
                             boolean success = jsonObject.getBoolean("success");
 
                             if (success) {
-                                Log.d(TAG, "OTP Verified Successfully!");
-                                Toast.makeText(otp_verification.this, "Login Successful!", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(otp_verification.this, "Login successful!", Toast.LENGTH_SHORT).show();
 
                                 // Fetch user details from API response
                                 String userId = jsonObject.getString("user_id");
@@ -198,9 +180,6 @@ public class otp_verification extends AppCompatActivity {
                                 editor.putString("patient_id", patientId);
                                 editor.apply();
 
-                                Log.d(TAG, "User data saved in SharedPreferences: user_id=" + userId +
-                                        ", username=" + username + ", email=" + email + ", patient_id=" + patientId);
-
                                 // Redirect to MainActivity
                                 Intent intent = new Intent(otp_verification.this, MainActivity.class);
                                 startActivity(intent);
@@ -208,27 +187,18 @@ public class otp_verification extends AppCompatActivity {
                             } else {
                                 // OTP verification failed; show toast and clear OTP EditText.
                                 String message = jsonObject.getString("message");
-                                Log.w(TAG, "OTP Verification Failed: " + message);
-                                Toast.makeText(otp_verification.this, message, Toast.LENGTH_SHORT).show();
+                                Toast.makeText(otp_verification.this, "Incorrect OTP. Please try again.", Toast.LENGTH_SHORT).show();
                                 etOtp.setText("");
                             }
                         } catch (JSONException e) {
-                            Log.e(TAG, "JSON Parsing Error: " + e.getMessage());
+                            Toast.makeText(otp_verification.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                         }
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        String errorMsg = "Volley Error: " + error.toString();
-                        NetworkResponse networkResponse = error.networkResponse;
-                        if (networkResponse != null) {
-                            errorMsg += ", Status Code: " + networkResponse.statusCode;
-                            Log.e(TAG, "Network Response Data: " + new String(networkResponse.data));
-                        }
-                        Log.e(TAG, errorMsg);
-                        // Optionally, you can show a toast and clear the OTP field in case of a network error as well.
-                        Toast.makeText(otp_verification.this, "Error verifying OTP. Please try again.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(otp_verification.this, "Could not verify OTP. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                         etOtp.setText("");
                     }
                 }) {
@@ -237,13 +207,11 @@ public class otp_verification extends AppCompatActivity {
                 Map<String, String> params = new HashMap<>();
                 params.put("mobile", mobileNumber);
                 params.put("otp", enteredOtp);
-                Log.d(TAG, "Sending request params: " + params.toString());
                 return params;
             }
         };
 
         RequestQueue requestQueue = Volley.newRequestQueue(this);
-        Log.d(TAG, "Adding request to Volley queue");
         requestQueue.add(request);
     }
 }
