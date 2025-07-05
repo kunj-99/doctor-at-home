@@ -42,6 +42,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+
+
 public class complet_bill extends AppCompatActivity {
 
     Button Download;
@@ -56,10 +58,9 @@ public class complet_bill extends AppCompatActivity {
         setContentView(R.layout.activity_complet_bill);
 
         appointmentId = getIntent().getIntExtra("appointment_id", -1);
-        Log.d(TAG, "Received appointment_id: " + appointmentId);
 
         if (appointmentId == -1) {
-            Toast.makeText(this, "Invalid appointment ID", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Sorry, something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -80,38 +81,32 @@ public class complet_bill extends AppCompatActivity {
 
     private void fetchBillDetails(int appointmentId) {
         String url = "http://sxm.a58.mytemp.website/fetch_user_payment_history.php?appointment_id=" + appointmentId;
-        Log.d(TAG, "Fetching bill from URL: " + url);
 
-        // Show loader
         loaderutil.showLoader(this);
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET, url, null,
                 response -> {
-                    loaderutil.hideLoader(); // Hide loader on success
+                    loaderutil.hideLoader();
                     try {
-                        Log.d(TAG, "Response received: " + response);
                         if (response.getBoolean("success")) {
                             JSONArray data = response.getJSONArray("data");
                             if (data.length() > 0) {
                                 JSONObject bill = data.getJSONObject(0);
-                                Log.d(TAG, "Parsed bill data: " + bill);
                                 populateBillUI(bill);
                             } else {
-                                Toast.makeText(this, "No bill found.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, "No bill was found for your appointment.", Toast.LENGTH_SHORT).show();
                             }
                         } else {
-                            Toast.makeText(this, "No bill found.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "No bill was found for your appointment.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "Error parsing response: " + e.getMessage());
-                        e.printStackTrace();
+                        Toast.makeText(this, "Sorry, we couldn't load your bill. Please try again.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
-                    loaderutil.hideLoader(); // Hide loader on error
-                    Log.e(TAG, "Volley error: " + error);
-                    Toast.makeText(this, "Error fetching bill", Toast.LENGTH_SHORT).show();
+                    loaderutil.hideLoader();
+                    Toast.makeText(this, "Could not connect to the server. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                 }
         );
 
@@ -136,13 +131,9 @@ public class complet_bill extends AppCompatActivity {
             setTextSafe(R.id.tv_payment_status, bill.optString("payment_status", "N/A"));
             setTextSafe(R.id.tv_refund_status, bill.optString("refund_status", "N/A"));
             setTextSafe(R.id.tv_notes, bill.optString("notes", "-"));
-            setTextSafe(R.id.tv_payment_method, bill.optString("payment_method", "N/A")); // ✅ NEW
-
-            Log.i(TAG, "UI populated successfully");
-
+            setTextSafe(R.id.tv_payment_method, bill.optString("payment_method", "N/A"));
         } catch (Exception e) {
-            Log.e(TAG, "Error populating UI: " + e.getMessage());
-            e.printStackTrace();
+            Toast.makeText(this, "Could not show your bill details.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -150,8 +141,6 @@ public class complet_bill extends AppCompatActivity {
         TextView tv = findViewById(id);
         if (tv != null) {
             tv.setText(value);
-        } else {
-            Log.e(TAG, "Missing TextView with ID: " + getResources().getResourceEntryName(id));
         }
     }
 
@@ -174,18 +163,18 @@ public class complet_bill extends AppCompatActivity {
         if (requestCode == 1 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             generatePDF();
         } else {
-            Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Permission is required to download your bill.", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void generatePDF() {
-        Download.setVisibility(View.GONE); // Hide button during generation
+        Download.setVisibility(View.GONE);
 
         PdfDocument pdfDocument = new PdfDocument();
         Bitmap bitmap = getBitmapFromView(billLayout);
 
         if (bitmap == null) {
-            Toast.makeText(this, "Error capturing layout", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Could not prepare your bill for download. Please try again.", Toast.LENGTH_SHORT).show();
             Download.setVisibility(View.VISIBLE);
             return;
         }
@@ -214,7 +203,7 @@ public class complet_bill extends AppCompatActivity {
 
                 pdfUri = getContentResolver().insert(MediaStore.Files.getContentUri("external"), values);
                 if (pdfUri == null) {
-                    Toast.makeText(this, "Failed to create file", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Could not create your bill file.", Toast.LENGTH_SHORT).show();
                     Download.setVisibility(View.VISIBLE);
                     return;
                 }
@@ -229,8 +218,7 @@ public class complet_bill extends AppCompatActivity {
             outputStream.close();
             pdfDocument.close();
 
-            Toast.makeText(this, "PDF Downloaded: " + fileName, Toast.LENGTH_LONG).show();
-            Log.i(TAG, "PDF saved as: " + fileName);
+            Toast.makeText(this, "Your bill has been downloaded to your device.", Toast.LENGTH_LONG).show();
 
             // Open the PDF
             Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -239,15 +227,11 @@ public class complet_bill extends AppCompatActivity {
             startActivity(intent);
 
         } catch (IOException e) {
-            Log.e(TAG, "Error creating PDF: " + e.getMessage());
-            e.printStackTrace();
-            Toast.makeText(this, "Error creating PDF", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Something went wrong while downloading your bill. Please try again.", Toast.LENGTH_SHORT).show();
         } finally {
-            Download.setVisibility(View.VISIBLE); // Show button again in all cases
+            Download.setVisibility(View.VISIBLE);
         }
     }
-
-
 
     private Bitmap getBitmapFromView(View view) {
         Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);

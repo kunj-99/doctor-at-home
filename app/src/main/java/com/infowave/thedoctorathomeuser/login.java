@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,8 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class login extends AppCompatActivity {
-
-    private static final String TAG = "LoginActivity";
 
     private EditText etMobile;
     private Button sendotp;
@@ -57,7 +54,7 @@ public class login extends AppCompatActivity {
                 String mobile = etMobile.getText().toString().trim();
 
                 if (TextUtils.isEmpty(mobile) || mobile.length() != 10) {
-                    etMobile.setError("Enter a valid 10-digit mobile number");
+                    etMobile.setError("Please enter a valid 10-digit mobile number.");
                     return;
                 }
 
@@ -80,7 +77,7 @@ public class login extends AppCompatActivity {
                         String message = jsonObject.getString("message");
 
                         if (success) {
-                            Toast.makeText(login.this, "Mobile number found! Proceeding to OTP verification.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(login.this, "OTP sent successfully. Please check your SMS.", Toast.LENGTH_SHORT).show();
 
                             // Pass mobile number to OTP Verification Activity
                             Intent intent = new Intent(login.this, otp_verification.class);
@@ -88,19 +85,18 @@ public class login extends AppCompatActivity {
                             startActivity(intent);
                             finish();
                         } else {
-                            Toast.makeText(login.this, message, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(login.this, "Mobile number not found. Please check and try again.", Toast.LENGTH_SHORT).show();
                             sendotp.setEnabled(true);
                             sendotp.setText(originalText);
                         }
                     } catch (JSONException e) {
-                        Log.e(TAG, "JSON Parsing Error: " + e.getMessage(), e);
+                        Toast.makeText(login.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                         sendotp.setEnabled(true);
                         sendotp.setText(originalText);
                     }
                 },
                 error -> {
-                    Log.e(TAG, "Volley Error: " + error.getMessage(), error);
-                    Toast.makeText(login.this, "Server error! Try again.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(login.this, "Unable to connect to the server. Please check your internet connection.", Toast.LENGTH_SHORT).show();
                     sendotp.setEnabled(true);
                     sendotp.setText(originalText);
                 }) {

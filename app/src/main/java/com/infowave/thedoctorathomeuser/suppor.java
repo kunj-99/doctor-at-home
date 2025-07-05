@@ -4,9 +4,10 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
+// import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -21,7 +22,7 @@ import java.net.URL;
 
 public class suppor extends AppCompatActivity {
 
-    private static final String TAG = "suppor";
+    // private static final String TAG = "suppor";
     // Replace with your actual API URL where contact_us.php is hosted
     private static final String API_URL = "http://sxm.a58.mytemp.website/contact_us.php";
 
@@ -66,10 +67,10 @@ public class suppor extends AppCompatActivity {
                     in.close();
                     return response.toString();
                 } else {
-                    Log.e(TAG, "HTTP error code: " + responseCode);
+                    // Log.e(TAG, "HTTP error code: " + responseCode);
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error fetching data", e);
+                // Log.e(TAG, "Error fetching data", e);
             }
             return null;
         }
@@ -106,8 +107,8 @@ public class suppor extends AppCompatActivity {
                             public void onClick(View v) {
                                 Intent emailIntent = new Intent(Intent.ACTION_SENDTO);
                                 emailIntent.setData(Uri.parse("mailto:" + email));
-                                emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Subject Here");
-                                emailIntent.putExtra(Intent.EXTRA_TEXT, "Your email body here");
+                                emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Contact from The Doctor At Home");
+                                emailIntent.putExtra(Intent.EXTRA_TEXT, "");
                                 startActivity(Intent.createChooser(emailIntent, "Send Email"));
                             }
                         });
@@ -135,10 +136,12 @@ public class suppor extends AppCompatActivity {
                         });
                     }
                 } catch (JSONException e) {
-                    Log.e(TAG, "JSON parsing error", e);
+                    // Log.e(TAG, "JSON parsing error", e);
+                    Toast.makeText(suppor.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                Log.e(TAG, "Result is null. Check your API URL or network connection.");
+                // Log.e(TAG, "Result is null. Check your API URL or network connection.");
+                Toast.makeText(suppor.this, "Unable to load contact details. Please check your connection.", Toast.LENGTH_LONG).show();
             }
         }
     }

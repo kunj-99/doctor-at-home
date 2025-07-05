@@ -101,8 +101,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 getSupportFragmentManager().findFragmentById(R.id.map_fragment);
         if (mapFragment != null) mapFragment.getMapAsync(this);
 
-        fusedLocationClient =
-                LocationServices.getFusedLocationProviderClient(this);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         //── initial spinner state: show placeholder & disable until data loads ───
         List<String> placeholder = new ArrayList<>();
@@ -110,9 +109,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         ArrayAdapter<String> initAdapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_item, placeholder
         );
-        initAdapter.setDropDownViewResource(
-                android.R.layout.simple_spinner_dropdown_item
-        );
+        initAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         pincodeSpinner.setAdapter(initAdapter);
         pincodeSpinner.setEnabled(false);
 
@@ -121,36 +118,29 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
         //── book button click ─────────────────────────────────────────────────────
         bookButton.setOnClickListener(v -> {
-            String name    = ((EditText)findViewById(R.id.patient_name))
-                    .getText().toString().trim();
-            String address = ((EditText)findViewById(R.id.address))
-                    .getText().toString().trim();
-            String problem = ((EditText)findViewById(R.id.problem))
-                    .getText().toString().trim();
+            String name    = ((EditText)findViewById(R.id.patient_name)).getText().toString().trim();
+            String address = ((EditText)findViewById(R.id.address)).getText().toString().trim();
+            String problem = ((EditText)findViewById(R.id.problem)).getText().toString().trim();
             String pin     = pincodeSpinner.getSelectedItem() != null
                     ? pincodeSpinner.getSelectedItem().toString()
                     : "";
 
             boolean valid = true;
             if (name.isEmpty()) {
-                ((EditText)findViewById(R.id.patient_name))
-                        .setError("Enter patient's name");
+                ((EditText)findViewById(R.id.patient_name)).setError("Please enter the patient's name.");
                 valid = false;
             }
             if (address.isEmpty()) {
-                ((EditText)findViewById(R.id.address))
-                        .setError("Enter address");
+                ((EditText)findViewById(R.id.address)).setError("Please enter the address.");
                 valid = false;
             }
             if (problem.isEmpty()) {
-                ((EditText)findViewById(R.id.problem))
-                        .setError("Describe the problem");
+                ((EditText)findViewById(R.id.problem)).setError("Please describe the problem.");
                 valid = false;
             }
             // placeholder check
             if (pin.isEmpty() || pin.equals("Select pincode")) {
-                Toast.makeText(this,
-                        "Please select a pincode", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please select a pincode to continue.", Toast.LENGTH_SHORT).show();
                 valid = false;
             }
 
@@ -161,14 +151,12 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 month = monthSpinner.getSelectedItemPosition() + 1;
                 year  = Integer.parseInt(yearSpinner.getSelectedItem().toString());
             } catch (Exception e) {
-                Toast.makeText(this,
-                        "Please select a valid date", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please select a valid date of birth.", Toast.LENGTH_SHORT).show();
                 return;
             }
             int age = calculateAge(year, month, day);
             if (age < 0 || age > 150) {
-                Toast.makeText(this,
-                        "Please select a valid date of birth", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please select a valid date of birth.", Toast.LENGTH_SHORT).show();
                 valid = false;
             }
 
@@ -176,18 +164,15 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
             int genderId = genderGroup.getCheckedRadioButtonId();
             String gender = "";
             if (genderId != -1) {
-                gender = ((RadioButton)findViewById(genderId))
-                        .getText().toString();
+                gender = ((RadioButton)findViewById(genderId)).getText().toString();
             } else {
-                Toast.makeText(this,
-                        "Please select gender", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please select a gender.", Toast.LENGTH_SHORT).show();
                 valid = false;
             }
 
             // map location
             if (selectedLocation == null) {
-                Toast.makeText(this,
-                        "Please select a location on the map", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please select your location on the map.", Toast.LENGTH_SHORT).show();
                 valid = false;
             }
 
@@ -210,16 +195,12 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     }
 
     private void fetchPincodesForDoctor(String doctorId) {
-        // show your custom loader if network is slow or unavailable
         loaderutil.showLoader(this);
 
-        // check immediate connectivity; if none, we still show loader until retry
-        ConnectivityManager cm = (ConnectivityManager)
-                getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo ni = cm.getActiveNetworkInfo();
         if (ni == null || !ni.isConnected()) {
-            Toast.makeText(this,
-                    "No network—waiting to retry...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No internet connection. Please check and try again.", Toast.LENGTH_SHORT).show();
         }
 
         String url = "http://sxm.a58.mytemp.website/get_pincode.php?doctor_id=" + doctorId;
@@ -228,7 +209,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
                 Request.Method.GET, url, null,
                 response -> {
-                    // build list with placeholder first
                     List<String> pins = new ArrayList<>();
                     pins.add("Select pincode");
                     try {
@@ -237,28 +217,22 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                             if (!pin.isEmpty()) pins.add(pin);
                         }
                     } catch (JSONException e) {
-                        e.printStackTrace();
+                        // If JSON error, fallback to placeholder only
                     }
-                    // populate spinner and enable it
                     ArrayAdapter<String> adapter = new ArrayAdapter<>(
                             book_form.this,
                             android.R.layout.simple_spinner_item,
                             pins
                     );
-                    adapter.setDropDownViewResource(
-                            android.R.layout.simple_spinner_dropdown_item
-                    );
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     pincodeSpinner.setAdapter(adapter);
                     pincodeSpinner.setEnabled(true);
 
-                    // hide loader now that data is in
                     loaderutil.hideLoader();
                 },
                 error -> {
-                    // on any error, hide loader and let user retry
                     loaderutil.hideLoader();
-                    Toast.makeText(book_form.this,
-                            "Failed to load pincodes", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(book_form.this, "Could not load pincodes. Please try again.", Toast.LENGTH_SHORT).show();
                 }
         );
         queue.add(jsonArrayRequest);
@@ -291,7 +265,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     private void showLocationPermissionDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Location Permission Required")
-                .setMessage("This app needs location to auto-detect your position.")
+                .setMessage("Location is needed to detect your position automatically.")
                 .setPositiveButton("OK", (d, w) ->
                         ActivityCompat.requestPermissions(
                                 book_form.this,
@@ -325,14 +299,10 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                                     .startResolutionForResult(
                                             book_form.this, REQUEST_CHECK_SETTINGS);
                         } catch (Exception ex) {
-                            Toast.makeText(this,
-                                    "Cannot resolve location settings.",
-                                    Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Unable to update your location settings.", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        Toast.makeText(this,
-                                "Location settings cannot be fixed here.",
-                                Toast.LENGTH_LONG).show();
+                        Toast.makeText(this, "Your device's location settings could not be updated.", Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -353,7 +323,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                         mMap.animateCamera(
                                 CameraUpdateFactory.newLatLngZoom(selectedLocation, 15));
                     } else {
-                        // if null, request an update
                         LocationRequest req = LocationRequest.create()
                                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                                 .setInterval(5000)
@@ -382,8 +351,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                     }
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(this,
-                                "Error fetching location", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, "Could not get your current location. Please try again.", Toast.LENGTH_SHORT).show()
                 );
     }
 
@@ -397,8 +365,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 checkLocationSettings();
             } else {
-                Toast.makeText(this,
-                        "Location permission denied", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Location permission denied. Some features may not work.", Toast.LENGTH_SHORT).show();
             }
         } else {
             super.onRequestPermissionsResult(
@@ -411,8 +378,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     protected void onActivityResult(
             int requestCode, int resultCode, Intent data
     ) {
-        if (requestCode == REQUEST_CHECK_SETTINGS
-                && resultCode == RESULT_OK) {
+        if (requestCode == REQUEST_CHECK_SETTINGS && resultCode == RESULT_OK) {
             setCurrentLocation();
         }
         super.onActivityResult(requestCode, resultCode, data);

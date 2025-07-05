@@ -30,7 +30,7 @@ import java.util.Map;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
-    private static final String TAG        = "FCM";
+    private static final String TAG = "FCM";
     private static final String CHANNEL_ID = "patient_channel";
 
     // ======================= TOKEN HANDLING =========================
@@ -92,20 +92,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage rm) {
         super.onMessageReceived(rm);
 
-        // Always recreate the channel (safe, won't cause duplicate after reinstall)
         createChannelIfNeeded();
 
         String title = "Doctor At Home";
         String body  = "You have a new update!";
 
-        // Prefer data payload for flexibility
         if (rm.getData().size() > 0) {
             Map<String, String> data = rm.getData();
             if (data.containsKey("title")) title = data.get("title");
             if (data.containsKey("body"))  body  = data.get("body");
-        }
-        // Fallback to notification payload
-        else if (rm.getNotification() != null) {
+        } else if (rm.getNotification() != null) {
             if (rm.getNotification().getTitle() != null) title = rm.getNotification().getTitle();
             if (rm.getNotification().getBody() != null)  body  = rm.getNotification().getBody();
         }
@@ -118,7 +114,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 this, 0, i,
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
-        // Do NOT set sound here; it will use channel's sound automatically.
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.app_logo)
                 .setContentTitle(title)
@@ -130,7 +125,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-            // permission not granted, skip notification
+            // Permission not granted; notification will not be shown
             return;
         }
 
@@ -141,10 +136,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = getSystemService(NotificationManager.class);
 
-            // Delete existing channel to apply new sound (mostly needed for dev/testing)
+            // Always delete existing channel for dev/test to force sound update (optional)
             nm.deleteNotificationChannel(CHANNEL_ID);
 
-            // Only .mp3 or .ogg, NOT .wav!
+            // Use only .mp3 or .ogg, not .wav!
             Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.sound);
             AudioAttributes attrs = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -157,11 +152,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     NotificationManager.IMPORTANCE_HIGH
             );
             ch.setDescription("Doctor At Home notifications for patients");
-            ch.setSound(soundUri, attrs); // <-- set custom sound
+            ch.setSound(soundUri, attrs); // Set custom sound
             nm.createNotificationChannel(ch);
         }
     }
-
 
     // ======================= ANDROID 13+ PERMISSION REQUEST =========================
     public static void requestNotificationPermissionIfNeeded(Activity activity) {

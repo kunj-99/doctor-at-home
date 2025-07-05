@@ -10,7 +10,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
@@ -50,7 +49,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class Profile extends AppCompatActivity {
 
     private static final int PICK_IMAGE = 1;
-    private static final String TAG = "Profile";
+    // private static final String TAG = "Profile"; // Commented for production
 
     private ImageView civProfile;
     private EditText etFullName, etDOB, etAddress, etMobile, etEmail, etMedicalHistory,
@@ -62,13 +61,10 @@ public class Profile extends AppCompatActivity {
     private RequestQueue requestQueue;
     private int patientId;
 
-    // Endpoints
     private static final String GET_PROFILE_URL = "http://sxm.a58.mytemp.website/get_profile.php?patient_id=";
     private static final String UPDATE_PROFILE_URL = "http://sxm.a58.mytemp.website/update_profile.php";
 
-    // Store selected image for upload
     private Bitmap selectedBitmap = null;
-    // Store the old image name fetched from the DB
     private String oldImageUrl = "";
 
     @Override
@@ -79,12 +75,11 @@ public class Profile extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String patientIdStr = sp.getString("patient_id", "");
         if (patientIdStr.isEmpty()) {
-            Log.e(TAG, "Patient ID not found");
+            // Log.e(TAG, "Patient ID not found");
             finish();
             return;
         }
 
-        // Back button functionality
         ImageView btnBack = findViewById(R.id.iv_back_arrow);
         btnBack.setOnClickListener(v -> {
             Intent intent = new Intent(Profile.this, MainActivity.class);
@@ -123,7 +118,6 @@ public class Profile extends AppCompatActivity {
         bloodGroupAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerBloodGroup.setAdapter(bloodGroupAdapter);
 
-        // Set up DatePicker for DOB field
         etDOB.setFocusable(false);
         etDOB.setClickable(true);
         etDOB.setOnClickListener(v -> showDatePicker());
@@ -133,7 +127,7 @@ public class Profile extends AppCompatActivity {
             try {
                 updateProfile();
             } catch (AuthFailureError e) {
-                Log.e(TAG, "AuthFailureError in updateProfile", e);
+                // Log.e(TAG, "AuthFailureError in updateProfile", e);
             }
         });
         fetchProfile();
@@ -154,8 +148,8 @@ public class Profile extends AppCompatActivity {
                 civProfile.setImageBitmap(bitmap);
                 selectedBitmap = bitmap;
             } catch (IOException e) {
-                Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
-                Log.e(TAG, "Error loading image", e);
+                Toast.makeText(this, "Could not load image. Please try a different photo.", Toast.LENGTH_SHORT).show();
+                // Log.e(TAG, "Error loading image", e);
             }
         }
     }
@@ -184,7 +178,7 @@ public class Profile extends AppCompatActivity {
                     selectedCalendar.set(selectedYear, selectedMonth, selectedDay);
                     Calendar currentCalendar = Calendar.getInstance();
                     if (selectedCalendar.after(currentCalendar)) {
-                        Toast.makeText(Profile.this, "Date cannot be in the future", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(Profile.this, "Birth date cannot be in the future.", Toast.LENGTH_SHORT).show();
                     } else {
                         String formattedDate = String.format(Locale.getDefault(), "%02d/%02d/%04d",
                                 selectedDay, selectedMonth + 1, selectedYear);
@@ -218,7 +212,6 @@ public class Profile extends AppCompatActivity {
                             etAllergies.setText(data.optString("allergies", ""));
                             etCurrentMedications.setText(data.optString("current_medications", ""));
 
-                            // Load the profile picture if available and extract the image file name.
                             String profilePictureUrl = data.optString("profile_picture", "");
                             if (!TextUtils.isEmpty(profilePictureUrl)) {
                                 Glide.with(this)
@@ -230,22 +223,22 @@ public class Profile extends AppCompatActivity {
                                 } else {
                                     oldImageUrl = profilePictureUrl;
                                 }
-                                Log.d(TAG, "Fetched old image name: " + oldImageUrl);
+                                // Log.d(TAG, "Fetched old image name: " + oldImageUrl);
                             } else {
-                                Log.d(TAG, "No profile image found in DB.");
+                                // Log.d(TAG, "No profile image found in DB.");
                             }
                         } else {
-                            Toast.makeText(Profile.this, "Profile not found", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(Profile.this, "Profile not found.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
-                        Toast.makeText(Profile.this, "Parsing error", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "JSON parsing error", e);
+                        Toast.makeText(Profile.this, "Could not load your profile. Please try again.", Toast.LENGTH_SHORT).show();
+                        // Log.e(TAG, "JSON parsing error", e);
                     }
                 },
                 error -> {
                     progressDialog.dismiss();
-                    Toast.makeText(Profile.this, "Error fetching profile", Toast.LENGTH_SHORT).show();
-                    Log.e(TAG, "Fetch profile error: " + error.getMessage());
+                    Toast.makeText(Profile.this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                    // Log.e(TAG, "Fetch profile error: " + error.getMessage());
                 });
         requestQueue.add(jsonObjectRequest);
     }
@@ -264,35 +257,33 @@ public class Profile extends AppCompatActivity {
 
     private void updateProfile() throws AuthFailureError {
         if (TextUtils.isEmpty(etFullName.getText().toString())) {
-            etFullName.setError("Full Name is required");
+            etFullName.setError("Please enter your full name.");
             return;
         }
         progressDialog.show();
 
         if (selectedBitmap != null) {
-            // If a new image is selected, use multipart request.
             VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, UPDATE_PROFILE_URL,
                     response -> {
                         progressDialog.dismiss();
                         try {
                             JSONObject jsonResponse = new JSONObject(new String(response.data));
                             if ("success".equals(jsonResponse.getString("status"))) {
-                                Toast.makeText(Profile.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                                // Redirect to MainActivity
+                                Toast.makeText(Profile.this, "Your profile was updated successfully!", Toast.LENGTH_SHORT).show();
                                 Intent intent = new Intent(Profile.this, MainActivity.class);
                                 startActivity(intent);
                                 finish();
                             } else {
-                                Toast.makeText(Profile.this, "Update failed: " + jsonResponse.getString("message"), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(Profile.this, "Could not update your profile. Please try again.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (JSONException e) {
-                            Toast.makeText(Profile.this, "Response parsing error", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(Profile.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                         }
                     },
                     error -> {
                         progressDialog.dismiss();
-                        Toast.makeText(Profile.this, "Error updating profile", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "Multipart update error: " + error.getMessage());
+                        Toast.makeText(Profile.this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                        // Log.e(TAG, "Multipart update error: " + error.getMessage());
                     }) {
                 @Override
                 protected Map<String, String> getParams() {
@@ -307,7 +298,7 @@ public class Profile extends AppCompatActivity {
                             Date dobDate = inputFormat.parse(dobInput);
                             dobInput = outputFormat.format(dobDate);
                         } catch (ParseException e) {
-                            Log.e(TAG, "DOB conversion error (multipart)", e);
+                            // Log.e(TAG, "DOB conversion error (multipart)", e);
                         }
                     }
                     params.put("date_of_birth", dobInput);
@@ -333,30 +324,28 @@ public class Profile extends AppCompatActivity {
             };
             requestQueue.add(multipartRequest);
         } else {
-            // No new image selected—send the old image name.
-            Log.d(TAG, "Updating profile with old image name: " + oldImageUrl);
+            // Log.d(TAG, "Updating profile with old image name: " + oldImageUrl);
             StringRequest stringRequest = new StringRequest(Request.Method.POST, UPDATE_PROFILE_URL,
                     response -> {
                         progressDialog.dismiss();
                         try {
                             JSONObject jsonResponse = new JSONObject(response);
                             if ("success".equals(jsonResponse.getString("status"))) {
-                                Toast.makeText(Profile.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                                // Redirect to MainActivity
+                                Toast.makeText(Profile.this, "Your profile was updated successfully!", Toast.LENGTH_SHORT).show();
                                 Intent intent = new Intent(Profile.this, MainActivity.class);
                                 startActivity(intent);
                                 finish();
                             } else {
-                                Toast.makeText(Profile.this, "Update failed: " + jsonResponse.getString("message"), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(Profile.this, "Could not update your profile. Please try again.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (JSONException e) {
-                            Toast.makeText(Profile.this, "Response parsing error", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(Profile.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                         }
                     },
                     error -> {
                         progressDialog.dismiss();
-                        Toast.makeText(Profile.this, "Error updating profile", Toast.LENGTH_SHORT).show();
-                        Log.e(TAG, "StringRequest update error: " + error.getMessage());
+                        Toast.makeText(Profile.this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                        // Log.e(TAG, "StringRequest update error: " + error.getMessage());
                     }) {
                 @Override
                 protected Map<String, String> getParams() {
@@ -371,7 +360,7 @@ public class Profile extends AppCompatActivity {
                             Date dobDate = inputFormat.parse(dobInput);
                             dobInput = outputFormat.format(dobDate);
                         } catch (ParseException e) {
-                            Log.e(TAG, "DOB conversion error (StringRequest)", e);
+                            // Log.e(TAG, "DOB conversion error (StringRequest)", e);
                         }
                     }
                     params.put("date_of_birth", dobInput);
@@ -386,7 +375,6 @@ public class Profile extends AppCompatActivity {
                     params.put("allergies", etAllergies.getText().toString());
                     params.put("current_medications", etCurrentMedications.getText().toString());
 
-                    // Always send the old image name
                     params.put("profile_image", oldImageUrl);
                     return params;
                 }
@@ -395,14 +383,12 @@ public class Profile extends AppCompatActivity {
         }
     }
 
-    // Helper method to convert bitmap to byte array
     public byte[] getFileDataFromDrawable(Bitmap bitmap) {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 80, byteArrayOutputStream);
         return byteArrayOutputStream.toByteArray();
     }
 
-    // Inner class for multipart requests
     public abstract class VolleyMultipartRequest extends com.android.volley.Request<NetworkResponse> {
 
         private final Response.Listener<NetworkResponse> mListener;
@@ -471,7 +457,6 @@ public class Profile extends AppCompatActivity {
         }
     }
 
-    // DataPart class for multipart requests
     public class DataPart {
         private String fileName;
         private byte[] content;

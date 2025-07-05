@@ -98,16 +98,16 @@ public class RefundStatus extends AppCompatActivity {
                             seekBarRefundProgress.setProgress(progress);
 
                         } else {
-                            Toast.makeText(this, "No refund data found.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "No refund information available at the moment.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (Exception e) {
-                        Toast.makeText(this, "Error parsing response", Toast.LENGTH_SHORT).show();
-                        e.printStackTrace();
+                        Toast.makeText(this, "Sorry, we could not show your refund status right now.", Toast.LENGTH_SHORT).show();
+                        // e.printStackTrace(); // Log/Debug in dev only
                     }
                 },
                 error -> {
                     loaderutil.hideLoader();
-                    Toast.makeText(this, "Network error. Please try again.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                 }
         ) {
             @Override

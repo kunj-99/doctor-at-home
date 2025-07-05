@@ -133,7 +133,7 @@ public class available_doctor extends AppCompatActivity {
                 userPincode = pincode;
                 fetchDoctorsByPincodeAndCategory(pincode, categoryId, true);
             } else {
-                Toast.makeText(available_doctor.this, "Please enter a valid pincode", Toast.LENGTH_SHORT).show();
+                Toast.makeText(available_doctor.this, "Please enter a valid pincode.", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -144,7 +144,7 @@ public class available_doctor extends AppCompatActivity {
             if (!userId.isEmpty()) {
                 fetchUserPincode(userId);
             } else {
-                Toast.makeText(available_doctor.this, "User ID not found. Please log in.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(available_doctor.this, "Could not find your user profile. Please log in again.", Toast.LENGTH_SHORT).show();
             }
 
             loaderutil.hideLoader();
@@ -165,16 +165,16 @@ public class available_doctor extends AppCompatActivity {
                             defaultPincode = response.getString("pincode");
                             userPincode = defaultPincode;
                         } else {
-                            Toast.makeText(available_doctor.this, "No pincode found for the user", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(available_doctor.this, "No pincode found for your profile.", Toast.LENGTH_SHORT).show();
                             return;
                         }
                     } catch (JSONException e) {
-                        Toast.makeText(available_doctor.this, "Error parsing pincode", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(available_doctor.this, "Could not read your pincode. Please try again.", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
                 },
-                error -> Toast.makeText(available_doctor.this, "Error fetching pincode", Toast.LENGTH_SHORT).show()
+                error -> Toast.makeText(available_doctor.this, "Unable to fetch your pincode. Please check your connection.", Toast.LENGTH_SHORT).show()
         );
         Volley.newRequestQueue(this).add(request);
     }
@@ -237,13 +237,13 @@ public class available_doctor extends AppCompatActivity {
                         recyclerView.setVisibility(doctorIds.isEmpty() ? View.GONE : View.VISIBLE);
 
                     } catch (JSONException e) {
-                        Toast.makeText(available_doctor.this, "Data parsing error", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(available_doctor.this, "Could not show doctors right now. Please try again.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
                     tvNoDoctors.setVisibility(View.VISIBLE);
                     recyclerView.setVisibility(View.GONE);
-                    Toast.makeText(available_doctor.this, "Error fetching doctors.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(available_doctor.this, "Unable to load doctor list. Please check your internet connection.", Toast.LENGTH_SHORT).show();
                 }
         );
 

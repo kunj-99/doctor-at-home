@@ -1,8 +1,9 @@
 package com.infowave.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+//import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,13 +35,14 @@ public class diseases extends AppCompatActivity {
     private String categoryId, categoryName;
     private TextView title;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_diseases);
 
         // Initialize UI components
-        title = findViewById(R.id.title);  // Make sure title exists in XML
+        title = findViewById(R.id.title);
         confirm = findViewById(R.id.confirm_button);
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -48,22 +50,17 @@ public class diseases extends AppCompatActivity {
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
-        Log.d("DISEASES_ACTIVITY", "Received categoryId: " + categoryId);
-        Log.d("DISEASES_ACTIVITY", "Received categoryName: " + categoryName);
-
         if (categoryName != null && !categoryName.isEmpty()) {
-            title.setText(categoryName+ "  General Physician");
+            title.setText(categoryName + "  General Physician");
         } else {
-            title.setText("Select a Category");  // More user-friendly default
-            Log.w("DISEASES_ACTIVITY", "Warning: categoryName is missing!");
+            title.setText("Select a Category");
         }
-
 
         // Fetch diseases only if categoryId is valid
         if (categoryId != null) {
             fetchDiseases(categoryId);
         } else {
-            Toast.makeText(this, "Error: Category ID not found!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Could not find the selected category. Please try again.", Toast.LENGTH_SHORT).show();
         }
 
         // Confirm button click listener
@@ -96,17 +93,15 @@ public class diseases extends AppCompatActivity {
                             recyclerView.setAdapter(adapter);
 
                         } else {
-                            Toast.makeText(diseases.this, "No diseases found!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(diseases.this, "No diseases found in this category.", Toast.LENGTH_SHORT).show();
                         }
 
                     } catch (JSONException e) {
-                        Log.e("JSON_ERROR", "Error parsing JSON: " + e.getMessage());
-                        Toast.makeText(diseases.this, "Error parsing data!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(diseases.this, "Sorry, we could not load the diseases right now.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
-                    Log.e("API_ERROR", "Volley Error: " + error.toString());
-                    Toast.makeText(diseases.this, "Failed to load diseases. Try again!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(diseases.this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                 });
 
         queue.add(jsonObjectRequest);

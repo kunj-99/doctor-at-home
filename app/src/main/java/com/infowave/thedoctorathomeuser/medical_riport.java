@@ -13,7 +13,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.util.Log;
+//import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -28,8 +28,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
@@ -44,12 +42,8 @@ import java.util.List;
 
 public class medical_riport extends AppCompatActivity {
 
-    // API endpoint URL (update with your actual server URL)
     private static final String GET_REPORT_URL = "http://sxm.a58.mytemp.website/get_medical_report.php?appointment_id=";
-
-    // Appointment ID retrieved from the Intent extra
     private String appointmentId;
-    // Store report photo URL if available
     private String reportPhotoUrl = "";
 
     private TextView tvHospitalName, tvHospitalAddress;
@@ -62,7 +56,6 @@ public class medical_riport extends AppCompatActivity {
     private ImageView ivReportPhoto;
     private Button btnDownload;
 
-    // Loader view and its ImageView for the GIF loader
     private View loader;
     private ImageView ivLoader;
 
@@ -74,19 +67,16 @@ public class medical_riport extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Check appointment ID BEFORE inflating the layout
         appointmentId = getIntent().getStringExtra("appointment_id");
-        Log.d(TAG, "Received appointment ID: " + appointmentId);
+//        Log.d(TAG, "Received appointment ID: " + appointmentId);
         if (appointmentId == null || appointmentId.isEmpty()) {
-            Toast.makeText(this, "Appointment ID not provided", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Invalid appointment. Please try again.", Toast.LENGTH_SHORT).show();
             redirectToHistoryFragment();
             return;
         }
 
-        // Inflate the layout only if appointmentId is present
         setContentView(R.layout.activity_medical_riport);
 
-        // Initialize UI elements
         tvHospitalName = findViewById(R.id.tv_hospital_name);
         tvHospitalAddress = findViewById(R.id.tv_hospital_address);
         tvPatientName = findViewById(R.id.tv_patient_name);
@@ -107,213 +97,168 @@ public class medical_riport extends AppCompatActivity {
         btnBack = findViewById(R.id.btn_back);
         btnDownload = findViewById(R.id.btn_download);
 
-        // Initialize loader view and its ImageView for GIF
         loader = findViewById(R.id.loader);
         ivLoader = findViewById(R.id.iv_loader);
         loader.setVisibility(View.VISIBLE);
-        // Load the GIF loader using Glide
+
         Glide.with(this)
                 .asGif()
-                .load(R.drawable.loader)  // Make sure loader.gif is in res/drawable and referenced correctly
+                .load(R.drawable.loader)
                 .into(ivLoader);
 
         btnBack.setOnClickListener(v -> finish());
 
-        // Optionally, set static header texts
         tvHospitalName.setText("VRAJ HOSPITAL");
         tvHospitalAddress.setText("150 Feet Ring Road, Rajkot - 360 004");
 
-        // Initialize Volley RequestQueue
         requestQueue = Volley.newRequestQueue(this);
-
-        // Fetch the medical report data using the appointment ID
         fetchMedicalReport();
         btnDownload.setBackgroundColor(getResources().getColor(R.color.navy_blue));
-        // Set click listener for download button
-        btnDownload.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (ivReportPhoto.getVisibility() == View.VISIBLE && !reportPhotoUrl.isEmpty()) {
-                    // Report is image-based – download the image
-                    downloadImage(reportPhotoUrl);
-                } else {
-                    // Virtual report – generate a PDF from the view
-                    generatePdf();
-                }
+
+        btnDownload.setOnClickListener(v -> {
+            if (ivReportPhoto.getVisibility() == View.VISIBLE && !reportPhotoUrl.isEmpty()) {
+                downloadImage(reportPhotoUrl);
+            } else {
+                generatePdf();
             }
         });
     }
 
     private void fetchMedicalReport() {
         String url = GET_REPORT_URL + appointmentId;
-        Log.d(TAG, "Fetching report from URL: " + url);
+//        Log.d(TAG, "Fetching report from URL: " + url);
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
-                new Response.Listener<JSONObject>() {
-                    @SuppressLint("SetTextI18n")
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        Log.d(TAG, "API Response received: " + response.toString());
-                        try {
-                            String status = response.optString("status", "");
-                            if (!status.equalsIgnoreCase("success")) {
-                                Toast.makeText(medical_riport.this, "Report not found", Toast.LENGTH_SHORT).show();
-                                redirectToHistoryFragment();
-                                return;
-                            }
-
-                            JSONObject data = response.optJSONObject("data");
-                            if (data == null) {
-                                Toast.makeText(medical_riport.this, "Report not found", Toast.LENGTH_SHORT).show();
-                                redirectToHistoryFragment();
-                                return;
-                            }
-
-                            String photoUrl = data.optString("report_photo", "");
-                            if (!photoUrl.isEmpty()) {
-                                // Image report: save the URL and show the image
-                                reportPhotoUrl = photoUrl;
-                                ivReportPhoto.setVisibility(View.VISIBLE);
-                                // Hide all children in the content container except the download button
-                                LinearLayout contentContainer = findViewById(R.id.content_container);
-                                for (int i = 0; i < contentContainer.getChildCount(); i++) {
-                                    View child = contentContainer.getChildAt(i);
-                                    if (child.getId() != R.id.btn_download) {
-                                        child.setVisibility(View.GONE);
-                                    }
-                                }
-                                btnDownload.setVisibility(View.VISIBLE);
-
-                                Glide.with(medical_riport.this)
-                                        .load(photoUrl)
-                                        .error(R.drawable.error)
-                                        .into(ivReportPhoto);
-                            } else {
-                                // Virtual report: populate text views
-                                tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
-                                tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
-                                tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
-                                tvTemperature.setText("Temperature: " + data.optString("temperature", "N/A"));
-                                tvPatientAge.setText("Age: " + data.optString("age", "N/A") + " Years");
-                                tvPatientWeight.setText("Weight: " + data.optString("weight", "N/A") + " kg");
-                                tvPatientSex.setText("Sex: " + data.optString("sex", "N/A"));
-                                tvPulse.setText("Pulse: " + data.optString("pulse", "N/A"));
-                                tvSpo2.setText("SP02: " + data.optString("spo2", "N/A"));
-                                tvBloodPressure.setText("Blood Pressure: " + data.optString("blood_pressure", "N/A"));
-                                tvRespiratory.setText("Respiratory: " + data.optString("respiratory_system", "N/A"));
-                                tvSymptoms.setText("Symptoms: " + data.optString("symptoms", "N/A"));
-                                tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
-                                tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
-
-                                // Populate medications table
-                                String medicationsStr = data.optString("medications", "");
-                                String dosageStr = data.optString("dosage", "");
-
-                                String[] medicationsArray = medicationsStr.split("\\n");
-                                String[] dosageArray = dosageStr.split("\\n");
-
-                                List<String> medList = new ArrayList<>();
-                                for (String med : medicationsArray) {
-                                    med = med.trim();
-                                    if (!med.isEmpty()) {
-                                        if (med.endsWith(",")) med = med.substring(0, med.length() - 1);
-                                        medList.add(med);
-                                    }
-                                }
-
-                                List<String> dosageList = new ArrayList<>();
-                                for (String dos : dosageArray) {
-                                    dos = dos.trim();
-                                    if (!dos.isEmpty()) {
-                                        if (dos.endsWith(",")) dos = dos.substring(0, dos.length() - 1);
-                                        dosageList.add(dos);
-                                    }
-                                }
-
-                                int rowCount = Math.max(medList.size(), dosageList.size());
-                                TableLayout tableMedications = findViewById(R.id.table_medications);
-                                if (tableMedications.getChildCount() > 1) {
-                                    tableMedications.removeViews(1, tableMedications.getChildCount() - 1);
-                                }
-
-                                for (int i = 0; i < rowCount; i++) {
-                                    TableRow row = new TableRow(medical_riport.this);
-                                    TextView tvNo = new TextView(medical_riport.this);
-                                    tvNo.setText(String.valueOf(i + 1));
-                                    tvNo.setTextSize(16);
-                                    tvNo.setPadding(4, 4, 4, 4);
-
-                                    TextView tvMedName = new TextView(medical_riport.this);
-                                    tvMedName.setText(i < medList.size() ? medList.get(i) : "");
-                                    tvMedName.setTextSize(16);
-                                    tvMedName.setPadding(4, 4, 4, 4);
-
-                                    TextView tvDosage = new TextView(medical_riport.this);
-                                    tvDosage.setText(i < dosageList.size() ? dosageList.get(i) : "");
-                                    tvDosage.setTextSize(16);
-                                    tvDosage.setPadding(4, 4, 4, 4);
-
-                                    row.addView(tvNo);
-                                    row.addView(tvMedName);
-                                    row.addView(tvDosage);
-                                    tableMedications.addView(row);
-                                }
-                            }
-                        } catch (Exception e) {
-                            Log.e(TAG, "Exception during parsing: " + e.getMessage(), e);
-                            Toast.makeText(medical_riport.this, "Error parsing report data", Toast.LENGTH_SHORT).show();
-                        } finally {
-                            // Hide the loader after a minimum delay of 1 second
-                            new Handler().postDelayed(new Runnable() {
-                                @Override
-                                public void run() {
-                                    loader.setVisibility(View.GONE);
-                                }
-                            }, 1000);
+        @SuppressLint("SetTextI18n") JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+                response -> {
+//                    Log.d(TAG, "API Response received: " + response);
+                    try {
+                        String status = response.optString("status", "");
+                        if (!status.equalsIgnoreCase("success")) {
+                            Toast.makeText(medical_riport.this, "Report not found.", Toast.LENGTH_SHORT).show();
+                            redirectToHistoryFragment();
+                            return;
                         }
+
+                        JSONObject data = response.optJSONObject("data");
+                        if (data == null) {
+                            Toast.makeText(medical_riport.this, "Report not found.", Toast.LENGTH_SHORT).show();
+                            redirectToHistoryFragment();
+                            return;
+                        }
+
+                        String photoUrl = data.optString("report_photo", "");
+                        if (!photoUrl.isEmpty()) {
+                            reportPhotoUrl = photoUrl;
+                            ivReportPhoto.setVisibility(View.VISIBLE);
+                            LinearLayout contentContainer = findViewById(R.id.content_container);
+                            for (int i = 0; i < contentContainer.getChildCount(); i++) {
+                                View child = contentContainer.getChildAt(i);
+                                if (child.getId() != R.id.btn_download) {
+                                    child.setVisibility(View.GONE);
+                                }
+                            }
+                            btnDownload.setVisibility(View.VISIBLE);
+
+                            Glide.with(medical_riport.this)
+                                    .load(photoUrl)
+                                    .error(R.drawable.error)
+                                    .into(ivReportPhoto);
+
+                        } else {
+                            tvPatientName.setText("Name: " + data.optString("patient_name", "N/A"));
+                            tvPatientAddress.setText("Address: " + data.optString("patient_address", "N/A"));
+                            tvVisitDate.setText("Date: " + data.optString("visit_date", "N/A"));
+                            tvTemperature.setText("Temperature: " + data.optString("temperature", "N/A"));
+                            tvPatientAge.setText("Age: " + data.optString("age", "N/A") + " Years");
+                            tvPatientWeight.setText("Weight: " + data.optString("weight", "N/A") + " kg");
+                            tvPatientSex.setText("Sex: " + data.optString("sex", "N/A"));
+                            tvPulse.setText("Pulse: " + data.optString("pulse", "N/A"));
+                            tvSpo2.setText("SP02: " + data.optString("spo2", "N/A"));
+                            tvBloodPressure.setText("Blood Pressure: " + data.optString("blood_pressure", "N/A"));
+                            tvRespiratory.setText("Respiratory: " + data.optString("respiratory_system", "N/A"));
+                            tvSymptoms.setText("Symptoms: " + data.optString("symptoms", "N/A"));
+                            tvInvestigations.setText("Investigations: " + data.optString("investigations", "N/A"));
+                            tvDoctorName.setText("Doctor: " + data.optString("doctor_name", "N/A"));
+
+                            // Table for medications
+                            String medicationsStr = data.optString("medications", "");
+                            String dosageStr = data.optString("dosage", "");
+                            String[] medicationsArray = medicationsStr.split("\\n");
+                            String[] dosageArray = dosageStr.split("\\n");
+                            List<String> medList = new ArrayList<>();
+                            for (String med : medicationsArray) {
+                                med = med.trim();
+                                if (!med.isEmpty()) {
+                                    if (med.endsWith(",")) med = med.substring(0, med.length() - 1);
+                                    medList.add(med);
+                                }
+                            }
+                            List<String> dosageList = new ArrayList<>();
+                            for (String dos : dosageArray) {
+                                dos = dos.trim();
+                                if (!dos.isEmpty()) {
+                                    if (dos.endsWith(",")) dos = dos.substring(0, dos.length() - 1);
+                                    dosageList.add(dos);
+                                }
+                            }
+
+                            int rowCount = Math.max(medList.size(), dosageList.size());
+                            TableLayout tableMedications = findViewById(R.id.table_medications);
+                            if (tableMedications.getChildCount() > 1) {
+                                tableMedications.removeViews(1, tableMedications.getChildCount() - 1);
+                            }
+                            for (int i = 0; i < rowCount; i++) {
+                                TableRow row = new TableRow(medical_riport.this);
+                                TextView tvNo = new TextView(medical_riport.this);
+                                tvNo.setText(String.valueOf(i + 1));
+                                tvNo.setTextSize(16);
+                                tvNo.setPadding(4, 4, 4, 4);
+
+                                TextView tvMedName = new TextView(medical_riport.this);
+                                tvMedName.setText(i < medList.size() ? medList.get(i) : "");
+                                tvMedName.setTextSize(16);
+                                tvMedName.setPadding(4, 4, 4, 4);
+
+                                TextView tvDosage = new TextView(medical_riport.this);
+                                tvDosage.setText(i < dosageList.size() ? dosageList.get(i) : "");
+                                tvDosage.setTextSize(16);
+                                tvDosage.setPadding(4, 4, 4, 4);
+
+                                row.addView(tvNo);
+                                row.addView(tvMedName);
+                                row.addView(tvDosage);
+                                tableMedications.addView(row);
+                            }
+                        }
+                    } catch (Exception e) {
+//                        Log.e(TAG, "Exception during parsing: " + e.getMessage(), e);
+                        Toast.makeText(medical_riport.this, "Something went wrong while loading the report.", Toast.LENGTH_SHORT).show();
+                    } finally {
+                        new Handler().postDelayed(() -> loader.setVisibility(View.GONE), 1000);
                     }
                 },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.e(TAG, "Volley error: " + error.getMessage(), error);
-                        Toast.makeText(medical_riport.this, "Error fetching report", Toast.LENGTH_SHORT).show();
-                        // Hide the loader even if there is an error
-                        new Handler().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                loader.setVisibility(View.GONE);
-                            }
-                        }, 1000);
-                    }
+                error -> {
+//                    Log.e(TAG, "Volley error: " + error.getMessage(), error);
+                    Toast.makeText(medical_riport.this, "Unable to load your report. Please check your internet connection.", Toast.LENGTH_SHORT).show();
+                    new Handler().postDelayed(() -> loader.setVisibility(View.GONE), 1000);
                 }
         );
-
         requestQueue.add(request);
     }
 
-    // Download the image using DownloadManager
     private void downloadImage(String url) {
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "medical_report.jpg");
         DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
         downloadManager.enqueue(request);
-        Toast.makeText(this, "Downloading Image...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Your report image is downloading...", Toast.LENGTH_SHORT).show();
     }
 
-    // Generate a PDF from the virtual report view and save it in Downloads
     private void generatePdf() {
-        // Get the content container view (virtual report data)
         View content = findViewById(R.id.content_container);
-
-        // Temporarily hide the download button so it doesn't appear in the PDF
-        btnDownload.setVisibility(View.GONE);   
-
-        // Capture the bitmap from the view
+        btnDownload.setVisibility(View.GONE);
         Bitmap bitmap = getBitmapFromView(content);
-
-        // Restore the download button visibility
         btnDownload.setVisibility(View.VISIBLE);
 
         PdfDocument document = new PdfDocument();
@@ -330,14 +275,13 @@ public class medical_riport extends AppCompatActivity {
             document.writeTo(fos);
             document.close();
             fos.close();
-            Toast.makeText(this, "PDF saved in Downloads", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "PDF saved in your Downloads folder.", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
             e.printStackTrace();
-            Toast.makeText(this, "Error generating PDF", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Unable to generate PDF. Please try again.", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // Helper method to create a bitmap from a view
     private Bitmap getBitmapFromView(View view) {
         Bitmap returnedBitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(returnedBitmap);

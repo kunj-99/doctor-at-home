@@ -36,7 +36,7 @@ public class payments extends AppCompatActivity {
 
     private String patientId;
 
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,6 +50,7 @@ public class payments extends AppCompatActivity {
 
         SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
+        // Log: Patient ID loaded from shared preferences for wallet/payment actions
         Log.d("DEBUG", "Loaded patient_id: " + patientId);
 
         if (patientId.isEmpty()) {
@@ -91,6 +92,7 @@ public class payments extends AppCompatActivity {
     }
 
     private void rechargeWallet(String amount) {
+        @SuppressLint("SetTextI18n")
         StringRequest request = new StringRequest(Request.Method.POST, rechargeUrl,
                 response -> {
                     try {
@@ -123,7 +125,7 @@ public class payments extends AppCompatActivity {
     }
 
     private void fetchWalletBalance() {
-        StringRequest request = new StringRequest(Request.Method.POST, fetchBalanceUrl,
+        @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(Request.Method.POST, fetchBalanceUrl,
                 response -> {
                     try {
                         JSONObject obj = new JSONObject(response);
@@ -155,7 +157,9 @@ public class payments extends AppCompatActivity {
         StringRequest request = new StringRequest(Request.Method.POST, fetchTransactionUrl,
                 response -> {
                     try {
+                        // Log: Raw transaction history response received from server
                         Log.d("TRANSACTION_HISTORY", response);
+
                         JSONObject obj = new JSONObject(response);
                         if (obj.getString("status").equals("success")) {
                             List<TransactionAdapter.TransactionItem> tempList = new ArrayList<>();

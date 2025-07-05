@@ -41,12 +41,12 @@ public class cancle_appintment extends AppCompatActivity {
         if (getIntent().hasExtra("appointment_id")) {
             appointmentId = String.valueOf(getIntent().getIntExtra("appointment_id", -1));
             if (appointmentId.equals("-1")) {
-                tvError("Invalid appointment ID");
+                tvError("Something went wrong. Please try again.");
                 finish();
                 return;
             }
         } else {
-            tvError("No appointment ID received");
+            tvError("Could not find your appointment. Please try again.");
             finish();
             return;
         }
@@ -78,18 +78,18 @@ public class cancle_appintment extends AppCompatActivity {
             // Validate cancellation reason
             String reason = Objects.requireNonNull(reasonInput.getText()).toString().trim();
             if (TextUtils.isEmpty(reason)) {
-                reasonInput.setError("Enter a cancellation reason");
-                errorBuilder.append("Enter a cancellation reason\n");
+                reasonInput.setError("Please enter a reason for cancellation.");
+                errorBuilder.append("Please enter a reason for cancellation.\n");
             }
 
             // Validate UPI ID
             String upi = upiIdInput.getText().toString().trim();
             if (TextUtils.isEmpty(upi)) {
-                upiIdInput.setError("Enter your UPI ID");
-                errorBuilder.append("Enter your UPI ID\n");
+                upiIdInput.setError("Please enter your UPI ID.");
+                errorBuilder.append("Please enter your UPI ID.\n");
             } else if (!isValidUpi(upi)) {
-                upiIdInput.setError("Invalid UPI ID format");
-                errorBuilder.append("Invalid UPI ID format\n");
+                upiIdInput.setError("Please enter a valid UPI ID.");
+                errorBuilder.append("Please enter a valid UPI ID.\n");
             }
 
             // If any errors exist in the EditText fields, display them and stop processing
@@ -100,7 +100,7 @@ public class cancle_appintment extends AppCompatActivity {
 
             // Now, check the confirmation checkbox
             if (!confirmationCheckbox.isChecked()) {
-                Toast.makeText(cancle_appintment.this, "Please confirm cancellation", Toast.LENGTH_SHORT).show();
+                Toast.makeText(cancle_appintment.this, "Please check the box to confirm cancellation.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -121,7 +121,7 @@ public class cancle_appintment extends AppCompatActivity {
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         if (!jsonObject.getBoolean("success")) {
-                            tvError(jsonObject.getString("error"));
+                            tvError("Could not load appointment details. Please try again.");
                             return;
                         }
                         JSONObject appointment = jsonObject.getJSONObject("appointment");
@@ -130,10 +130,10 @@ public class cancle_appintment extends AppCompatActivity {
                         if (patientName != null) patientName.setText(appointment.getString("patient_name"));
                         if (appointmentDate != null) appointmentDate.setText(appointment.getString("appointment_date"));
                     } catch (JSONException e) {
-                        tvError("Error loading appointment details.");
+                        tvError("Sorry, we could not load your appointment details right now.");
                     }
                 },
-                error -> tvError("Network Error! Please try again.")) {
+                error -> tvError("No internet connection. Please check and try again.")) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
@@ -156,13 +156,13 @@ public class cancle_appintment extends AppCompatActivity {
                         if (jsonObject.getBoolean("success")) {
                             onSuccess.run();
                         } else {
-                            tvError("UPI update failed: " + jsonObject.getString("error"));
+                            tvError("Could not update UPI ID. Please check and try again.");
                         }
                     } catch (JSONException e) {
-                        tvError("Error processing UPI update response.");
+                        tvError("Sorry, something went wrong while updating your UPI ID.");
                     }
                 },
-                error -> tvError("Network Error during UPI update! Please try again.")) {
+                error -> tvError("Network error while updating UPI ID. Please check your connection.")) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
@@ -184,16 +184,16 @@ public class cancle_appintment extends AppCompatActivity {
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         if (jsonObject.getBoolean("success")) {
-                            tvError("Appointment cancelled successfully!");
+                            tvError("Your appointment has been cancelled successfully.");
                             finish();
                         } else {
-                            tvError("Cancellation failed: " + jsonObject.getString("error"));
+                            tvError("Could not cancel the appointment. Please try again.");
                         }
                     } catch (JSONException e) {
-                        tvError("Error processing request.");
+                        tvError("Something went wrong. Please try again.");
                     }
                 },
-                error -> tvError("Network Error! Please try again.")) {
+                error -> tvError("No internet connection. Please check and try again.")) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();

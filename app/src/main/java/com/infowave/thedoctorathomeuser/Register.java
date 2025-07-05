@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -28,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Register extends AppCompatActivity {
-    private static final String TAG = "RegisterActivity";
+    // private static final String TAG = "RegisterActivity"; // Log statements are now commented
 
     Button signup;
     EditText etName, etMobile, etEmail, etPincode;
@@ -37,6 +38,7 @@ public class Register extends AppCompatActivity {
     CheckBox cbTerms;
     TextView tvTerms, tvPolicy;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,8 +78,18 @@ public class Register extends AppCompatActivity {
             finish();
         });
 
-        // AutoCompleteTextView for City
-        String[] cities = {"Rajkot", "Ahemdabad", "Surat", "Mumbai", "Junagadh"};
+        // Expanded AutoCompleteTextView for City (Gujarat & Maharashtra major cities)
+        String[] cities = {
+                // Gujarat
+                "Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Gandhinagar", "Junagadh",
+                "Anand", "Nadiad", "Navsari", "Valsad", "Vapi", "Morbi", "Bharuch", "Mehsana", "Porbandar", "Godhra",
+                "Palanpur", "Veraval", "Botad", "Surendranagar", "Amreli", "Gondal", "Dahod", "Himmatnagar", "Patan",
+                "Deesa", "Dhoraji", "Jetpur", "Keshod", "Diu", "Mandvi", "Wadhwan", "Umreth", "Vyara", "Modasa",
+                "Sanand", "Kalol", "Maninagar", "Halol", "Petlad", "Mahuva", "Khambhat", "Unjha", "Chhota Udaipur",
+                // Maharashtra (key cities)
+                "Mumbai", "Pune", "Nashik", "Nagpur", "Thane", "Aurangabad", "Solapur", "Amravati", "Jalgaon",
+                "Kolhapur", "Latur", "Dhule", "Ahmednagar", "Chandrapur", "Parbhani", "Sangli", "Satara", "Nanded", "Wardha"
+        };
         ArrayAdapter<String> cityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, cities);
         actvCity.setAdapter(cityAdapter);
 
@@ -161,27 +173,29 @@ public class Register extends AppCompatActivity {
                         boolean success = jsonObject.getBoolean("success");
 
                         if (success) {
-                            Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(Register.this, "Registration successful. Please login to continue.", Toast.LENGTH_SHORT).show();
                             Intent intent = new Intent(Register.this, login.class);
                             startActivity(intent);
                             finish();
                         } else {
-                            Log.e(TAG, "Registration Failed: " + message);
+                            // Log.e(TAG, "Registration Failed: " + message);
                             Toast.makeText(Register.this, message, Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
-                        Log.e(TAG, "JSON Parsing Error: " + e.getMessage(), e);
+                        // Log.e(TAG, "JSON Parsing Error: " + e.getMessage(), e);
+                        Toast.makeText(Register.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                     }
                     signup.setEnabled(true);
                     signup.setText("Sign Up");
                 },
                 error -> {
-                    if (error.networkResponse != null) {
-                        String responseBody = new String(error.networkResponse.data);
-                        Log.e(TAG, "Server Error: " + responseBody);
-                    } else {
-                        Log.e(TAG, "Volley error: " + error.getMessage(), error);
-                    }
+                    // if (error.networkResponse != null) {
+                    //     String responseBody = new String(error.networkResponse.data);
+                    //     Log.e(TAG, "Server Error: " + responseBody);
+                    // } else {
+                    //     Log.e(TAG, "Volley error: " + error.getMessage(), error);
+                    // }
+                    Toast.makeText(Register.this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                     signup.setEnabled(true);
                     signup.setText("Sign Up");
                 }) {

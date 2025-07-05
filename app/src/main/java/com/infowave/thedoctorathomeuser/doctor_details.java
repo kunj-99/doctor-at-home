@@ -2,8 +2,8 @@ package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
+//import android.util.Log;
+//import android.view.View;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
@@ -28,11 +28,10 @@ public class doctor_details extends AppCompatActivity {
 
     private static final String API_URL = "http://sxm.a58.mytemp.website/fetch_doctor.php?doctor_id=";
 
-//    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_doctor_details); // Make sure this matches your XML file
+        setContentView(R.layout.activity_doctor_details);
 
         // Initialize UI elements
         doctorName = findViewById(R.id.doctorName);
@@ -44,20 +43,18 @@ public class doctor_details extends AppCompatActivity {
         doctorQualification = findViewById(R.id.degreeDetails);
         doctorRating = findViewById(R.id.doctor_rating);
         doctorImage = findViewById(R.id.doctorImage);
-        backButton = findViewById(R.id.backButton); // Optional
+        backButton = findViewById(R.id.backButton);
 
         String doctorId = getIntent().getStringExtra("doctor_id");
 
         if (doctorId == null || doctorId.trim().isEmpty()) {
-            Toast.makeText(this, "Doctor ID not found", Toast.LENGTH_SHORT).show();
-            Log.e("ERROR", "Doctor ID is null or empty");
+            Toast.makeText(this, "Unable to find this doctor. Please try again.", Toast.LENGTH_SHORT).show();
             finish();
         } else {
-            Log.d("DOCTOR_ID", "Fetching details for Doctor ID: " + doctorId);
             fetchDoctorDetails(doctorId);
         }
 
-        // Back button (optional)
+        // Back button
         if (backButton != null) {
             backButton.setOnClickListener(v -> finish());
         }
@@ -65,12 +62,9 @@ public class doctor_details extends AppCompatActivity {
 
     private void fetchDoctorDetails(String doctorId) {
         String url = API_URL + doctorId;
-        Log.d("API_REQUEST", "Fetching data from: " + url);
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        @SuppressLint("SetTextI18n") JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
-                    Log.d("API_RESPONSE", "Full response: " + response.toString());
-
                     if (response.optBoolean("success")) {
                         JSONObject doctorData = response.optJSONObject("data");
 
@@ -95,16 +89,14 @@ public class doctor_details extends AppCompatActivity {
                                         .into(doctorImage);
                             }
                         } else {
-                            Log.e("API_ERROR", "Doctor data is null");
-                            Toast.makeText(this, "Doctor details not found", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Doctor details are currently unavailable.", Toast.LENGTH_SHORT).show();
                         }
                     } else {
-                        Toast.makeText(this, "API returned success=false", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Sorry, we could not load this doctor's details.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
-                    Log.e("API_ERROR", "Request failed: " + error.getMessage());
-                    Toast.makeText(this, "Failed to load doctor details. Please try again.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Could not connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                 });
 
         request.setRetryPolicy(new DefaultRetryPolicy(

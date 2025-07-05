@@ -6,13 +6,12 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
+// import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.content.Intent;
 import android.view.View;
 import android.widget.Button;
-
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,7 +22,6 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.infowave.thedoctorathomeuser.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -45,17 +43,16 @@ import java.util.List;
 
 public class track_doctor extends AppCompatActivity implements OnMapReadyCallback {
 
-    private static final String TAG = "TrackDoctor";
+    // private static final String TAG = "TrackDoctor";
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
     private static final String GET_LOCATION_URL = "http://sxm.a58.mytemp.website/get_live_location.php";
-    // Replace with your actual Google Directions API key.
     private static final String API_KEY = "AIzaSyCkUxQSJ1jNt0q_CcugieFl5vezsNAUxe0";
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 
     private MapView mapView;
     private GoogleMap googleMap;
     private Marker doctorMarker;
-    private Marker userMarker;  // New marker for the user's location
+    private Marker userMarker;
     private Polyline currentPolyline;
     private final Handler handler = new Handler();
     private Runnable updateRunnable;
@@ -75,24 +72,20 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_track_doctor);
 
-        // Initialize TextViews.
         tvDistance = findViewById(R.id.tvDistance);
         tvDuration = findViewById(R.id.tvDuration);
 
-        // Get doctor_id and appointment_id from Intent extras.
         doctorId = String.valueOf(getIntent().getIntExtra("doctor_id", -1));
         appointmentId = String.valueOf(getIntent().getIntExtra("appointment_id", -1));
 
         if (doctorId.equals("-1") || appointmentId.equals("-1")) {
-            Toast.makeText(this, "Invalid Doctor or Appointment ID", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Could not load appointment. Please try again.", Toast.LENGTH_LONG).show();
             finish();
             return;
         }
-        Log.d(TAG, "Doctor ID: " + doctorId + ", Appointment ID: " + appointmentId);
+        // Log.d(TAG, "Doctor ID: " + doctorId + ", Appointment ID: " + appointmentId);
 
-        // Initialize FusedLocationProviderClient for user location.
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        // Check for location permission and fetch user location if granted.
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -112,17 +105,15 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         Button buttonBill = findViewById(R.id.button_bill);
         Button buttonDone = findViewById(R.id.button_done);
 
-// Redirect to CompleteBill Activity with appointment_id
         buttonBill.setOnClickListener(v -> {
             Intent intent = new Intent(track_doctor.this, complet_bill.class);
             intent.putExtra("appointment_id", Integer.parseInt(appointmentId));
             startActivity(intent);
         });
 
-// Redirect to HomeActivity with open_fragment = 2
         buttonDone.setOnClickListener(v -> {
             Intent intent = new Intent(track_doctor.this, MainActivity.class);
-            intent.putExtra("open_fragment", 2);  // Assuming 2 = Appointment Fragment
+            intent.putExtra("open_fragment", 2);
             startActivity(intent);
             finish();
         });
@@ -132,7 +123,6 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(@NonNull GoogleMap map) {
         googleMap = map;
-        // Optionally enable the My Location layer (if permission is granted).
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             googleMap.setMyLocationEnabled(true);
@@ -140,20 +130,18 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         startLocationUpdates();
     }
 
-    // Start periodic updates for doctor's live location (and refresh the user's location).
     private void startLocationUpdates() {
         updateRunnable = new Runnable() {
             @Override
             public void run() {
                 fetchLiveLocation();
-                fetchUserLocation(); // Refresh user location as well.
-                handler.postDelayed(this, 5000); // Update every 5 seconds.
+                fetchUserLocation();
+                handler.postDelayed(this, 5000);
             }
         };
         handler.post(updateRunnable);
     }
 
-    // Fetch the doctor's live location from the server.
     private void fetchLiveLocation() {
         String url = GET_LOCATION_URL + "?doctor_id=" + doctorId + "&appointment_id=" + appointmentId;
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
@@ -164,21 +152,20 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                             double lon = response.getDouble("live_longitude");
                             updateDoctorMarker(lat, lon);
                         } else {
-                            Log.e(TAG, "Latitude or Longitude not found in response");
-                            Toast.makeText(track_doctor.this, "Doctor location data not available", Toast.LENGTH_SHORT).show();
+                            // Log.e(TAG, "Latitude or Longitude not found in response");
+                            Toast.makeText(track_doctor.this, "Doctor location not yet available.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "Error parsing doctor location data", e);
-                        Toast.makeText(track_doctor.this, "Error parsing doctor location data", Toast.LENGTH_SHORT).show();
+                        // Log.e(TAG, "Error parsing doctor location data", e);
+                        Toast.makeText(track_doctor.this, "Could not update doctor location.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
-                    Log.e(TAG, "Fetch doctor location error", error);
-                    Toast.makeText(track_doctor.this, "Error fetching doctor location data", Toast.LENGTH_SHORT).show();
+                    // Log.e(TAG, "Fetch doctor location error", error);
+                    Toast.makeText(track_doctor.this, "Unable to get doctor location. Please check your internet.", Toast.LENGTH_SHORT).show();
                 });
         requestQueue.add(request);
     }
-
 
     private void updateDoctorMarker(double lat, double lon) {
         if (googleMap == null) return;
@@ -187,19 +174,16 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
             doctorMarker = googleMap.addMarker(new MarkerOptions()
                     .position(doctorPosition)
                     .title("Doctor Location")
-                    // Set custom drawable icon for the doctor.
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.doctor)));
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(doctorPosition, 15));
         } else {
             doctorMarker.setPosition(doctorPosition);
         }
-        // If we have the user's location, compute the route.
         if (userLocation != null) {
             calculateDistanceAndDuration(doctorPosition, userLocation);
         }
     }
 
-    // Fetch the user's current location and update/add a red marker.
     private void fetchUserLocation() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -208,8 +192,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
             if (location != null) {
                 userLocation = new LatLng(location.getLatitude(), location.getLongitude());
-                Log.d(TAG, "User location: " + userLocation);
-                // Update or create the user marker as a red marker.
+                // Log.d(TAG, "User location: " + userLocation);
                 if (googleMap != null) {
                     if (userMarker == null) {
                         userMarker = googleMap.addMarker(new MarkerOptions()
@@ -220,18 +203,16 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                         userMarker.setPosition(userLocation);
                     }
                 }
-                // If doctor's marker is available, recalc route (origin: doctor, destination: user).
                 if (doctorMarker != null) {
                     calculateDistanceAndDuration(doctorMarker.getPosition(), userLocation);
                 }
             } else {
-                Log.e(TAG, "Unable to fetch user location");
+                // Log.e(TAG, "Unable to fetch user location");
+                Toast.makeText(this, "Unable to access your location.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // Use the Google Directions API to calculate driving distance, duration, and draw the route.
-    // Here, the origin is the doctor's location and the destination is the user's location.
     private void calculateDistanceAndDuration(LatLng origin, LatLng destination) {
         String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
         String str_dest = "destination=" + destination.latitude + "," + destination.longitude;
@@ -246,7 +227,6 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                         JSONArray routes = response.getJSONArray("routes");
                         if (routes.length() > 0) {
                             JSONObject firstRoute = routes.getJSONObject(0);
-                            // Update distance and duration from the first leg.
                             JSONArray legs = firstRoute.getJSONArray("legs");
                             if (legs.length() > 0) {
                                 JSONObject firstLeg = legs.getJSONObject(0);
@@ -255,12 +235,10 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                                 tvDistance.setText("Distance: " + distanceText);
                                 tvDuration.setText("Duration: " + durationText);
                             }
-                            // Draw the route line using the overview_polyline.
                             JSONObject overviewPolyline = firstRoute.getJSONObject("overview_polyline");
                             String polylinePoints = overviewPolyline.getString("points");
                             List<LatLng> polylineList = decodePoly(polylinePoints);
 
-                            // Remove previous polyline if it exists.
                             if (currentPolyline != null) {
                                 currentPolyline.remove();
                             }
@@ -271,16 +249,17 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                             currentPolyline = googleMap.addPolyline(polylineOptions);
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "Error parsing directions response", e);
+                        // Log.e(TAG, "Error parsing directions response", e);
+                        Toast.makeText(this, "Unable to show route.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
-                    Log.e(TAG, "Directions API error", error);
+                    // Log.e(TAG, "Directions API error", error);
+                    Toast.makeText(this, "Could not connect to directions service.", Toast.LENGTH_SHORT).show();
                 });
         requestQueue.add(request);
     }
 
-    // Decodes an encoded polyline string into a list of LatLngs.
     private List<LatLng> decodePoly(String encoded) {
         List<LatLng> poly = new ArrayList<>();
         int index = 0, len = encoded.length();
@@ -352,7 +331,6 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         mapView.onLowMemory();
     }
 
-    // Handle runtime permission result for ACCESS_FINE_LOCATION.
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
@@ -360,7 +338,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 fetchUserLocation();
             } else {
-                Toast.makeText(this, "Location permission is required", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Location permission is required for tracking.", Toast.LENGTH_SHORT).show();
             }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
