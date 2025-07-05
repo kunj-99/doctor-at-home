@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
+// import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -73,10 +73,8 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
         String id        = doctorIds.get(pos);
         String autoStat  = autoStatuses.get(pos);
 
-        // ★ Store autoStatus in the holder so polling can know it:
         holder.autoStatus = autoStat;
 
-        // static binds
         holder.name.setText(names.get(pos));
         holder.specialty.setText(specialties.get(pos));
         holder.hospital.setText(hospitals.get(pos));
@@ -88,7 +86,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                 .error(R.drawable.plaseholder_error)
                 .into(holder.image);
 
-        // detail click
         holder.itemView.setOnClickListener(v -> {
             Intent i = new Intent(context, doctor_details.class);
             i.putExtra("doctor_id", id);
@@ -96,7 +93,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
             context.startActivity(i);
         });
 
-        // book/request click
         holder.bookButton.setOnClickListener(v -> {
             Intent i = new Intent(context, book_form.class);
             i.putExtra("doctor_id", id);
@@ -105,10 +101,8 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
             context.startActivity(i);
         });
 
-        // always start polling (to fill badges & ETA)
         holder.startAutoRefresh(id);
 
-        // ★ immediately disable if inactive so initial state shows:
         if (autoStat.equalsIgnoreCase("inactive")) {
             holder.bookButton.setText("Currently Not Accepting");
             holder.bookButton.setEnabled(false);
@@ -171,11 +165,9 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                             int pendNum          = response.getInt("pending_count");
                             int totalEtaMinutes  = response.optInt("total_eta", 0);
 
-                            // ★ Always show request count
                             requestCount.setVisibility(View.VISIBLE);
                             requestCount.setText("Requests: " + reqNum);
 
-                            // pending badge
                             if (pendNum > 0) {
                                 pendingCount.setVisibility(View.VISIBLE);
                                 pendingCount.setText("Pending: " + pendNum);
@@ -183,10 +175,8 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                                 pendingCount.setVisibility(View.GONE);
                             }
 
-                            // ETA
                             if (totalEtaMinutes > 0) {
                                 tvEta.setVisibility(View.VISIBLE);
-                                // user friendly text
                                 String friendly;
                                 if (totalEtaMinutes < 60) {
                                     friendly = "Next slot in ~" + totalEtaMinutes + " min";
@@ -204,7 +194,6 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                                 tvEta.setVisibility(View.GONE);
                             }
 
-                            // ★ If autoStatus is inactive, override button & return:
                             if ("inactive".equalsIgnoreCase(autoStatus)) {
                                 bookButton.setText("Currently Not Accepting");
                                 bookButton.setEnabled(false);
@@ -214,11 +203,9 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
                                 return;
                             }
 
-                            // otherwise normal booking logic:
                             if (hasActive) {
                                 bookButton.setText("Request for visit");
                                 bookButton.setBackgroundColor(Color.parseColor("#5494DA"));
-
                             } else {
                                 bookButton.setText("Book Appointment");
                             }
@@ -226,9 +213,13 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
 
                         } catch (JSONException e) {
                             resetUI();
+                            // Log.e("DoctorAdapter", "JSON parsing error: " + e.getMessage());
                         }
                     },
-                    error -> resetUI()
+                    error -> {
+                        resetUI();
+                        // Log.e("DoctorAdapter", "Volley error: " + error.getMessage());
+                    }
             );
 
             RequestQueue q = VolleySingleton.getInstance(itemView.getContext()).getRequestQueue();

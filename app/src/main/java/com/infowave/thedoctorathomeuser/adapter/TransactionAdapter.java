@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.LayoutInflater;
@@ -28,6 +29,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         this.list = transactionList != null ? new ArrayList<>(transactionList) : new ArrayList<>();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     public void updateTransactions(List<TransactionItem> newList) {
         this.list = newList != null ? new ArrayList<>(newList) : new ArrayList<>();
         notifyDataSetChanged();
@@ -112,6 +114,7 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         }
     }
 
+    @SuppressLint("DefaultLocale")
     private String formatAmount(String amount) {
         try {
             double value = Double.parseDouble(amount);

@@ -5,7 +5,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.util.Log;
+// import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,7 +37,7 @@ import java.util.Set;
 
 public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private static final String TAG = "DoctorHistoryAdapter";
+    // private static final String TAG = "DoctorHistoryAdapter";
     private static final int VIEW_TYPE_ITEM = 0;
     private static final int VIEW_TYPE_EMPTY = 1;
 
@@ -48,16 +48,13 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
     private final List<String> doctorSpecialties;
     private final List<String> appointmentDates;
     private final List<String> appointmentPrices;
-    // Updated list for profile picture URLs
     private final List<String> doctorProfilePictures;
     private final List<Integer> appointmentIds;
-    private final List<String> appointmentStatuses; // e.g., "Completed", "Cancelled", etc.
+    private final List<String> appointmentStatuses;
 
-    // API endpoints for review submission and checking review status
     private static final String REVIEW_API_URL = "http://sxm.a58.mytemp.website/submit_review.php";
     private static final String CHECK_REVIEW_API_URL = "http://sxm.a58.mytemp.website/check_review_status.php";
 
-    // Local flag to prevent multiple pop-ups per doctor during auto-refresh in this session
     private final Set<Integer> reviewPopupShown = new HashSet<>();
 
     public DoctorHistoryAdapter(Context context, String patientId, List<Integer> doctorIds, List<String> doctorNames,
@@ -78,7 +75,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     @Override
     public int getItemViewType(int position) {
-        // If there is no data in the doctorNames list, use the empty view.
         if (doctorNames == null || doctorNames.isEmpty()) {
             return VIEW_TYPE_EMPTY;
         }
@@ -89,11 +85,9 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if (viewType == VIEW_TYPE_EMPTY) {
-            // Inflate the empty state layout
             View view = LayoutInflater.from(context).inflate(R.layout.item_empty_state, parent, false);
             return new EmptyViewHolder(view);
         } else {
-            // Inflate the regular item layout for doctor history
             View view = LayoutInflater.from(context).inflate(R.layout.item_history, parent, false);
             return new ViewHolder(view);
         }
@@ -122,7 +116,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             String status = appointmentStatuses.get(position);
 
-            // Reset all button visibility
             viewHolder.detailsLayout.setVisibility(View.GONE);
             viewHolder.statusMessage.setVisibility(View.GONE);
             viewHolder.btnViewBill.setVisibility(View.GONE);
@@ -135,10 +128,9 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
                 viewHolder.viewDetailsButton.setEnabled(true);
                 viewHolder.viewDetailsButton.setText(cancelText);
-//                viewHolder.viewDetailsButton.setBackgroundColor(Color.RED);
+                // viewHolder.viewDetailsButton.setBackgroundColor(Color.RED);
                 viewHolder.viewDetailsButton.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.error));
 
-                // On click, show only the refund button inside detailsLayout
                 viewHolder.viewDetailsButton.setOnClickListener(v -> {
                     if (viewHolder.detailsLayout.getVisibility() == View.GONE) {
                         viewHolder.detailsLayout.setVisibility(View.VISIBLE);
@@ -158,7 +150,6 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
                 });
 
             } else {
-                // For non-cancelled appointments: show View Details button normally
                 viewHolder.viewDetailsButton.setEnabled(true);
                 viewHolder.viewDetailsButton.setText("View Details");
                 viewHolder.viewDetailsButton.setBackgroundColor(ContextCompat.getColor(context, R.color.navy_blue));
@@ -206,11 +197,8 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 
-
-    // Unified getItemCount() implementation
     @Override
     public int getItemCount() {
-        // If the list is empty, return 1 to show the empty view.
         if (doctorNames == null || doctorNames.isEmpty()) {
             return 1;
         }
@@ -224,17 +212,19 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
                         JSONObject jsonObject = new JSONObject(response);
                         boolean alreadyReviewed = jsonObject.getBoolean("already_reviewed");
                         boolean reviewCanceled = jsonObject.getBoolean("review_canceled");
-                        Log.d(TAG, "checkAndPromptForReview API response for doctorId " + doctorId +
-                                ": alreadyReviewed=" + alreadyReviewed + ", reviewCanceled=" + reviewCanceled);
+                        // Log.d(TAG, "checkAndPromptForReview API response for doctorId " + doctorId +
+                        //         ": alreadyReviewed=" + alreadyReviewed + ", reviewCanceled=" + reviewCanceled);
                         if (!alreadyReviewed && !reviewCanceled) {
                             reviewPopupShown.add(doctorId);
                             showReviewPopup(doctorId, appointmentId);
                         }
                     } catch (JSONException e) {
-                        Log.e(TAG, "checkAndPromptForReview JSON error: " + e.getMessage());
+                        // Log.e(TAG, "checkAndPromptForReview JSON error: " + e.getMessage());
                     }
                 },
-                error -> Log.e(TAG, "checkAndPromptForReview error: " + error.toString())) {
+                error -> {
+                    // Log.e(TAG, "checkAndPromptForReview error: " + error.toString());
+                }) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
@@ -249,7 +239,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     private void showReviewPopup(int doctorId, int appointmentId) {
-        Log.d(TAG, "Showing review popup for doctorId " + doctorId + ", appointmentId " + appointmentId);
+        // Log.d(TAG, "Showing review popup for doctorId " + doctorId + ", appointmentId " + appointmentId);
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_review, null);
         builder.setView(dialogView);
@@ -263,9 +253,9 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
         btnSubmitReview.setOnClickListener(v -> {
             int rating = (int) ratingBar.getRating();
             String comment = etReviewComment.getText().toString().trim();
-            Log.d(TAG, "Submit review clicked for doctorId " + doctorId + ". Rating: " + rating + ", Comment: " + comment);
+            // Log.d(TAG, "Submit review clicked for doctorId " + doctorId + ". Rating: " + rating + ", Comment: " + comment);
             if (rating == 0) {
-                Toast.makeText(context, "Please give a rating", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "Please select a rating before submitting.", Toast.LENGTH_SHORT).show();
                 return;
             }
             submitReview(doctorId, rating, comment, "submit");
@@ -274,8 +264,8 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
 
         btnCancelReview.setOnClickListener(v -> {
             submitReview(doctorId, 0, "", "skip");
-            Log.d(TAG, "Review canceled for doctorId " + doctorId);
-            Toast.makeText(context, "Review canceled", Toast.LENGTH_SHORT).show();
+            // Log.d(TAG, "Review canceled for doctorId " + doctorId);
+            Toast.makeText(context, "You chose not to review this appointment.", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
         });
 
@@ -283,27 +273,33 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     private void submitReview(int doctorId, int rating, String comment, String action) {
-        Log.d(TAG, "Submitting review: patientId=" + patientId + ", doctorId=" + doctorId + ", rating=" + rating +
-                ", comment=" + comment + ", action=" + action);
+        // Log.d(TAG, "Submitting review: patientId=" + patientId + ", doctorId=" + doctorId + ", rating=" + rating +
+        //         ", comment=" + comment + ", action=" + action);
         StringRequest stringRequest = new StringRequest(Request.Method.POST, REVIEW_API_URL,
                 response -> {
-                    Log.d(TAG, "submitReview response: " + response);
+                    // Log.d(TAG, "submitReview response: " + response);
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         if (jsonObject.getBoolean("success")) {
-                            Toast.makeText(context, "Review " + (action.equals("submit") ? "submitted" : "canceled") + " successfully!", Toast.LENGTH_SHORT).show();
+                            String msg = (action.equals("submit"))
+                                    ? "Thank you for your feedback!"
+                                    : "Review canceled successfully.";
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
                         } else {
-                            Toast.makeText(context, "Failed to " + action + " review", Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "submitReview failed: " + jsonObject.optString("error"));
+                            String failMsg = (action.equals("submit"))
+                                    ? "Failed to submit review. Please try again later."
+                                    : "Failed to cancel review. Please try again later.";
+                            Toast.makeText(context, failMsg, Toast.LENGTH_SHORT).show();
+                            // Log.e(TAG, "submitReview failed: " + jsonObject.optString("error"));
                         }
                     } catch (JSONException e) {
-                        Log.e(TAG, "submitReview JSON exception: " + e.getMessage());
+                        // Log.e(TAG, "submitReview JSON exception: " + e.getMessage());
                         e.printStackTrace();
                     }
                 },
                 error -> {
-                    Log.e(TAG, "submitReview error: " + error.toString());
-                    Toast.makeText(context, "Network error", Toast.LENGTH_SHORT).show();
+                    // Log.e(TAG, "submitReview error: " + error.toString());
+                    Toast.makeText(context, "Network error. Please check your connection.", Toast.LENGTH_SHORT).show();
                 }) {
             @Override
             protected Map<String, String> getParams() {
@@ -315,7 +311,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
                     params.put("rating", String.valueOf(rating));
                     params.put("review_comment", comment);
                 }
-                Log.d(TAG, "submitReview params: " + params);
+                // Log.d(TAG, "submitReview params: " + params);
                 return params;
             }
         };
@@ -343,12 +339,11 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
             btnViewBill = itemView.findViewById(R.id.btnViewBill);
             btnViewReport = itemView.findViewById(R.id.btnViewReport);
             btnViewProfile = itemView.findViewById(R.id.btnViewProfile);
-            btnRefundDetails = itemView.findViewById(R.id.btnRefundDetails); // ✅ CORRECT LINE
+            btnRefundDetails = itemView.findViewById(R.id.btnRefundDetails);
             statusMessage = itemView.findViewById(R.id.statusMessage);
         }
     }
 
-    // Empty view holder for displaying the empty state when there is no appointment history
     public static class EmptyViewHolder extends RecyclerView.ViewHolder {
         ImageView emptyImage;
         TextView emptyText;

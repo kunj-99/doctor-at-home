@@ -43,7 +43,6 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ArticleV
         holder.title.setText(item.getTitle());
         holder.subtitle.setText(item.getSubtitle());
 
-        // Use Glide to load the cover image from the full URL.
         Glide.with(context)
                 .load(item.getCover())
                 .into(holder.image);
@@ -51,13 +50,13 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ArticleV
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Create an intent with ACTION_VIEW to open the PDF URL.
                 Uri pdfUri = Uri.parse(item.getPdf());
                 Intent intent = new Intent(Intent.ACTION_VIEW, pdfUri);
                 try {
                     context.startActivity(intent);
                 } catch (ActivityNotFoundException e) {
-                    Toast.makeText(context, "No application available to view PDF", Toast.LENGTH_SHORT).show();
+                    // Toast.makeText(context, "No application available to view PDF", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, "No app found to open this file. Please install a PDF viewer to continue.", Toast.LENGTH_LONG).show();
                 }
             }
         });

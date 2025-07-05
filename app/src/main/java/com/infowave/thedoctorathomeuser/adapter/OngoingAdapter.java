@@ -2,7 +2,7 @@ package com.infowave.thedoctorathomeuser.adapter;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
+// import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +10,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -35,14 +36,14 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final List<Integer> appointmentIds;
     private final List<String> statuses;
     private final List<String> durations;
-    private final List<Integer> doctorIds; // Added list for doctor IDs
+    private final List<Integer> doctorIds;
     private final Context context;
 
     public OngoingAdapter(Context context, List<String> names, List<String> specialties,
                           List<String> hospitals, List<Float> ratings,
                           List<String> profilePictures, List<Integer> appointmentIds,
                           List<String> statuses, List<String> durations,
-                          List<Integer> doctorIds) { // Include doctorIds in constructor
+                          List<Integer> doctorIds) {
         this.context = context;
         this.names = names;
         this.specialties = specialties;
@@ -52,12 +53,11 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.appointmentIds = appointmentIds;
         this.statuses = statuses;
         this.durations = durations;
-        this.doctorIds = doctorIds; // Assign doctorIds
+        this.doctorIds = doctorIds;
     }
 
     @Override
     public int getItemViewType(int position) {
-        // If there is no data in the list, return the empty view type.
         if (names == null || names.isEmpty()) {
             return VIEW_TYPE_EMPTY;
         }
@@ -68,11 +68,9 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if (viewType == VIEW_TYPE_EMPTY) {
-            // Inflate the empty state layout
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_empty_state, parent, false);
             return new EmptyViewHolder(view);
         } else {
-            // Inflate the regular item layout for ongoing appointments
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_ongoing, parent, false);
             return new DoctorViewHolder(view);
         }
@@ -81,14 +79,13 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof EmptyViewHolder) {
-            // Bind the empty view holder: set image and text if needed
             EmptyViewHolder emptyHolder = (EmptyViewHolder) holder;
             Glide.with(context)
-                    .load(R.drawable.nodataimg)  // Your empty state image resource
+                    .load(R.drawable.nodataimg)
                     .into(emptyHolder.emptyImage);
-//            emptyHolder.emptyText.setText("No Appointments Available");
+            emptyHolder.emptyText.setText("No Ongoing Appointments Found");
+//            Toast.makeText(context, "No ongoing appointments available.", Toast.LENGTH_SHORT).show();
         } else {
-            // Bind the regular item data
             DoctorViewHolder viewHolder = (DoctorViewHolder) holder;
             viewHolder.setIsRecyclable(false);
 
@@ -119,14 +116,14 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 status = "";
             }
 
-            Log.d("OngoingAdapter", "Appointment ID " + appointmentIds.get(position) + " Status: " + status);
+//            Log.d("OngoingAdapter", "Appointment ID " + appointmentIds.get(position) + " Status: " + status);
 
             if (status.contains("requested")) {
                 viewHolder.track.setText("Requested");
                 viewHolder.track.setEnabled(false);
                 viewHolder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.gray));
             } else if (status.contains("pending")) {
-                viewHolder.track.setText("pending");
+                viewHolder.track.setText("Pending");
                 viewHolder.track.setEnabled(false);
                 viewHolder.track.setBackgroundTintList(ContextCompat.getColorStateList(context, R.color.gray));
             }
@@ -135,6 +132,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 Intent intent = new Intent(context, cancle_appintment.class);
                 intent.putExtra("appointment_id", appointmentIds.get(position));
                 context.startActivity(intent);
+                Toast.makeText(context, "You can cancel your appointment here.", Toast.LENGTH_SHORT).show();
             });
 
             viewHolder.track.setOnClickListener(v -> {
@@ -143,8 +141,9 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     intent.putExtra("doctor_name", names.get(position));
                     intent.putExtra("appointment_id", appointmentIds.get(position));
                     intent.putExtra("specialty", specialties.get(position));
-                    intent.putExtra("doctor_id", doctorIds.get(position)); // Pass doctor_id
+                    intent.putExtra("doctor_id", doctorIds.get(position));
                     context.startActivity(intent);
+                    Toast.makeText(context, "Tracking your doctor's location...", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -152,14 +151,12 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        // If the names list is empty, return 1 to display the empty state view.
         if (names == null || names.isEmpty()) {
             return 1;
         }
         return names.size();
     }
 
-    // ViewHolder for the regular ongoing appointment item
     static class DoctorViewHolder extends RecyclerView.ViewHolder {
         TextView name, specialty, hospital, experienceDuration;
         RatingBar ratingBar;
@@ -179,7 +176,6 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    // ViewHolder for the empty state view when there is no data
     static class EmptyViewHolder extends RecyclerView.ViewHolder {
         ImageView emptyImage;
         TextView emptyText;
