@@ -33,8 +33,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 public class OngoingAppointmentFragment extends Fragment {
-    private static final String TAG = "OngoingAppointment";
+    // private static final String TAG = "OngoingAppointment"; // COMMENTED FOR PRODUCTION
     private static final String API_URL = "http://sxm.a58.mytemp.website/getOngoingAppointment.php";
     private static final int REFRESH_INTERVAL = 5000; // 5 seconds
 
@@ -81,8 +82,8 @@ public class OngoingAppointmentFragment extends Fragment {
                 .getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
         if (patientId.isEmpty()) {
-            Log.e(TAG, "Patient ID not found");
-            Toast.makeText(getContext(), "Patient ID not available", Toast.LENGTH_SHORT).show();
+            // Log.e(TAG, "Patient ID not found");
+            Toast.makeText(getContext(), "Could not load your information. Please log in again.", Toast.LENGTH_SHORT).show();
         }
 
         bookAppointment = view.findViewById(R.id.bookButton);
@@ -145,23 +146,23 @@ public class OngoingAppointmentFragment extends Fragment {
                             }
 
                             adapter.notifyDataSetChanged();
-                            Log.d(TAG, "Loaded " + doctorNames.size() + " appointments");
+                            // Log.d(TAG, "Loaded " + doctorNames.size() + " appointments");
                         } else {
                             Toast.makeText(requireContext(),
-                                    "No ongoing appointments",
+                                    "You don't have any ongoing appointments right now.",
                                     Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
-                        Log.e(TAG, "JSON parse error", e);
+                        // Log.e(TAG, "JSON parse error", e);
                         Toast.makeText(requireContext(),
-                                "Data parse error",
+                                "Could not load appointment data. Please try again.",
                                 Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
-                    Log.e(TAG, "Network error", error);
+                    // Log.e(TAG, "Network error", error);
                     Toast.makeText(requireContext(),
-                            "Failed to fetch appointments",
+                            "Unable to connect. Please check your internet and try again.",
                             Toast.LENGTH_SHORT).show();
                 }
         ) {

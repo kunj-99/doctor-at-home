@@ -11,12 +11,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.DefaultItemAnimator;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.PagerSnapHelper;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.SnapHelper;
+import androidx.recyclerview.widget.*;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -25,21 +20,11 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.infowave.thedoctorathomeuser.loaderutil;
 import com.infowave.thedoctorathomeuser.R;
-import com.infowave.thedoctorathomeuser.adapter.AppointmentStatAdapter;
-import com.infowave.thedoctorathomeuser.adapter.ArticleAdapter;
-import com.infowave.thedoctorathomeuser.adapter.HealthTipAdapter;
-import com.infowave.thedoctorathomeuser.adapter.ServiceAdapter;
-import com.infowave.thedoctorathomeuser.adapter.home_slaider;
-import com.infowave.thedoctorathomeuser.ArticleItem;
-import com.infowave.thedoctorathomeuser.AppointmentStat;
-import com.infowave.thedoctorathomeuser.HealthTip;
-import com.infowave.thedoctorathomeuser.ServiceItem;
+import com.infowave.thedoctorathomeuser.adapter.*;
+import com.infowave.thedoctorathomeuser.*;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.json.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,10 +63,9 @@ public class HomeFragment extends Fragment {
         // If no network is available, show loader immediately
         if (!isNetworkAvailable()) {
             loaderutil.showLoader(getContext());
-            attemptHideLoader(); // begin polling for connectivity
+            attemptHideLoader();
         }
 
-        // Initialize loader logic: post a delayed runnable to show the loader if any network calls are pending.
         pendingRequestCount = 0;
         loaderRunnable = new Runnable() {
             @Override
@@ -93,7 +77,6 @@ public class HomeFragment extends Fragment {
         };
         loaderHandler.postDelayed(loaderRunnable, LOADER_DELAY);
 
-        // Start network requests and UI setups.
         setupImageSlider();
         setupHealthTips();
         setupAppointmentStats();
@@ -110,16 +93,12 @@ public class HomeFragment extends Fragment {
         SnapHelper snapHelper = new PagerSnapHelper();
         snapHelper.attachToRecyclerView(recyclerView);
 
-        // Optional: Only add if you have this class & dimen
-        // int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.slider_spacing);
-        // recyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
         recyclerView.setPadding(8, 0, 8, 0);
         recyclerView.setClipToPadding(false);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        // Fetch images from the PHP API
         RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-        String url = "http://sxm.a58.mytemp.website/get_slider_images.php"; // Your PHP endpoint
+        String url = "http://sxm.a58.mytemp.website/get_slider_images.php";
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.GET,
@@ -141,14 +120,16 @@ public class HomeFragment extends Fragment {
                                 setupAutoRotation(imageUrls.size());
                             }
                         } catch (JSONException e) {
-                            e.printStackTrace();
+                            // e.printStackTrace();
+                            Toast.makeText(getContext(), "Unable to load banner images. Please try again.", Toast.LENGTH_SHORT).show();
                         }
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
+                        // error.printStackTrace();
+                        Toast.makeText(getContext(), "Could not load banner images.", Toast.LENGTH_SHORT).show();
                     }
                 }
         );
@@ -178,7 +159,8 @@ public class HomeFragment extends Fragment {
                                 tipList.add(new HealthTip(title, description, imageResId));
                             }
                         } catch (JSONException e) {
-                            e.printStackTrace();
+                            // e.printStackTrace();
+                            Toast.makeText(getContext(), "Unable to load health tips.", Toast.LENGTH_SHORT).show();
                         }
                         HealthTipAdapter tipAdapter = new HealthTipAdapter(getContext(), tipList);
                         tipRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -189,7 +171,8 @@ public class HomeFragment extends Fragment {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
+                        // error.printStackTrace();
+                        Toast.makeText(getContext(), "Unable to load health tips. Please try again.", Toast.LENGTH_SHORT).show();
                         decrementAndDismissLoader();
                     }
                 }
@@ -218,7 +201,8 @@ public class HomeFragment extends Fragment {
                             appointmentStatRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
                             appointmentStatRecyclerView.setAdapter(statAdapter);
                         } catch (JSONException e) {
-                            e.printStackTrace();
+                            // e.printStackTrace();
+                            Toast.makeText(getContext(), "Could not load appointment stats.", Toast.LENGTH_SHORT).show();
                         }
                         decrementAndDismissLoader();
                     }
@@ -226,7 +210,8 @@ public class HomeFragment extends Fragment {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
+                        // error.printStackTrace();
+                        Toast.makeText(getContext(), "Could not fetch appointment stats.", Toast.LENGTH_SHORT).show();
                         decrementAndDismissLoader();
                     }
                 }
@@ -266,7 +251,8 @@ public class HomeFragment extends Fragment {
                                 articles.add(new ArticleItem(id, title, subtitle, cover, pdf));
                             }
                         } catch (JSONException e) {
-                            e.printStackTrace();
+                            // e.printStackTrace();
+                            Toast.makeText(getContext(), "Unable to load articles.", Toast.LENGTH_SHORT).show();
                         }
                         articlesRecyclerView.setLayoutManager(
                                 new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false)
@@ -278,8 +264,8 @@ public class HomeFragment extends Fragment {
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
-                        Toast.makeText(getContext(), "Error fetching articles", Toast.LENGTH_SHORT).show();
+                        // error.printStackTrace();
+                        Toast.makeText(getContext(), "Could not fetch articles. Please try again.", Toast.LENGTH_SHORT).show();
                         decrementAndDismissLoader();
                     }
                 }

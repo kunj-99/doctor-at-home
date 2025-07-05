@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser.fragment;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -10,7 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import android.util.Log;
+// import android.util.Log; // For debugging only, commented in production.
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -73,12 +74,12 @@ public class HistoryFragment extends Fragment {
         patientId = sp.getString("patient_id", "");
 
         if (patientId.isEmpty()) {
-            Log.e("HistoryFragment", "Patient ID not found in SharedPreferences");
-            Toast.makeText(requireContext(), "Patient ID not available", Toast.LENGTH_SHORT).show();
+            // Log.e("HistoryFragment", "Patient ID not found in SharedPreferences");
+            Toast.makeText(requireContext(), "We could not verify your profile. Please log in again.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Log.d("HistoryFragment", "Patient ID: " + patientId);
+        // Log.d("HistoryFragment", "Patient ID: " + patientId);
         apiUrl = "http://sxm.a58.mytemp.website/get_history.php?patient_id=" + patientId;
 
         adapter = new DoctorHistoryAdapter(requireContext(), patientId, doctorIds, doctorNames, doctorSpecialties,
@@ -93,7 +94,7 @@ public class HistoryFragment extends Fragment {
     private void fetchData(boolean showLoader) {
         if (showLoader) progressBar.setVisibility(View.VISIBLE);
 
-        StringRequest request = new StringRequest(Request.Method.GET, apiUrl,
+        @SuppressLint("NotifyDataSetChanged") StringRequest request = new StringRequest(Request.Method.GET, apiUrl,
                 response -> {
                     if (showLoader) progressBar.setVisibility(View.GONE);
 
@@ -112,7 +113,6 @@ public class HistoryFragment extends Fragment {
                             List<String> newDoctorProfilePictures = new ArrayList<>();
                             List<String> newAppointmentStatuses = new ArrayList<>();
 
-                            
                             for (int i = 0; i < appointments.length(); i++) {
                                 JSONObject obj = appointments.getJSONObject(i);
                                 newAppointmentIds.add(obj.getInt("appointment_id"));
@@ -148,20 +148,20 @@ public class HistoryFragment extends Fragment {
 
                                 recyclerView.setAlpha(0f);
                                 recyclerView.animate().alpha(1f).setDuration(400).start();
-                                Log.d("HistoryFragment", "History Updated: " + doctorNames.size() + " items");
+                                // Log.d("HistoryFragment", "History Updated: " + doctorNames.size() + " items");
                             }
                         } else {
-                            Toast.makeText(requireContext(), "No history found", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(requireContext(), "No past appointments found yet.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
-                        Log.e("HistoryFragment", "JSON parsing error: " + e.getMessage());
-                        Toast.makeText(requireContext(), "Data parsing error", Toast.LENGTH_SHORT).show();
+                        // Log.e("HistoryFragment", "JSON parsing error: " + e.getMessage());
+                        Toast.makeText(requireContext(), "Sorry, we could not process your data. Please try again later.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
                     if (showLoader) progressBar.setVisibility(View.GONE);
-                    Log.e("HistoryFragment", "Volley error: " + (error.getMessage() != null ? error.getMessage() : "Unknown error"));
-                    Toast.makeText(requireContext(), "Failed to fetch data", Toast.LENGTH_SHORT).show();
+                    // Log.e("HistoryFragment", "Volley error: " + (error.getMessage() != null ? error.getMessage() : "Unknown error"));
+                    Toast.makeText(requireContext(), "Unable to load your appointments. Please check your internet connection.", Toast.LENGTH_SHORT).show();
                 });
 
         requestQueue.add(request);
