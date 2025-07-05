@@ -56,7 +56,8 @@ public class pending_bill extends AppCompatActivity {
 
     // Dynamic UPI/config (if you want to reintegrate)
     private String merchantUpiId, merchantName, transactionNote, currency;
-    private double baseDistance, extraCostPerKm;
+
+   // private double baseDistance, extraCostPerKm;
 
     // Booking Data
     private String patientName, age, gender, problem, address,
@@ -90,7 +91,7 @@ public class pending_bill extends AppCompatActivity {
         SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
         if (patientId.isEmpty()) {
-            Toast.makeText(this, "Patient ID not available", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Sorry, we could not identify your profile. Please log in again.", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
@@ -107,7 +108,8 @@ public class pending_bill extends AppCompatActivity {
         address     = intent.getStringExtra("address");
         doctorId = intent.getStringExtra("doctor_id");
         if (doctorId == null || doctorId.isEmpty()) {
-            Toast.makeText(this, "Doctor ID not passed", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Sorry, we could not find the doctor information. Please try again.", Toast.LENGTH_SHORT).show();
+
             finish();
             return;
         }
@@ -177,7 +179,7 @@ public class pending_bill extends AppCompatActivity {
 
         btnOfflinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Offline";
-            Toast.makeText(this, "Offline Payment selected", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "You have selected Cash Payment (Pay at Visit).", Toast.LENGTH_SHORT).show();
             btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.dark_cyan));
             btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.custom_gray));
             if (platformChargeAdded) {
@@ -195,7 +197,8 @@ public class pending_bill extends AppCompatActivity {
         });
         btnOnlinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Online";
-            Toast.makeText(this, "Online Payment selected", Toast.LENGTH_SHORT).show();
+            // Online Payment selected
+            Toast.makeText(this, "You have selected Online Payment.", Toast.LENGTH_SHORT).show();
             btnOnlinePayment .setBackgroundColor(getResources().getColor(R.color.dark_cyan));
             btnOfflinePayment.setBackgroundColor(getResources().getColor(R.color.custom_gray));
             if (walletBalance >=DEPOSIT) {
@@ -229,8 +232,7 @@ public class pending_bill extends AppCompatActivity {
 
                     if (selectedPaymentMethod.isEmpty()) {
                         loaderutil.hideLoader();
-                        Toast.makeText(this, "Please select a payment method",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Please choose a payment option to continue.", Toast.LENGTH_SHORT).show();
 
                     } else if ("Offline".equals(selectedPaymentMethod)) {
                         if (walletBalance >= DEPOSIT) {
@@ -240,9 +242,8 @@ public class pending_bill extends AppCompatActivity {
                             saveBookingData(googleMapsLink);
                         } else {
                             loaderutil.hideLoader();
-                            Toast.makeText(this,
-                                    "Insufficient balance for offline payment.",
-                                    Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "You do not have enough wallet balance for offline payment. Please recharge your wallet.", Toast.LENGTH_SHORT).show();
+
                             btnRechargeWallet.setVisibility(View.VISIBLE);
                         }
 
@@ -331,7 +332,7 @@ public class pending_bill extends AppCompatActivity {
 
     private void startUpiPayment() {
         if (merchantUpiId == null) {
-            Toast.makeText(this, "Loading payment settings…", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Payment settings are still loading. Please wait a moment and try again.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -361,7 +362,8 @@ public class pending_bill extends AppCompatActivity {
     private void processUpiPaymentResponse(String response) {
         loaderutil.hideLoader();
         if (response == null || response.trim().isEmpty()) {
-            Toast.makeText(this, "Payment cancelled or failed", Toast.LENGTH_SHORT).show();
+            // Payment cancelled or failed
+            Toast.makeText(this, "Your payment was cancelled or did not go through.", Toast.LENGTH_SHORT).show();
             return;
         }
         String status = "";
@@ -380,7 +382,7 @@ public class pending_bill extends AppCompatActivity {
                         "Platform charge for online appointment (wallet debit)");
             } else {
                 // (unlikely if you enabled the button correctly, but just in case)
-                Toast.makeText(this, "Insufficient wallet balance for deposit!", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "You do not have enough wallet balance to make this payment. Please recharge your wallet.", Toast.LENGTH_LONG).show();
                 return;
             }
 
@@ -389,11 +391,11 @@ public class pending_bill extends AppCompatActivity {
             updatePaymentUI();
 
             // *3) Then save the booking & record payment history*
-            Toast.makeText(this, "Payment successful!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Payment completed successfully!", Toast.LENGTH_SHORT).show();
             saveBookingData(googleMapsLink);
 
         } else {
-            Toast.makeText(this, "Payment failed or cancelled.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Payment was not successful. Please try again.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -537,11 +539,11 @@ public class pending_bill extends AppCompatActivity {
                     } catch (JSONException e) {
                         loaderutil.hideLoader();
                     }
-                    Toast.makeText(this,"Appointment saved successfully!",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Your appointment has been booked successfully!", Toast.LENGTH_SHORT).show();
                 },
                 err -> {
                     loaderutil.hideLoader();
-                    Toast.makeText(this,"Error saving appointment!",Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Could not book your appointment. Please check your connection and try again.", Toast.LENGTH_LONG).show();
                 }
         ) {
             @Override
@@ -617,13 +619,13 @@ public class pending_bill extends AppCompatActivity {
             StringRequest req = new StringRequest(Request.Method.POST, url,
                     resp -> {
                         loaderutil.hideLoader();
-                        Toast.makeText(this,"Payment recorded.",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Your payment details have been saved.", Toast.LENGTH_SHORT).show();
                         Log.d(TAG,"Payment inserted => "+resp);
                         onBookingSuccess();
                     },
                     err -> {
                         loaderutil.hideLoader();
-                        Toast.makeText(this,"Failed to record payment.",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Could not save payment details. Please try again.", Toast.LENGTH_SHORT).show();
                     }
             ) {
                 @Override

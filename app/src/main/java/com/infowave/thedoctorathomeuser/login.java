@@ -51,6 +51,7 @@ public class login extends AppCompatActivity {
         });
 
         sendotp.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void onClick(View v) {
                 String mobile = etMobile.getText().toString().trim();
