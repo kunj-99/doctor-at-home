@@ -163,7 +163,7 @@ public class Register extends AppCompatActivity {
         int selectedGenderId = rgGender.getCheckedRadioButtonId();
         String gender = selectedGenderId != -1 ? ((RadioButton) findViewById(selectedGenderId)).getText().toString() : "Not Specified";
 
-        String URL = "http://sxm.a58.mytemp.website/register.php";
+        String URL = "https://thedoctorathome.in/register.php";
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, URL,
                 response -> {

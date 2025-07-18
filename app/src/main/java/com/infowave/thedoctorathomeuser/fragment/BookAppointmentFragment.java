@@ -36,7 +36,7 @@ public class BookAppointmentFragment extends Fragment {
 
     private book_AppointmentAdapter adapter;
 
-    private static final String API_URL = "http://sxm.a58.mytemp.website/bookappointment.php";
+    private static final String API_URL = "https://thedoctorathome.in/bookappointment.php";
 
     @Nullable
     @Override

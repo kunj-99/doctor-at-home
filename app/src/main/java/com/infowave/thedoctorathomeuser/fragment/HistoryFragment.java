@@ -80,7 +80,7 @@ public class HistoryFragment extends Fragment {
         }
 
         // Log.d("HistoryFragment", "Patient ID: " + patientId);
-        apiUrl = "http://sxm.a58.mytemp.website/get_history.php?patient_id=" + patientId;
+        apiUrl = "https://thedoctorathome.in/get_history.php?patient_id=" + patientId;
 
         adapter = new DoctorHistoryAdapter(requireContext(), patientId, doctorIds, doctorNames, doctorSpecialties,
                 appointmentDates, appointmentPrices, doctorProfilePictures, appointmentIds, appointmentStatuses);
@@ -124,7 +124,7 @@ public class HistoryFragment extends Fragment {
 
                                 String profilePicUrl = obj.optString("profile_picture", "");
                                 if (profilePicUrl.isEmpty()) {
-                                    profilePicUrl = "http://sxm.a58.mytemp.website/doctor_images/default.png";
+                                    profilePicUrl = "https://thedoctorathome.in/doctor_images/default.png";
                                 }
                                 newDoctorProfilePictures.add(profilePicUrl);
 

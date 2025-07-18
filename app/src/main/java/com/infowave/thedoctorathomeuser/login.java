@@ -67,7 +67,7 @@ public class login extends AppCompatActivity {
     }
 
     private void checkMobileNumber(String mobile, final String originalText) {
-        String URL = "http://sxm.a58.mytemp.website/login.php"; // Your server URL
+        String URL = "https://thedoctorathome.in/login.php"; // Your server URL
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, URL,
                 response -> {

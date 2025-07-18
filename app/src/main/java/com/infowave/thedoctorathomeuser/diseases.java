@@ -27,7 +27,7 @@ import java.util.List;
 
 public class diseases extends AppCompatActivity {
 
-    private static final String API_URL = "http://sxm.a58.mytemp.website/fetch_diseases.php?category_id=";
+    private static final String API_URL = "https://thedoctorathome.in/fetch_diseases.php?category_id=";
     private RecyclerView recyclerView;
     private DiseaseAdapter adapter;
     private List<String> diseaseList = new ArrayList<>();

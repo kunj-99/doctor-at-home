@@ -42,7 +42,7 @@ import java.util.List;
 
 public class medical_riport extends AppCompatActivity {
 
-    private static final String GET_REPORT_URL = "http://sxm.a58.mytemp.website/get_medical_report.php?appointment_id=";
+    private static final String GET_REPORT_URL = "https://thedoctorathome.in/get_medical_report.php?appointment_id=";
     private String appointmentId;
     private String reportPhotoUrl = "";
 
