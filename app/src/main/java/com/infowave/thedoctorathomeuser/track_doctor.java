@@ -45,7 +45,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
 
     // private static final String TAG = "TrackDoctor";
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
-    private static final String GET_LOCATION_URL = "https://thedoctorathome.in/get_live_location.php";
+    private static final String GET_LOCATION_URL = "http://sxm.a58.mytemp.website/get_live_location.php";
     private static final String API_KEY = "AIzaSyCkUxQSJ1jNt0q_CcugieFl5vezsNAUxe0";
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
 

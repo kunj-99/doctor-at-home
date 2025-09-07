@@ -157,7 +157,7 @@ public class available_doctor extends AppCompatActivity {
     }
 
     private void fetchUserPincode(String userId) {
-        String url = "https://thedoctorathome.in/user_pincode.php?user_id=" + userId;
+        String url = "http://sxm.a58.mytemp.website/user_pincode.php?user_id=" + userId;
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
@@ -180,7 +180,7 @@ public class available_doctor extends AppCompatActivity {
     }
 
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
-        String url = "https://thedoctorathome.in/getDoctorsByCategory.php?pincode=" + pincode + "&category_id=" + categoryId;
+        String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode=" + pincode + "&category_id=" + categoryId;
 
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {
@@ -204,7 +204,7 @@ public class available_doctor extends AppCompatActivity {
 
                             String profilePicUrl = doctor.optString("profile_picture", "");
                             if (profilePicUrl.isEmpty() || profilePicUrl.equals("null")) {
-                                profilePicUrl = "https://thedoctorathome.in/doctor_images/default.png";
+                                profilePicUrl = "http://sxm.a58.mytemp.website/doctor_images/default.png";
                             }
                             newImageUrls.add(profilePicUrl);
                             newDuration.add(doctor.getString("experience_duration"));
@@ -252,7 +252,7 @@ public class available_doctor extends AppCompatActivity {
     }
 
     private void updateDoctorAutoStatus(final Runnable onComplete) {
-        String updateUrl = "https://thedoctorathome.in/update_doctor_status.php";
+        String updateUrl = "http://sxm.a58.mytemp.website/update_doctor_status.php";
         StringRequest updateRequest = new StringRequest(Request.Method.GET, updateUrl,
                 response -> {
                     if (onComplete != null) onComplete.run();

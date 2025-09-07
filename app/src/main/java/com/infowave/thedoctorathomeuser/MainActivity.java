@@ -43,7 +43,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class MainActivity extends AppCompatActivity {
 
     // URL for fetching profile details
-    private static final String GET_PROFILE_URL = "https://thedoctorathome.in/get_profile.php?patient_id=";
+    private static final String GET_PROFILE_URL = "http://sxm.a58.mytemp.website/get_profile.php?patient_id=";
     private static final String TAG = "GetProfileTask";
 
     private ViewPager vp;

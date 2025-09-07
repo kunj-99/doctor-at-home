@@ -153,7 +153,7 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
         }
 
         private void checkDoctorAppointmentStatus(String doctorId) {
-            String url = "https://thedoctorathome.in/checkDoctorAppointment.php?doctor_id=" + doctorId;
+            String url = "http://sxm.a58.mytemp.website/checkDoctorAppointment.php?doctor_id=" + doctorId;
 
             @SuppressLint("SetTextI18n") JsonObjectRequest req = new JsonObjectRequest(
                     Request.Method.GET, url, null,

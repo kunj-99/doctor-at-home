@@ -98,7 +98,7 @@ public class HomeFragment extends Fragment {
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
         RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-        String url = "https://thedoctorathome.in/get_slider_images.php";
+        String url = "http://sxm.a58.mytemp.website/get_slider_images.php";
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.GET,
@@ -140,7 +140,7 @@ public class HomeFragment extends Fragment {
         pendingRequestCount++;
 
         RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-        String url = "https://thedoctorathome.in/healthtip.php";
+        String url = "http://sxm.a58.mytemp.website/healthtip.php";
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
                 Request.Method.GET,
@@ -184,7 +184,7 @@ public class HomeFragment extends Fragment {
         pendingRequestCount++;
 
         RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
-        String url = "https://thedoctorathome.in/completed_appointment.php";
+        String url = "http://sxm.a58.mytemp.website/completed_appointment.php";
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
                 Request.Method.GET,
@@ -229,7 +229,7 @@ public class HomeFragment extends Fragment {
 
     private void setupArticles() {
         pendingRequestCount++;
-        String url = "https://thedoctorathome.in/get_articles.php";
+        String url = "http://sxm.a58.mytemp.website/get_articles.php";
         RequestQueue requestQueue = Volley.newRequestQueue(getContext());
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(

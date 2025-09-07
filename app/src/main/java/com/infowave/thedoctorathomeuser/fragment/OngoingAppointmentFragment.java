@@ -36,7 +36,7 @@ import java.util.Map;
 
 public class OngoingAppointmentFragment extends Fragment {
     // private static final String TAG = "OngoingAppointment"; // COMMENTED FOR PRODUCTION
-    private static final String API_URL = "https://thedoctorathome.in/getOngoingAppointment.php";
+    private static final String API_URL = "http://sxm.a58.mytemp.website/getOngoingAppointment.php";
     private static final int REFRESH_INTERVAL = 5000; // 5 seconds
 
     private ViewPager vp;

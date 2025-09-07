@@ -29,7 +29,7 @@ public class cancle_appintment extends AppCompatActivity {
     private TextView tvErrorMessage;
 
     private String appointmentId = "";
-    private static final String API_URL = "https://thedoctorathome.in/cancel_appointment.php";
+    private static final String API_URL = "http://sxm.a58.mytemp.website/cancel_appointment.php";
 
     @SuppressLint("MissingInflatedId")
     @Override

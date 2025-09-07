@@ -203,7 +203,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
             Toast.makeText(this, "No internet connection. Please check and try again.", Toast.LENGTH_SHORT).show();
         }
 
-        String url = "https://thedoctorathome.in/get_pincode.php?doctor_id=" + doctorId;
+        String url = "http://sxm.a58.mytemp.website/get_pincode.php?doctor_id=" + doctorId;
         RequestQueue queue = Volley.newRequestQueue(this);
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(

@@ -26,7 +26,7 @@ public class doctor_details extends AppCompatActivity {
     private RatingBar doctorRating;
     private ImageView doctorImage, backButton;
 
-    private static final String API_URL = "https://thedoctorathome.in/fetch_doctor.php?doctor_id=";
+    private static final String API_URL = "http://sxm.a58.mytemp.website/fetch_doctor.php?doctor_id=";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

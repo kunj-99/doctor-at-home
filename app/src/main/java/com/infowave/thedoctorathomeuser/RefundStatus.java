@@ -70,7 +70,7 @@ public class RefundStatus extends AppCompatActivity {
     }
 
     private void fetchRefundDetails() {
-        String url = "https://thedoctorathome.in/get_refund_status.php";
+        String url = "http://sxm.a58.mytemp.website/get_refund_status.php";
 
         loaderutil.showLoader(this);
 

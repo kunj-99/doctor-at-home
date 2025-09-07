@@ -80,7 +80,7 @@ public class complet_bill extends AppCompatActivity {
     }
 
     private void fetchBillDetails(int appointmentId) {
-        String url = "https://thedoctorathome.in/fetch_user_payment_history.php?appointment_id=" + appointmentId;
+        String url = "http://sxm.a58.mytemp.website/fetch_user_payment_history.php?appointment_id=" + appointmentId;
 
         loaderutil.showLoader(this);
 

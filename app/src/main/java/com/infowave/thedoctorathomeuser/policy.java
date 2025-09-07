@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class policy extends AppCompatActivity {
 
     // 🔁 Replace this URL with your actual hosted HTML file
-    private static final String PRIVACY_POLICY_URL = "https://thedoctorathome.in/policy.html";
+    private static final String PRIVACY_POLICY_URL = "http://sxm.a58.mytemp.website/policy.html";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
