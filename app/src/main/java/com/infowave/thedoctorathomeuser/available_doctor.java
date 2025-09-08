@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
@@ -18,6 +17,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -35,7 +35,9 @@ import java.util.ArrayList;
 public class available_doctor extends AppCompatActivity {
 
     private RecyclerView recyclerView;
+    private SwipeRefreshLayout swipeRefresh;
     private DoctorAdapter adapter;
+
     private final ArrayList<String> doctorIds = new ArrayList<>();
     private final ArrayList<String> names = new ArrayList<>();
     private final ArrayList<String> specialties = new ArrayList<>();
@@ -54,48 +56,30 @@ public class available_doctor extends AppCompatActivity {
     private String userPincode = "";
     private String defaultPincode = "";
 
-    private final Handler handler = new Handler();
-    private static final int DOCTOR_STATUS_REFRESH_INTERVAL = 2000;
-    private static final int DOCTOR_LIST_REFRESH_INTERVAL = 15000;
-    private boolean isActivityVisible = false;
-
-    private final Runnable autoUpdateStatusRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (isActivityVisible) {
-                updateDoctorAutoStatus(null);
-                handler.postDelayed(this, DOCTOR_STATUS_REFRESH_INTERVAL);
-            }
-        }
-    };
-
-    private final Runnable autoRefreshDoctorsRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (isActivityVisible) {
-                if (!userPincode.isEmpty()) {
-                    fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
-                }
-                handler.postDelayed(this, DOCTOR_LIST_REFRESH_INTERVAL);
-            }
-        }
-    };
+    private RequestQueue queue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_available_doctor);
 
+        queue = Volley.newRequestQueue(this);
+
+        // Initial blocking loader (your project utility)
         loaderutil.showLoader(available_doctor.this);
 
+        // Views
         btnBack = findViewById(R.id.btn_back);
         recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        swipeRefresh = findViewById(R.id.swipeRefreshDoctors);
         edtPincode = findViewById(R.id.edt_pincode);
-        edtPincode.setFilters(new InputFilter[]{new InputFilter.LengthFilter(6)});
         btnSearch = findViewById(R.id.btn_search);
         tvNoDoctors = findViewById(R.id.tv_no_doctors);
 
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        edtPincode.setFilters(new InputFilter[]{new InputFilter.LengthFilter(6)});
+
+        // Intent extras
         categoryId = getIntent().getStringExtra("category_id");
         categoryName = getIntent().getStringExtra("category_name");
 
@@ -106,53 +90,61 @@ public class available_doctor extends AppCompatActivity {
             finish();
         });
 
+        // Pull-to-refresh: refresh current list (silent loader; uses swipe spinner)
+        swipeRefresh.setOnRefreshListener(() -> {
+            if (!userPincode.isEmpty() && categoryId != null) {
+                // Optionally ping auto-status before refreshing the list
+                updateDoctorAutoStatus(() -> fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false));
+            } else {
+                swipeRefresh.setRefreshing(false);
+            }
+        });
+
+        // Pincode watcher
         edtPincode.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.length() == 6) {
                     hideKeyboard();
-                    userPincode = s.toString();
-                    if (categoryId != null && !userPincode.isEmpty()) {
+                    userPincode = s.toString().trim();
+                    if (categoryId != null) {
+                        // Explicit user search → show swipe spinner briefly for consistency
+                        swipeRefresh.setRefreshing(true);
                         fetchDoctorsByPincodeAndCategory(userPincode, categoryId, true);
                     }
                 }
             }
             @Override public void afterTextChanged(Editable s) {
-                if (s.toString().trim().isEmpty()) {
-                    if (!defaultPincode.isEmpty()) {
-                        userPincode = defaultPincode;
-                        fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
-                    }
+                if (s.toString().trim().isEmpty() && !defaultPincode.isEmpty()) {
+                    userPincode = defaultPincode;
+                    swipeRefresh.setRefreshing(true);
+                    fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
                 }
             }
         });
 
+        // Search button
         btnSearch.setOnClickListener(v -> {
             String pincode = edtPincode.getText().toString().trim();
             if (!pincode.isEmpty() && categoryId != null) {
                 userPincode = pincode;
+                swipeRefresh.setRefreshing(true);
                 fetchDoctorsByPincodeAndCategory(pincode, categoryId, true);
             } else {
                 Toast.makeText(available_doctor.this, "Please enter a valid pincode.", Toast.LENGTH_SHORT).show();
             }
         });
 
+        // First-time flow: update auto-status, then resolve user's default pincode, finally load list
         updateDoctorAutoStatus(() -> {
             SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
             String userId = sp.getString("user_id", "");
-
             if (!userId.isEmpty()) {
                 fetchUserPincode(userId);
             } else {
+                loaderutil.hideLoader();
                 Toast.makeText(available_doctor.this, "Could not find your user profile. Please log in again.", Toast.LENGTH_SHORT).show();
             }
-
-            loaderutil.hideLoader();
-            recyclerView.setVisibility(View.VISIBLE);
-
-            isActivityVisible = true;
-            handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
-            handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
         });
     }
 
@@ -165,18 +157,25 @@ public class available_doctor extends AppCompatActivity {
                             defaultPincode = response.getString("pincode");
                             userPincode = defaultPincode;
                         } else {
+                            loaderutil.hideLoader();
                             Toast.makeText(available_doctor.this, "No pincode found for your profile.", Toast.LENGTH_SHORT).show();
                             return;
                         }
                     } catch (JSONException e) {
+                        loaderutil.hideLoader();
                         Toast.makeText(available_doctor.this, "Could not read your pincode. Please try again.", Toast.LENGTH_SHORT).show();
                         return;
                     }
+                    // Initial list load (we use swipe spinner for consistency)
+                    swipeRefresh.setRefreshing(true);
                     fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
                 },
-                error -> Toast.makeText(available_doctor.this, "Unable to fetch your pincode. Please check your connection.", Toast.LENGTH_SHORT).show()
+                error -> {
+                    loaderutil.hideLoader();
+                    Toast.makeText(available_doctor.this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                }
         );
-        Volley.newRequestQueue(this).add(request);
+        queue.add(request);
     }
 
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
@@ -200,18 +199,18 @@ public class available_doctor extends AppCompatActivity {
                             newNames.add(doctor.getString("full_name"));
                             newSpecialties.add(doctor.getString("specialization"));
                             newHospitals.add(doctor.getString("hospital_affiliation"));
-                            newRatings.add((float) doctor.getDouble("rating"));
-
+                            newRatings.add((float) doctor.optDouble("rating", 0));
                             String profilePicUrl = doctor.optString("profile_picture", "");
-                            if (profilePicUrl.isEmpty() || profilePicUrl.equals("null")) {
+                            if (profilePicUrl.isEmpty() || "null".equalsIgnoreCase(profilePicUrl)) {
                                 profilePicUrl = "http://sxm.a58.mytemp.website/doctor_images/default.png";
                             }
                             newImageUrls.add(profilePicUrl);
-                            newDuration.add(doctor.getString("experience_duration"));
+                            newDuration.add(doctor.optString("experience_duration", ""));
                             newAutoStatuses.add(doctor.optString("auto_status", "Inactive"));
                         }
 
-                        if (!newDoctorIds.equals(doctorIds) || !newAutoStatuses.equals(autoStatuses)) {
+                        boolean changed = !newDoctorIds.equals(doctorIds) || !newAutoStatuses.equals(autoStatuses);
+                        if (changed) {
                             doctorIds.clear(); doctorIds.addAll(newDoctorIds);
                             names.clear(); names.addAll(newNames);
                             specialties.clear(); specialties.addAll(newSpecialties);
@@ -222,46 +221,58 @@ public class available_doctor extends AppCompatActivity {
                             autoStatuses.clear(); autoStatuses.addAll(newAutoStatuses);
 
                             if (adapter == null) {
-                                adapter = new DoctorAdapter(available_doctor.this, doctorIds, names, specialties,
-                                        hospitals, ratings, imageUrls, Duration, autoStatuses);
+                                adapter = new DoctorAdapter(
+                                        available_doctor.this,
+                                        doctorIds, names, specialties, hospitals,
+                                        ratings, imageUrls, Duration, autoStatuses
+                                );
                                 recyclerView.setAdapter(adapter);
                             } else {
                                 adapter.notifyDataSetChanged();
                             }
 
                             recyclerView.setAlpha(0f);
-                            recyclerView.animate().alpha(1f).setDuration(400).start();
+                            recyclerView.animate().alpha(1f).setDuration(300).start();
                         }
 
+                        // Empty state + visibility
                         tvNoDoctors.setVisibility(doctorIds.isEmpty() ? View.VISIBLE : View.GONE);
                         recyclerView.setVisibility(doctorIds.isEmpty() ? View.GONE : View.VISIBLE);
 
+                        if (doctorIds.isEmpty()) {
+                            Toast.makeText(available_doctor.this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                        }
+
                     } catch (JSONException e) {
-                        Toast.makeText(available_doctor.this, "Could not show doctors right now. Please try again.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(available_doctor.this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                    } finally {
+                        // Stop loaders
+                        loaderutil.hideLoader();
+                        if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
                     }
                 },
                 error -> {
                     tvNoDoctors.setVisibility(View.VISIBLE);
                     recyclerView.setVisibility(View.GONE);
-                    Toast.makeText(available_doctor.this, "Unable to load doctor list. Please check your internet connection.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(available_doctor.this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+
+                    // Stop loaders
+                    loaderutil.hideLoader();
+                    if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
                 }
         );
 
         request.setShouldCache(false);
-        Volley.newRequestQueue(this).add(request);
+        queue.add(request);
     }
 
     private void updateDoctorAutoStatus(final Runnable onComplete) {
         String updateUrl = "http://sxm.a58.mytemp.website/update_doctor_status.php";
         StringRequest updateRequest = new StringRequest(Request.Method.GET, updateUrl,
-                response -> {
-                    if (onComplete != null) onComplete.run();
-                },
-                error -> {
-                    if (onComplete != null) onComplete.run();
-                }
+                response -> { if (onComplete != null) onComplete.run(); },
+                error -> { if (onComplete != null) onComplete.run(); }
         );
-        Volley.newRequestQueue(this).add(updateRequest);
+        queue.add(updateRequest);
     }
 
     private void hideKeyboard() {
@@ -269,29 +280,6 @@ public class available_doctor extends AppCompatActivity {
         if (imm != null) {
             imm.hideSoftInputFromWindow(edtPincode.getWindowToken(), 0);
         }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        isActivityVisible = true;
-        handler.postDelayed(autoUpdateStatusRunnable, DOCTOR_STATUS_REFRESH_INTERVAL);
-        handler.postDelayed(autoRefreshDoctorsRunnable, DOCTOR_LIST_REFRESH_INTERVAL);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        isActivityVisible = false;
-        handler.removeCallbacks(autoUpdateStatusRunnable);
-        handler.removeCallbacks(autoRefreshDoctorsRunnable);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        handler.removeCallbacks(autoUpdateStatusRunnable);
-        handler.removeCallbacks(autoRefreshDoctorsRunnable);
     }
 
     @Override

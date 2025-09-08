@@ -5,6 +5,7 @@
     android:background="#F0F4FF"
     android:orientation="vertical">
 
+    <!-- Full-screen loader (kept; visibility should generally be GONE) -->
     <RelativeLayout
         android:id="@+id/loaderLayout"
         android:layout_width="match_parent"
@@ -12,14 +13,12 @@
         android:background="#FFFFFF"
         android:gravity="center"
         android:visibility="gone">
-
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
-
-
     </RelativeLayout>
+
     <!-- Header with Back Button -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -49,7 +48,7 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Search Bar Container -->
+    <!-- Search Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -66,7 +65,7 @@
             android:layout_weight="1"
             android:maxLength="6"
             android:background="@android:color/transparent"
-            android:hint="Search"
+            android:hint="Enter pincode"
             android:inputType="number"
             android:padding="12dp"
             android:textSize="16sp" />
@@ -81,25 +80,43 @@
             android:src="@drawable/ic_search" />
     </LinearLayout>
 
-    <!-- RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="8dp"
-        android:clipToPadding="false"
-        android:padding="16dp" />
-
+    <!-- Empty state message (just below search bar, where first card would appear) -->
     <TextView
         android:id="@+id/tv_no_doctors"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="4dp"
         android:gravity="center"
-        android:padding="20dp"
-        android:text="No doctors available. Try another pincode."
+        android:padding="16dp"
+        android:text="Currently no doctors at your pincode."
         android:textColor="#666666"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:visibility="gone" />
+
+    <!-- Pull-to-refresh container wrapping the list -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshDoctors"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="8dp"
+            android:clipToPadding="false"
+            android:padding="16dp" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Professional tip at the bottom -->
+    <TextView
+        android:id="@+id/tv_refresh_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:text="Tip: Pull down to refresh and check the latest availability."
+        android:textColor="#7A7A7A"
+        android:textSize="13sp" />
 
 </LinearLayout>
