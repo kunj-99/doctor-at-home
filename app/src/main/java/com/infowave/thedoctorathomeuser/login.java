@@ -76,7 +76,8 @@ public class login extends AppCompatActivity {
     }
 
     private void checkMobileNumber(String mobile, final String originalText) {
-        String URL = "http://sxm.a58.mytemp.website/login.php";
+        String URL = ApiConfig.endpoint("login.php");
+
         Log.d(TAG, "checkMobileNumber: API Endpoint = " + URL);
         Log.d(TAG, "checkMobileNumber: Sending params: mobile=" + mobile);
 

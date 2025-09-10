@@ -18,6 +18,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
+import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.adapter.book_AppointmentAdapter;
 import com.infowave.thedoctorathomeuser.R;
 
@@ -36,7 +37,8 @@ public class BookAppointmentFragment extends Fragment {
 
     private book_AppointmentAdapter adapter;
 
-    private static final String API_URL = "http://sxm.a58.mytemp.website/bookappointment.php";
+    private static final String API_URL = ApiConfig.endpoint("bookappointment.php");
+
 
     @Nullable
     @Override

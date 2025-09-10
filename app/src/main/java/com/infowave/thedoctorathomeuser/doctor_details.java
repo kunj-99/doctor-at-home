@@ -26,7 +26,7 @@ public class doctor_details extends AppCompatActivity {
     private RatingBar doctorRating;
     private ImageView doctorImage, backButton;
 
-    private static final String API_URL = "http://sxm.a58.mytemp.website/fetch_doctor.php?doctor_id=";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +61,8 @@ public class doctor_details extends AppCompatActivity {
     }
 
     private void fetchDoctorDetails(String doctorId) {
-        String url = API_URL + doctorId;
+
+        String url = ApiConfig.endpoint("fetch_doctor.php", "doctor_id", doctorId);
 
         @SuppressLint("SetTextI18n") JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {

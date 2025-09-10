@@ -43,7 +43,6 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class MainActivity extends AppCompatActivity {
 
     // URL for fetching profile details
-    private static final String GET_PROFILE_URL = "http://sxm.a58.mytemp.website/get_profile.php?patient_id=";
     private static final String TAG = "GetProfileTask";
 
     private ViewPager vp;
@@ -295,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected ProfileData doInBackground(String... params) {
             String patientId = params[0];
-            String urlString = GET_PROFILE_URL + patientId;
+            String urlString = ApiConfig.endpoint("get_profile.php", "patient_id", patientId);
             try {
                 URL url = new URL(urlString);
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();

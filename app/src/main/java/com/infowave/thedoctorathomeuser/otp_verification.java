@@ -29,7 +29,8 @@ import java.util.Map;
 
 public class otp_verification extends AppCompatActivity {
 
-    private static final String VERIFY_OTP_URL = "http://sxm.a58.mytemp.website/verify_otp.php"; // API URL
+    private static final String VERIFY_OTP_URL = ApiConfig.endpoint("verify_otp.php"); // API URL
+
 
     private Button continu, resend_otp;
     private EditText etOtp;
@@ -108,7 +109,8 @@ public class otp_verification extends AppCompatActivity {
         resend_otp.setEnabled(false);
         startResendOtpTimer();
 
-        String URL = "http://sxm.a58.mytemp.website/login.php";
+        String URL = ApiConfig.endpoint("login.php");
+
 
         StringRequest stringRequest = new StringRequest(Request.Method.POST, URL,
                 new Response.Listener<String>() {

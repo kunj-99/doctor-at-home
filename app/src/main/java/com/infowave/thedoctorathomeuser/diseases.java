@@ -16,7 +16,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.infowave.thedoctorathomeuser.adapter.*;
+import com.infowave.thedoctorathomeuser.adapter.DiseaseAdapter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,10 +27,12 @@ import java.util.List;
 
 public class diseases extends AppCompatActivity {
 
-    private static final String API_URL = "http://sxm.a58.mytemp.website/fetch_diseases.php?category_id=";
+    // Centralized via ApiConfig
+    private static final String API_PATH = "fetch_diseases.php";
+
     private RecyclerView recyclerView;
     private DiseaseAdapter adapter;
-    private List<String> diseaseList = new ArrayList<>();
+    private final List<String> diseaseList = new ArrayList<>();
     private Button confirm;
     private String categoryId, categoryName;
     private TextView title;
@@ -73,10 +75,12 @@ public class diseases extends AppCompatActivity {
     }
 
     private void fetchDiseases(String categoryId) {
-        String url = API_URL + categoryId;
-        RequestQueue queue = Volley.newRequestQueue(this);
+        // Build URL via ApiConfig (dynamic base URL)
+        String url = ApiConfig.endpoint(API_PATH, "category_id", categoryId);
 
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
+        RequestQueue queue = Volley.newRequestQueue(this);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(
+                Request.Method.GET, url, null,
                 response -> {
                     try {
                         diseaseList.clear();
@@ -100,9 +104,8 @@ public class diseases extends AppCompatActivity {
                         Toast.makeText(diseases.this, "Sorry, we could not load the diseases right now.", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> {
-                    Toast.makeText(diseases.this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
-                });
+                error -> Toast.makeText(diseases.this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show()
+        );
 
         queue.add(jsonObjectRequest);
     }

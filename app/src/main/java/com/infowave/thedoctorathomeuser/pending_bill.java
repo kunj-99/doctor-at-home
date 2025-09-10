@@ -273,7 +273,8 @@ public class pending_bill extends AppCompatActivity {
     // Load UPI + distance + platform config from your PHP
 
     private void fetchUpiConfig(String doctorId) {
-        String url = "http://sxm.a58.mytemp.website/get_upi_config.php";
+        String url = ApiConfig.endpoint("get_upi_config.php");
+
 
         @SuppressLint("DefaultLocale") JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
@@ -306,7 +307,8 @@ public class pending_bill extends AppCompatActivity {
     }
 
     private void fetchAppointmentCharge(String doctorId) {
-        String url = "http://sxm.a58.mytemp.website/get_appointment_charge.php?doctor_id=" + doctorId;
+        String url = ApiConfig.endpoint("get_appointment_charge.php", "doctor_id", doctorId);
+
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
@@ -400,7 +402,8 @@ public class pending_bill extends AppCompatActivity {
     }
 
     private void fetchWalletBalance() {
-        String url = "http://sxm.a58.mytemp.website/get_wallet_balance.php";
+        String url = ApiConfig.endpoint("get_wallet_balance.php");
+
         @SuppressLint("SetTextI18n") StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> {
                     try {
@@ -425,7 +428,8 @@ public class pending_bill extends AppCompatActivity {
     }
 
     private void fetchDoctorLocation(String docId) {
-        String url = "http://sxm.a58.mytemp.website/get_doctor_location.php?doctor_id=" + docId;
+        String url = ApiConfig.endpoint("get_doctor_location.php", "doctor_id", docId);
+
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url,null,
                 resp -> {
                     try {
@@ -529,7 +533,8 @@ public class pending_bill extends AppCompatActivity {
     }
 
     private void saveBookingData(String googleMapsLink) {
-        String url = "http://sxm.a58.mytemp.website/save_appointment.php";
+        String url = ApiConfig.endpoint("save_appointment.php");
+
         StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> {
                     try {
@@ -578,7 +583,8 @@ public class pending_bill extends AppCompatActivity {
     }
 
     private void updateUserWallet(String userId, double newBalance) {
-        String url = "http://sxm.a58.mytemp.website/update_wallet.php";
+        String url = ApiConfig.endpoint("update_wallet.php");
+
         StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> Log.d(TAG,"Wallet updated: "+resp),
                 err -> Log.e(TAG,"Wallet update error",err)
@@ -596,7 +602,8 @@ public class pending_bill extends AppCompatActivity {
     }
     private void addWalletTransaction(int patientId, double amount,
                                       String type, String reason) {
-        String url = "http://sxm.a58.mytemp.website/add_wallet_transaction.php";
+        String url = ApiConfig.endpoint("add_wallet_transaction.php");
+
         StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> Log.d(TAG,"Wallet txn added: "+resp),
                 err -> Log.e(TAG,"Wallet txn error",err)
@@ -615,8 +622,9 @@ public class pending_bill extends AppCompatActivity {
     }
     private void insertPaymentHistory(String appointmentId) {
         String statusEnum = "Pending";
-            String url = "http://sxm.a58.mytemp.website/payment_history.php";
-            StringRequest req = new StringRequest(Request.Method.POST, url,
+        String url = ApiConfig.endpoint("payment_history.php");
+
+        StringRequest req = new StringRequest(Request.Method.POST, url,
                     resp -> {
                         loaderutil.hideLoader();
                         Toast.makeText(this, "Your payment details have been saved.", Toast.LENGTH_SHORT).show();

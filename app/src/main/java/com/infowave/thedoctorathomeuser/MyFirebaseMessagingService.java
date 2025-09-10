@@ -68,7 +68,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         RequestQueue queue = Volley.newRequestQueue(ctx);
-        String url = "http://sxm.a58.mytemp.website/save_patient_token.php";
+
+        String url = ApiConfig.endpoint("save_patient_token.php");
+
 
         StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> Log.d(TAG, "token saved: " + resp),

@@ -9,7 +9,8 @@ import androidx.appcompat.app.AppCompatActivity;
 public class tarmsandcondition extends AppCompatActivity {
 
     // Replace this with your actual URL
-    private static final String PRIVACY_URL = "http://sxm.a58.mytemp.website/term.html";
+    private static final String PRIVACY_URL = ApiConfig.endpoint("term.html");
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

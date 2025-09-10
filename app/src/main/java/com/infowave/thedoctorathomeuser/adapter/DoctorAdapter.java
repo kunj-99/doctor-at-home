@@ -22,6 +22,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.bumptech.glide.Glide;
+import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.book_form;
 import com.infowave.thedoctorathomeuser.doctor_details;
@@ -153,7 +154,8 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
         }
 
         private void checkDoctorAppointmentStatus(String doctorId) {
-            String url = "http://sxm.a58.mytemp.website/checkDoctorAppointment.php?doctor_id=" + doctorId;
+            String url = ApiConfig.endpoint("checkDoctorAppointment.php", "doctor_id", doctorId);
+
 
             @SuppressLint("SetTextI18n") JsonObjectRequest req = new JsonObjectRequest(
                     Request.Method.GET, url, null,

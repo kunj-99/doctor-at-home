@@ -70,7 +70,8 @@ public class RefundStatus extends AppCompatActivity {
     }
 
     private void fetchRefundDetails() {
-        String url = "http://sxm.a58.mytemp.website/get_refund_status.php";
+        String url = ApiConfig.endpoint("get_refund_status.php");
+
 
         loaderutil.showLoader(this);
 

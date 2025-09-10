@@ -80,7 +80,9 @@ public class complet_bill extends AppCompatActivity {
     }
 
     private void fetchBillDetails(int appointmentId) {
-        String url = "http://sxm.a58.mytemp.website/fetch_user_payment_history.php?appointment_id=" + appointmentId;
+
+        String url = ApiConfig.endpoint("fetch_user_payment_history.php", "appointment_id", String.valueOf(appointmentId));
+
 
         loaderutil.showLoader(this);
 

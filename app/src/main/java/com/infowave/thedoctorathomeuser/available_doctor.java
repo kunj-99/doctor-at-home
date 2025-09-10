@@ -149,7 +149,9 @@ public class available_doctor extends AppCompatActivity {
     }
 
     private void fetchUserPincode(String userId) {
-        String url = "http://sxm.a58.mytemp.website/user_pincode.php?user_id=" + userId;
+
+        String url = ApiConfig.endpoint("user_pincode.php", "user_id", userId);
+
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
@@ -179,7 +181,10 @@ public class available_doctor extends AppCompatActivity {
     }
 
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
-        String url = "http://sxm.a58.mytemp.website/getDoctorsByCategory.php?pincode=" + pincode + "&category_id=" + categoryId;
+
+
+        String url = ApiConfig.endpoint("getDoctorsByCategory.php", "pincode", pincode, "category_id", categoryId);
+
 
         JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {
@@ -202,7 +207,9 @@ public class available_doctor extends AppCompatActivity {
                             newRatings.add((float) doctor.optDouble("rating", 0));
                             String profilePicUrl = doctor.optString("profile_picture", "");
                             if (profilePicUrl.isEmpty() || "null".equalsIgnoreCase(profilePicUrl)) {
-                                profilePicUrl = "http://sxm.a58.mytemp.website/doctor_images/default.png";
+
+                                profilePicUrl = ApiConfig.endpoint("doctor_images/default.png");
+
                             }
                             newImageUrls.add(profilePicUrl);
                             newDuration.add(doctor.optString("experience_duration", ""));
@@ -267,7 +274,9 @@ public class available_doctor extends AppCompatActivity {
     }
 
     private void updateDoctorAutoStatus(final Runnable onComplete) {
-        String updateUrl = "http://sxm.a58.mytemp.website/update_doctor_status.php";
+
+        String updateUrl = ApiConfig.endpoint("update_doctor_status.php");
+
         StringRequest updateRequest = new StringRequest(Request.Method.GET, updateUrl,
                 response -> { if (onComplete != null) onComplete.run(); },
                 error -> { if (onComplete != null) onComplete.run(); }

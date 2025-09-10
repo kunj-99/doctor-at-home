@@ -20,6 +20,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
+import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.RefundStatus;
 import com.infowave.thedoctorathomeuser.complet_bill;
@@ -52,8 +53,9 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
     private final List<Integer> appointmentIds;
     private final List<String> appointmentStatuses;
 
-    private static final String REVIEW_API_URL = "http://sxm.a58.mytemp.website/submit_review.php";
-    private static final String CHECK_REVIEW_API_URL = "http://sxm.a58.mytemp.website/check_review_status.php";
+    private static final String REVIEW_API_URL = ApiConfig.endpoint("submit_review.php");
+    private static final String CHECK_REVIEW_API_URL = ApiConfig.endpoint("check_review_status.php");
+
 
     private final Set<Integer> reviewPopupShown = new HashSet<>();
 

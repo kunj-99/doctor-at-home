@@ -61,8 +61,9 @@ public class Profile extends AppCompatActivity {
     private RequestQueue requestQueue;
     private int patientId;
 
-    private static final String GET_PROFILE_URL = "http://sxm.a58.mytemp.website/get_profile.php?patient_id=";
-    private static final String UPDATE_PROFILE_URL = "http://sxm.a58.mytemp.website/update_profile.php";
+
+    private static final String UPDATE_PROFILE_URL = ApiConfig.endpoint("update_profile.php");
+
 
     private Bitmap selectedBitmap = null;
     private String oldImageUrl = "";
@@ -192,7 +193,10 @@ public class Profile extends AppCompatActivity {
 
     private void fetchProfile() {
         progressDialog.show();
-        String url = GET_PROFILE_URL + patientId;
+
+        final String GET_PROFILE_URL = ApiConfig.endpoint("get_profile.php");
+        String url = ApiConfig.endpoint("get_profile.php", "patient_id", String.valueOf(patientId));
+
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     progressDialog.dismiss();

@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.MainActivity;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.adapter.OngoingAdapter;
@@ -37,7 +38,8 @@ import java.util.Map;
 
 public class OngoingAppointmentFragment extends Fragment {
 
-    private static final String API_URL = "http://sxm.a58.mytemp.website/getOngoingAppointment.php";
+    private static final String API_URL = ApiConfig.endpoint("getOngoingAppointment.php");
+
 
     private ViewPager vp;
     private RecyclerView recyclerView;

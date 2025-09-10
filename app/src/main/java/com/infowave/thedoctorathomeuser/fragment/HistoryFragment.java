@@ -22,6 +22,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.adapter.DoctorHistoryAdapter;
 
@@ -74,7 +75,8 @@ public class HistoryFragment extends Fragment {
             return;
         }
 
-        apiUrl = "http://sxm.a58.mytemp.website/get_history.php?patient_id=" + patientId;
+        apiUrl = ApiConfig.endpoint("get_history.php", "patient_id", patientId);
+
 
         adapter = new DoctorHistoryAdapter(
                 requireContext(),
@@ -147,7 +149,8 @@ public class HistoryFragment extends Fragment {
 
                                 String profilePicUrl = obj.optString("profile_picture", "");
                                 if (profilePicUrl == null || profilePicUrl.trim().isEmpty()) {
-                                    profilePicUrl = "http://sxm.a58.mytemp.website/doctor_images/default.png";
+                                    profilePicUrl = ApiConfig.endpoint("doctor_images/default.png");
+
                                 }
                                 newDoctorProfilePictures.add(profilePicUrl);
 

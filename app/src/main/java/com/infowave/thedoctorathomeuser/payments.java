@@ -30,9 +30,14 @@ public class payments extends AppCompatActivity {
     List<TransactionAdapter.TransactionItem> transactionList = new ArrayList<>();
     TransactionAdapter adapter;
 
-    String rechargeUrl = "http://sxm.a58.mytemp.website/rechargewallet.php";
-    String fetchBalanceUrl = "http://sxm.a58.mytemp.website/get_wallet_balance.php";
-    String fetchTransactionUrl = "http://sxm.a58.mytemp.website/fetch_wallet_transactions.php";
+    String rechargeUrl = ApiConfig.endpoint("rechargewallet.php");
+
+
+    String fetchBalanceUrl = ApiConfig.endpoint("get_wallet_balance.php");
+
+
+    String fetchTransactionUrl = ApiConfig.endpoint("fetch_wallet_transactions.php");
+
 
     private String patientId;
 

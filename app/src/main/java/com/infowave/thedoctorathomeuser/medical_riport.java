@@ -42,7 +42,6 @@ import java.util.List;
 
 public class medical_riport extends AppCompatActivity {
 
-    private static final String GET_REPORT_URL = "http://sxm.a58.mytemp.website/get_medical_report.php?appointment_id=";
     private String appointmentId;
     private String reportPhotoUrl = "";
 
@@ -125,7 +124,7 @@ public class medical_riport extends AppCompatActivity {
     }
 
     private void fetchMedicalReport() {
-        String url = GET_REPORT_URL + appointmentId;
+        String url = ApiConfig.endpoint("get_medical_report.php", "appointment_id", appointmentId);
 
         @SuppressLint("SetTextI18n")
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
