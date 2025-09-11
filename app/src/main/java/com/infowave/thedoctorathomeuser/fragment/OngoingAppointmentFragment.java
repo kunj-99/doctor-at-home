@@ -120,7 +120,10 @@ public class OngoingAppointmentFragment extends Fragment {
         bookAppointment.setOnClickListener(v -> {
             if (vp != null) vp.setCurrentItem(1);
         });
-    }
+
+
+
+            }
 
     private void stopRefreshingUI() {
         if (swipeRefresh != null && swipeRefresh.isRefreshing()) {
@@ -195,9 +198,5 @@ public class OngoingAppointmentFragment extends Fragment {
         Volley.newRequestQueue(requireContext()).add(req);
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        // No auto-refresh handlers to clear anymore
-    }
+
 }

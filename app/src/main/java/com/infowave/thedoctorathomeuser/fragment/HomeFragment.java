@@ -1,6 +1,7 @@
 package com.infowave.thedoctorathomeuser.fragment;
 
 import android.content.Context;
+import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -8,10 +9,13 @@ import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.*;
+import androidx.viewpager.widget.ViewPager;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -42,6 +46,7 @@ public class HomeFragment extends Fragment {
     // Dynamic slider image URLs
     private List<String> imageUrls = new ArrayList<>();
 
+    private ViewPager vp;
     // Loader-related fields
     private Handler loaderHandler = new Handler();
     private Runnable loaderRunnable;
@@ -59,6 +64,22 @@ public class HomeFragment extends Fragment {
         appointmentStatRecyclerView = view.findViewById(R.id.appointmentStatRecyclerView);
         servicesRecyclerView = view.findViewById(R.id.servicesRecyclerView);
         articlesRecyclerView = view.findViewById(R.id.articlesRecyclerView);
+
+        Button bookNowHome = view.findViewById(R.id.homebookNow);
+
+
+        // ViewPager from parent activity (to switch tabs when booking)
+        if (getActivity() instanceof MainActivity) {
+            vp = ((MainActivity) getActivity()).findViewById(R.id.vp);
+        }
+
+        // Book button → switch to booking tab/page
+        bookNowHome.setOnClickListener(v -> {
+            if (vp != null) vp.setCurrentItem(1);
+        });
+
+
+
 
         // If no network is available, show loader immediately
         if (!isNetworkAvailable()) {
