@@ -2,11 +2,18 @@ package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Log;
-import android.widget.*;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -16,12 +23,20 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.adapter.TransactionAdapter;
 
+// ✅ Correct API: Kotlin top-level PhonePeKt
+import com.phonepe.intent.sdk.api.PhonePeKt;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class payments extends AppCompatActivity {
+
+    private static final String TAG = "PHONEPE";
 
     TextView tvWalletBalance;
     Button btnRecharge;
@@ -30,16 +45,17 @@ public class payments extends AppCompatActivity {
     List<TransactionAdapter.TransactionItem> transactionList = new ArrayList<>();
     TransactionAdapter adapter;
 
-    String rechargeUrl = ApiConfig.endpoint("rechargewallet.php");
-
-
-    String fetchBalanceUrl = ApiConfig.endpoint("get_wallet_balance.php");
-
-
-    String fetchTransactionUrl = ApiConfig.endpoint("fetch_wallet_transactions.php");
-
+    // API endpoints
+    String createOrderUrl        = ApiConfig.endpoint("create_order.php");
+    String statusUrl             = ApiConfig.endpoint("check_status.php");
+    String fetchBalanceUrl       = ApiConfig.endpoint("get_wallet_balance.php");
+    String fetchTransactionUrl   = ApiConfig.endpoint("fetch_wallet_transactions.php");
 
     private String patientId;
+    private String merchantOrderId;
+
+    // Launcher for PhonePe checkout result
+    private ActivityResultLauncher<Intent> checkoutLauncher;
 
     @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
@@ -55,10 +71,9 @@ public class payments extends AppCompatActivity {
 
         SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
-        // Log: Patient ID loaded from shared preferences for wallet/payment actions
-        Log.d("DEBUG", "Loaded patient_id: " + patientId);
+        Log.d(TAG, "Loaded patient_id: " + patientId);
 
-        if (patientId.isEmpty()) {
+        if (patientId == null || patientId.isEmpty()) {
             Toast.makeText(this, "Patient ID not available", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -70,6 +85,18 @@ public class payments extends AppCompatActivity {
 
         fetchWalletBalance();
         fetchTransactionHistory();
+
+        // When PhonePe returns, verify final state with server
+        checkoutLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (merchantOrderId != null) {
+                        Log.d(TAG, "Returned from PhonePe. Checking status for " + merchantOrderId);
+                        checkPaymentStatus(merchantOrderId);
+                    } else {
+                        Log.w(TAG, "Returned from PhonePe but merchantOrderId is null");
+                    }
+                });
 
         btnRecharge.setOnClickListener(view -> showRechargeDialog());
     }
@@ -86,7 +113,7 @@ public class payments extends AppCompatActivity {
         builder.setPositiveButton("Recharge", (dialog, which) -> {
             String amountStr = input.getText().toString().trim();
             if (!amountStr.isEmpty()) {
-                rechargeWallet(amountStr);
+                startRecharge(amountStr);
             } else {
                 Toast.makeText(this, "Amount required!", Toast.LENGTH_SHORT).show();
             }
@@ -96,61 +123,134 @@ public class payments extends AppCompatActivity {
         builder.show();
     }
 
-    private void rechargeWallet(String amount) {
-        @SuppressLint("SetTextI18n")
-        StringRequest request = new StringRequest(Request.Method.POST, rechargeUrl,
+    private void startRecharge(String amount) {
+        StringRequest request = new StringRequest(
+                Request.Method.POST,
+                createOrderUrl,
                 response -> {
                     try {
+                        Log.d(TAG, "create_order response: " + response);
                         JSONObject obj = new JSONObject(response);
-                        if (obj.getString("status").equals("success")) {
-                            String updatedBalance = obj.getString("wallet_balance");
-                            tvWalletBalance.setText("₹" + updatedBalance);
-                            Toast.makeText(this, "Wallet recharged successfully", Toast.LENGTH_SHORT).show();
-                            fetchTransactionHistory();
-                        } else {
-                            Toast.makeText(this, obj.getString("message"), Toast.LENGTH_SHORT).show();
+
+                        if (!"success".equalsIgnoreCase(obj.optString("status"))) {
+                            Log.e(TAG, "create_order failed: " + obj);
+                            Toast.makeText(this, "Create order failed", Toast.LENGTH_SHORT).show();
+                            return;
                         }
+
+                        merchantOrderId = obj.optString("merchantOrderId", null);
+                        String token   = obj.optString("token", "");
+                        String orderId = obj.optString("orderId", "");
+
+                        if (token.isEmpty() || orderId.isEmpty()) {
+                            Log.e(TAG, "Missing token/orderId in response: " + obj);
+                            Toast.makeText(this, "Invalid order response", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        // ✅ Correct usage: pass launcher as 4th arg; method returns void
+                        try {
+                            PhonePeKt.startCheckoutPage(this, token, orderId, checkoutLauncher);
+                            Log.d(TAG, "Launched Standard Checkout: orderId=" + orderId);
+                        } catch (Throwable t) {
+                            Log.e(TAG, "startCheckoutPage failed", t);
+                            Toast.makeText(this, "Unable to open PhonePe UI", Toast.LENGTH_SHORT).show();
+                        }
+
                     } catch (Exception e) {
-                        Toast.makeText(this, "Error parsing response", Toast.LENGTH_SHORT).show();
-                        e.printStackTrace();
+                        Log.e(TAG, "create_order parse error", e);
+                        Toast.makeText(this, "Create order parse error", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> Toast.makeText(this, "Network error: " + error.getMessage(), Toast.LENGTH_SHORT).show()) {
-
+                error -> {
+                    String msg = (error == null || error.getMessage() == null) ? "unknown" : error.getMessage();
+                    Log.e(TAG, "create_order network error: " + msg, error);
+                    Toast.makeText(this, "Network error creating order", Toast.LENGTH_SHORT).show();
+                }
+        ) {
+            // inside startRecharge(...) -> new StringRequest(...){ getParams() { ... } }
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
-                map.put("patient_id", String.valueOf(patientId));
+                map.put("patient_id", patientId);
                 map.put("amount", amount);
+                map.put("purpose", "WALLET_TOPUP");   // ✅ add this line
                 return map;
             }
+
         };
 
         Volley.newRequestQueue(this).add(request);
     }
 
-    private void fetchWalletBalance() {
-        @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(Request.Method.POST, fetchBalanceUrl,
+    private void checkPaymentStatus(String merchantOrderId) {
+        String url = statusUrl + "?merchantOrderId=" + merchantOrderId;
+        @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(
+                Request.Method.GET,
+                url,
                 response -> {
+                    Log.d(TAG, "check_status response: " + response);
                     try {
                         JSONObject obj = new JSONObject(response);
-                        if (obj.getString("status").equals("success")) {
-                            String balance = obj.getString("wallet_balance");
+                        if ("success".equals(obj.optString("status"))) {
+                            String state = obj.optString("state", "PENDING");
+                            String balance = obj.optString("wallet_balance", "0.00");
+                            tvWalletBalance.setText("₹" + balance);
+
+                            switch (state) {
+                                case "COMPLETED":
+                                    Toast.makeText(this, "Recharge successful!", Toast.LENGTH_SHORT).show();
+                                    fetchTransactionHistory();
+                                    break;
+                                case "FAILED":
+                                    Toast.makeText(this, "Recharge failed", Toast.LENGTH_SHORT).show();
+                                    break;
+                                default:
+                                    Toast.makeText(this, "Payment pending", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Log.e(TAG, "Status check failed: " + obj);
+                            Toast.makeText(this, "Status check failed", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "status parse error", e);
+                        Toast.makeText(this, "Status parse error", Toast.LENGTH_SHORT).show();
+                    }
+                },
+                error -> {
+                    Log.e(TAG, "Network error in check_status: " + error);
+                    Toast.makeText(this, "Network error in status check", Toast.LENGTH_SHORT).show();
+                }
+        );
+
+        Volley.newRequestQueue(this).add(request);
+    }
+
+    private void fetchWalletBalance() {
+        @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(
+                Request.Method.POST,
+                fetchBalanceUrl,
+                response -> {
+                    Log.d(TAG, "fetch_balance response: " + response);
+                    try {
+                        JSONObject obj = new JSONObject(response);
+                        if ("success".equals(obj.optString("status"))) {
+                            String balance = obj.optString("wallet_balance", "0.00");
                             tvWalletBalance.setText("₹" + balance);
                         } else {
                             tvWalletBalance.setText("₹0.00");
+                            Log.e(TAG, "Fetch balance failed: " + obj);
                         }
                     } catch (Exception e) {
-                        Toast.makeText(this, "Error parsing balance", Toast.LENGTH_SHORT).show();
-                        e.printStackTrace();
+                        Log.e(TAG, "balance parse error", e);
                     }
                 },
-                error -> Toast.makeText(this, "Error fetching balance", Toast.LENGTH_SHORT).show()) {
-
+                error -> Log.e(TAG, "Network error in fetch_balance: " + error)
+        ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
-                map.put("patient_id", String.valueOf(patientId));
+                map.put("patient_id", patientId);
                 return map;
             }
         };
@@ -159,14 +259,14 @@ public class payments extends AppCompatActivity {
     }
 
     private void fetchTransactionHistory() {
-        StringRequest request = new StringRequest(Request.Method.POST, fetchTransactionUrl,
+        StringRequest request = new StringRequest(
+                Request.Method.POST,
+                fetchTransactionUrl,
                 response -> {
+                    Log.d(TAG, "txn_history response: " + response);
                     try {
-                        // Log: Raw transaction history response received from server
-                        Log.d("TRANSACTION_HISTORY", response);
-
                         JSONObject obj = new JSONObject(response);
-                        if (obj.getString("status").equals("success")) {
+                        if ("success".equals(obj.optString("status"))) {
                             List<TransactionAdapter.TransactionItem> tempList = new ArrayList<>();
                             JSONArray arr = obj.getJSONArray("data");
                             for (int i = 0; i < arr.length(); i++) {
@@ -179,18 +279,19 @@ public class payments extends AppCompatActivity {
                                 ));
                             }
                             adapter.updateTransactions(tempList);
+                        } else {
+                            Log.e(TAG, "Transaction history failed: " + obj);
                         }
                     } catch (Exception e) {
-                        Toast.makeText(this, "Error parsing transactions", Toast.LENGTH_SHORT).show();
-                        e.printStackTrace();
+                        Log.e(TAG, "txn history parse error", e);
                     }
                 },
-                error -> Toast.makeText(this, "Error fetching transactions", Toast.LENGTH_SHORT).show()) {
-
+                error -> Log.e(TAG, "Network error in txn_history: " + error)
+        ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
-                map.put("patient_id", String.valueOf(patientId));
+                map.put("patient_id", patientId);
                 return map;
             }
         };

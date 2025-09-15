@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.googleid)
     implementation(libs.drawerlayout)
     implementation(libs.swiperefreshlayout)
+    implementation(libs.play.services.maps)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -66,11 +67,10 @@ dependencies {
     implementation ("com.android.volley:volley:1.2.1")
     implementation ("androidx.cardview:cardview:1.0.0")
 
-    implementation ("com.razorpay:checkout:1.6.26")
 
     implementation ("com.airbnb.android:lottie:3.7.0")
 
-    implementation ("com.cashfree.pg:api:2.1.25")
+
 
     implementation ("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")
@@ -93,5 +93,6 @@ dependencies {
     // Optional: Analytics (if you use in doctor app)
      implementation("com.google.firebase:firebase-analytics")
 
+    implementation("phonepe.intentsdk.android.release:IntentSDK:5.1.1")
 
 }
