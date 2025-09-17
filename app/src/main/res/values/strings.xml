@@ -247,4 +247,7 @@
     <string name="appointment_header_desc">Appointment booking header image</string>
     <string name="select_date_desc">Select date</string>
     <string name="select_time_desc">Select time</string>
+
+    <string name="vet_appointment_header_desc">Veterinary appointment booking</string>
+
 </resources>
