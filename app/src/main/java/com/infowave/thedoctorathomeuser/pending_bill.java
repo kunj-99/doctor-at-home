@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
@@ -89,10 +90,13 @@ public class pending_bill extends AppCompatActivity {
     private ActivityResultLauncher<Intent> ppCheckoutLauncher;
 
     // Wallet
-
     private double walletBalance = 0.0;
     private final Handler walletHandler = new Handler();
     private Runnable walletRunnable;
+
+    // Deposit decision snapshot at confirmation time
+    private enum DepositMode { NONE, WALLET, BILL }
+    private DepositMode lastConfirmedDepositMode = DepositMode.NONE;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -111,7 +115,6 @@ public class pending_bill extends AppCompatActivity {
                     }
                 }
         );
-
 
         // Identify user
         SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
@@ -240,23 +243,25 @@ public class pending_bill extends AppCompatActivity {
                         return;
                     }
 
+                    // Snapshot of the deposit decision at the moment of confirmation
+                    lastConfirmedDepositMode = (walletBalance >= DEPOSIT) ? DepositMode.WALLET : DepositMode.BILL;
+
                     if ("Offline".equals(selectedPaymentMethod)) {
-                        if (walletBalance >= DEPOSIT) {
+                        // Unified logic for Offline
+                        if (lastConfirmedDepositMode == DepositMode.WALLET) {
                             deductWalletCharge(DEPOSIT, "Platform charge for offline appointment booking");
-                            // For Offline we now hide the row (same as initial state)
-                            hideDepositRow();
-                            saveBookingData(googleMapsLink);
+                            setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
                         } else {
-                            loaderutil.hideLoader();
-                            Toast.makeText(this, "Insufficient wallet balance for offline payment. Please recharge your wallet.", Toast.LENGTH_SHORT).show();
-                            btnRechargeWallet.setVisibility(View.VISIBLE);
+                            setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
                         }
+                        // Direct booking without PG
+                        saveBookingData(googleMapsLink);
                     } else {
-                        // Online flow (unchanged)
-                        if (walletBalance >= DEPOSIT) {
-                            showDepositRow("Wallet will be debited: ₹" + (int) DEPOSIT);
+                        // Online flow
+                        if (lastConfirmedDepositMode == DepositMode.WALLET) {
+                            setDepositLine("Wallet will be debited: ₹" + (int) DEPOSIT, true);
                         } else {
-                            showDepositRow("Platform Charge added to bill: ₹" + (int) DEPOSIT);
+                            setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
                         }
                         startPhonePeCheckout();
                     }
@@ -267,6 +272,7 @@ public class pending_bill extends AppCompatActivity {
                 .show()
         );
     }
+
     /** Create PhonePe SDK order (server) and open Standard Checkout UI (client). */
     private void startPhonePeCheckout() {
         loaderutil.showLoader(this);
@@ -330,8 +336,7 @@ public class pending_bill extends AppCompatActivity {
         Volley.newRequestQueue(this).add(req);
     }
 
-
-    /** Verify on server; on COMPLETED → save booking & payment history. */
+    /** Verify on server; on COMPLETED → handle wallet (if needed) then save booking & payment history. */
     private void checkPhonePeStatus(String merchantOrderId) {
         // For appointment flow we DO NOT credit wallet; PHP will respect skipWallet soon
         String url = ppStatusUrl + "?merchantOrderId=" + merchantOrderId + "&skipWallet=1";
@@ -352,8 +357,12 @@ public class pending_bill extends AppCompatActivity {
                         String state = obj.optString("state", "PENDING");
 
                         if ("COMPLETED".equalsIgnoreCase(state)) {
+                            // If the confirmed plan was wallet → debit now
+                            if ("Online".equals(selectedPaymentMethod) && lastConfirmedDepositMode == DepositMode.WALLET) {
+                                deductWalletCharge(DEPOSIT, "Platform charge for online appointment (wallet debit)");
+                                setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
+                            }
                             Toast.makeText(this, "Payment successful.", Toast.LENGTH_SHORT).show();
-                            // proceed with your existing success flow
                             saveBookingData(googleMapsLink);
                         } else if ("FAILED".equalsIgnoreCase(state)) {
                             loaderutil.hideLoader();
@@ -377,7 +386,6 @@ public class pending_bill extends AppCompatActivity {
 
         Volley.newRequestQueue(this).add(req);
     }
-
 
     // ------------------------- DATA FETCHERS -------------------------
 
@@ -433,7 +441,7 @@ public class pending_bill extends AppCompatActivity {
                         APPOINTMENT_CHARGE = 250.0;
                     }
                     gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
-                    consultingFee = APPOINTMENT_CHARGE - DEPOSIT;  // as per your existing business rule
+                    consultingFee = APPOINTMENT_CHARGE - DEPOSIT;  // business rule
                     chargeLoaded  = true;
                     recomputeTotalsAndUI();
                 },
@@ -538,11 +546,10 @@ public class pending_bill extends AppCompatActivity {
     // ------------------------- CORE MATH & UI -------------------------
 
     /**
-     * Single source of truth:
-     * - For **Online**: Total Pay = base (consulting + gst + distance) + deposit  ✅
-     *   (If wallet covers deposit, we still show it in Total so the user sees full outflow now.)
-     * - For **Offline**: deposit is a wallet debit only (not added to bill). If wallet insufficient → disable & show recharge.
-     * Also hides/shows the deposit row so no blank gap remains.
+     * Unified rule for both Online and Offline:
+     * - If wallet ≥ DEPOSIT → do NOT add deposit to bill; deposit will be taken from wallet.
+     * - If wallet < DEPOSIT → add deposit into bill.
+     * Deposit row shows the plan for both modes.
      */
     @SuppressLint("SetTextI18n")
     private void recomputeTotalsAndUI() {
@@ -551,26 +558,20 @@ public class pending_bill extends AppCompatActivity {
         // Base bill (without deposit)
         double baseTotal = consultingFee + gstAmount + distanceCharge;
 
-        String depositLine = "";
+        boolean depositCoveredByWallet = walletBalance >= DEPOSIT;
         boolean addDepositToBill = false;
+        String depositLine = "";
 
-        if ("Online".equals(selectedPaymentMethod)) {
-            // Online: show the deposit line AND always reflect deposit in Total Pay
-            addDepositToBill = true;
-            if (walletBalance >= DEPOSIT) {
+        if ("Online".equals(selectedPaymentMethod) || "Offline".equals(selectedPaymentMethod)) {
+            addDepositToBill = !depositCoveredByWallet; // add only when wallet insufficient
+            if (depositCoveredByWallet) {
                 depositLine = "Wallet will be debited: ₹" + (int) DEPOSIT;
             } else {
                 depositLine = "Platform Charge added to bill: ₹" + (int) DEPOSIT;
             }
-        } else if ("Offline".equals(selectedPaymentMethod)) {
-            // Offline: make it look like the initial state → hide the deposit row entirely
-            // (Still enforce wallet >= deposit via button state below)
-            depositLine = "";
-            addDepositToBill = false;
         } else {
-            // No selection yet → hide
-            depositLine = "";
             addDepositToBill = false;
+            depositLine = "";
         }
 
         finalCost = baseTotal + (addDepositToBill ? DEPOSIT : 0);
@@ -589,7 +590,7 @@ public class pending_bill extends AppCompatActivity {
             tvDistanceChargeValue.setText("Free under " + (int) FREE_DISTANCE_KM + " km");
         }
 
-        // Deposit row: show/hide the entire row (no blank gap)
+        // Deposit row visibility for both modes
         if (depositLine.isEmpty()) {
             hideDepositRow();
         } else {
@@ -604,13 +605,9 @@ public class pending_bill extends AppCompatActivity {
             loaderutil.hideLoader();
 
             if ("Offline".equals(selectedPaymentMethod)) {
-                if (walletBalance >= DEPOSIT) {
-                    btnRechargeWallet.setVisibility(View.GONE);
-                    enablePayButton();
-                } else {
-                    btnRechargeWallet.setVisibility(View.VISIBLE);
-                    disablePayButton();
-                }
+                // Always allow proceed; rule is applied at booking
+                btnRechargeWallet.setVisibility(View.GONE);
+                enablePayButton();
             } else if ("Online".equals(selectedPaymentMethod)) {
                 btnRechargeWallet.setVisibility(View.GONE);
                 enablePayButton();
@@ -621,9 +618,9 @@ public class pending_bill extends AppCompatActivity {
 
         Log.d(TAG, "recomputeTotals → mode=" + selectedPaymentMethod
                 + " wallet=" + walletBalance
-                + " final=" + finalCost);
+                + " final=" + finalCost
+                + " addDepositToBill=" + addDepositToBill);
     }
-
 
     // Hide/show helpers for the deposit row (avoid blank space)
     private void hideDepositRow() {
@@ -635,7 +632,6 @@ public class pending_bill extends AppCompatActivity {
         if (depositRow != null) depositRow.setVisibility(View.VISIBLE);
         if (tvDeposit != null) tvDeposit.setText(text);
     }
-
 
     private void setButtonNeutralState() {
         int gray = getResources().getColor(R.color.custom_gray);
@@ -809,10 +805,13 @@ public class pending_bill extends AppCompatActivity {
                 p.put("consultation_fee", String.format(Locale.getDefault(), "%.2f", consultingFee));
                 p.put("deposit", String.format(Locale.getDefault(), "%.2f", DEPOSIT));
 
-                if ("Online".equals(selectedPaymentMethod)) {
-                    p.put("deposit_status", (walletBalance >= DEPOSIT) ? "Wallet Debited" : "Added in Bill");
+                // Unified status for both modes based on confirmation-time decision
+                if (lastConfirmedDepositMode == DepositMode.WALLET) {
+                    p.put("deposit_status", "Wallet Debited");
+                } else if (lastConfirmedDepositMode == DepositMode.BILL) {
+                    p.put("deposit_status", "Added in Bill");
                 } else {
-                    p.put("deposit_status", (walletBalance >= DEPOSIT) ? "Wallet Debited" : "Insufficient Wallet");
+                    p.put("deposit_status", "None");
                 }
 
                 p.put("payment_method", selectedPaymentMethod);
@@ -879,7 +878,7 @@ public class pending_bill extends AppCompatActivity {
         }
 
         if ("success".equals(status)) {
-            if (walletBalance >= DEPOSIT && "Online".equals(selectedPaymentMethod)) {
+            if ("Online".equals(selectedPaymentMethod) && lastConfirmedDepositMode == DepositMode.WALLET) {
                 deductWalletCharge(DEPOSIT, "Platform charge for online appointment (wallet debit)");
                 setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
             }
