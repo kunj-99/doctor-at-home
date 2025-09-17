@@ -87,4 +87,25 @@
     <color name="light_green">#f0f3bd</color>
     <color name="acqua_green">#00A896</color>
 
+
+    <color name="primary_2">#1976D2</color>
+    <color name="primary_variant">#1565C0</color>
+
+    <!-- Surface Colors -->
+    <color name="background_primary">#FAFAFA</color>
+    <color name="surface_primary">#FFFFFF</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_tertiary">#BDBDBD</color>
+
+    <!-- Stroke Colors -->
+    <color name="stroke_primary">#E0E0E0</color>
+
+    <color name="card_stroke_2">#1A000000</color>
+    <color name="conservation_least_concern">#4CAF50</color>
+    <color name="conservation_vulnerable">#FF9800</color>
+    <color name="conservation_endangered">#F44336</color>
+
 </resources>

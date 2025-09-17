@@ -33,6 +33,16 @@
         android:usesCleartextTraffic="true"
         tools:ignore="WrongManifestParent"
         tools:targetApi="n" >
+
+        <!-- Add inside <application> ... </application> -->
+        <activity
+            android:name=".VetAnimalsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".VetAppointmentActivity"
+            android:exported="false" />
+
         <activity
             android:name=".SpacesItemDecoration"
             android:exported="false"

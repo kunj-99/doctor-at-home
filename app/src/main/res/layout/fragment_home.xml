@@ -7,9 +7,6 @@
     tools:context=".fragment.HomeFragment">
 
     <!-- Hero Section -->
-
-
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,21 +17,33 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_banner_wave"
             android:orientation="horizontal"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp"
-            android:gravity="center_vertical">
+            android:gravity="center"
+            android:layout_marginBottom="16dp">
 
-            <!-- Left: Text + Button -->
+            <!-- Patient Card -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="200dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_banner_wave">
 
+                <!-- Background Illustration -->
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/home_first"
+                    android:scaleType="centerCrop"
+                    android:alpha="0.25" />
 
-                <!-- Left: Text Block -->
+                <!-- Overlay Content -->
                 <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="2"
-                    android:orientation="vertical">
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="16dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -50,10 +59,10 @@
                         android:layout_height="wrap_content"
                         android:text="Book trusted doctors at your doorstep"
                         android:textSize="14sp"
-                        android:textColor="#444444" />
+                        android:textColor="#222222" />
 
                     <Button
-                        android:id="@+id/homebookNow"
+                        android:id="@+id/btnBookPatient"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Book Now"
@@ -66,22 +75,75 @@
                         android:paddingTop="8dp"
                         android:paddingBottom="8dp" />
                 </LinearLayout>
+            </FrameLayout>
 
-                <!-- Right: Doctor Illustration -->
-            <ImageView
-                android:layout_width="100dp"
-                android:layout_height="150dp"
-                android:layout_marginStart="8dp"
+            <!-- Vet Card -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="200dp"
                 android:layout_weight="1"
-                android:contentDescription="Doctor"
-                android:scaleType="fitCenter"
-                android:src="@drawable/home_first" />
-            </LinearLayout>
+                android:layout_marginStart="8dp"
+                android:clipToOutline="true"
+                android:background="@drawable/bg_banner_wave">
+
+                <!-- Background Illustration -->
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@drawable/home_vet"
+                    android:scaleType="centerCrop"
+                    android:alpha="0.25" />
+
+                <!-- Overlay Content -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Your Pet’s Health,\nOur Priority"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/acqua_green"
+                        android:layout_marginBottom="4dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Book trusted veterinarians at your doorstep"
+                        android:textSize="14sp"
+                        android:textColor="#222222" />
+
+                    <Button
+                        android:id="@+id/btnBookVet"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Book Now"
+                        android:textColor="@android:color/white"
+                        android:backgroundTint="@color/acqua_green"
+                        android:textStyle="bold"
+                        android:layout_marginTop="10dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp" />
+                </LinearLayout>
+            </FrameLayout>
+        </LinearLayout>
 
 
 
 
-            <!-- Horizontal RecyclerView -->
+
+
+
+
+
+        <!-- Horizontal RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
@@ -222,10 +284,6 @@
                 android:textColor="#757575"
                 android:layout_marginTop="4dp"
                 android:textAlignment="center" />
-
-
-
-    </LinearLayout>
-
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

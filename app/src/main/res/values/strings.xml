@@ -176,4 +176,75 @@
     <!-- Error Messages -->
     <string name="link_error">Unable to open link. Please check your internet connection.</string>
     <string name="steps_to_book">How to Book an Appointment</string>
+
+
+    <string name="choose_an_animal">Choose an Animal</string>
+    <string name="select_favorite_animal">Select your favorite animal from our diverse collection below. Each animal has unique characteristics and habitats.</string>
+    <string name="search_animals">Search animals…</string>
+    <string name="all_animals">All Animals</string>
+    <string name="no_animals_found">No animals found</string>
+    <string name="try_adjusting_search">Try adjusting your search or filter criteria</string>
+    <string name="clear_search">Clear Search</string>
+
+    <!-- Animal Card Strings -->
+    <string name="animal_image_desc">Image of %1$s</string>
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
+
+    <!-- Animal Names (Sample Data) -->
+    <string name="animal_lion">Lion</string>
+    <string name="animal_tiger">Tiger</string>
+    <string name="animal_elephant">Elephant</string>
+    <string name="animal_giraffe">Giraffe</string>
+    <string name="animal_panda">Panda</string>
+    <string name="animal_koala">Koala</string>
+    <string name="animal_zebra">Zebra</string>
+    <string name="animal_leopard">Leopard</string>
+
+    <!-- Animal Species (Sample Data) -->
+    <string name="species_lion">Panthera leo</string>
+    <string name="species_tiger">Panthera tigris</string>
+    <string name="species_elephant">Loxodonta africana</string>
+    <string name="species_giraffe">Giraffa camelopardalis</string>
+    <string name="species_panda">Ailuropoda melanoleuca</string>
+    <string name="species_koala">Phascolarctos cinereus</string>
+    <string name="species_zebra">Equus quagga</string>
+    <string name="species_leopard">Panthera pardus</string>
+
+    <!-- Conservation Status -->
+    <string name="status_vulnerable">VU</string>
+    <string name="status_endangered">EN</string>
+    <string name="status_critically_endangered">CR</string>
+    <string name="status_near_threatened">NT</string>
+    <string name="status_least_concern">LC</string>
+
+    <!-- Filter Dialog Strings -->
+    <string name="filter_title">Filter Animals</string>
+    <string name="filter_by_habitat">Filter by Habitat</string>
+    <string name="filter_by_status">Filter by Conservation Status</string>
+    <string name="habitat_forest">Forest</string>
+    <string name="habitat_grassland">Grassland</string>
+    <string name="habitat_desert">Desert</string>
+    <string name="habitat_aquatic">Aquatic</string>
+    <string name="apply_filters">Apply Filters</string>
+    <string name="reset_filters">Reset</string>
+
+    <!-- Accessibility Content Descriptions -->
+    <string name="search_icon_desc">Search icon</string>
+    <string name="close_icon_desc">Close</string>
+    <string name="filter_icon_desc">Filter animals</string>
+    <string name="favorite_icon_desc">Favorite</string>
+    <string name="pets_icon_desc">Pets icon</string>
+
+    <!-- Empty State Strings -->
+    <string name="empty_state_title">No animals found</string>
+    <string name="empty_state_subtitle">Try adjusting your search criteria</string>
+
+    <!-- Error Messages -->
+    <string name="error_loading_animals">Failed to load animals</string>
+    <string name="try_again">Try Again</string>
+
+    <string name="appointment_header_desc">Appointment booking header image</string>
+    <string name="select_date_desc">Select date</string>
+    <string name="select_time_desc">Select time</string>
 </resources>
