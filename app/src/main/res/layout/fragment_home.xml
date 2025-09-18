@@ -13,129 +13,123 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Hero Section -->
+        <!-- Patient Appointment Card (Original design) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_banner_wave"
+            android:padding="16dp"
             android:layout_marginBottom="16dp">
 
-            <!-- Patient Card -->
-            <FrameLayout
+            <!-- Left: Text Block -->
+            <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="200dp"
-                android:layout_weight="1"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_banner_wave">
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:orientation="vertical">
 
-                <!-- Background Illustration -->
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/home_first"
-                    android:scaleType="centerCrop"
-                    android:alpha="0.25" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Your Health,\nOur Priority"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/acqua_green"
+                    android:layout_marginBottom="4dp" />
 
-                <!-- Overlay Content -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="16dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Book trusted doctors at your doorstep"
+                    android:textSize="14sp"
+                    android:textColor="#444444" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Your Health,\nOur Priority"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/acqua_green"
-                        android:layout_marginBottom="4dp" />
+                <Button
+                    android:id="@+id/homebookNow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Book Now"
+                    android:textColor="@android:color/white"
+                    android:backgroundTint="@color/acqua_green"
+                    android:textStyle="bold"
+                    android:layout_marginTop="10dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp" />
+            </LinearLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Book trusted doctors at your doorstep"
-                        android:textSize="14sp"
-                        android:textColor="#222222" />
-
-                    <Button
-                        android:id="@+id/btnBookPatient"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Book Now"
-                        android:textColor="@android:color/white"
-                        android:backgroundTint="@color/acqua_green"
-                        android:textStyle="bold"
-                        android:layout_marginTop="10dp"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp" />
-                </LinearLayout>
-            </FrameLayout>
-
-            <!-- Vet Card -->
-            <FrameLayout
-                android:layout_width="0dp"
-                android:layout_height="200dp"
-                android:layout_weight="1"
+            <!-- Right: Doctor Illustration -->
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="150dp"
                 android:layout_marginStart="8dp"
-                android:clipToOutline="true"
-                android:background="@drawable/bg_banner_wave">
-
-                <!-- Background Illustration -->
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:src="@drawable/home_vet"
-                    android:scaleType="centerCrop"
-                    android:alpha="0.25" />
-
-                <!-- Overlay Content -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Your Pet’s Health,\nOur Priority"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/acqua_green"
-                        android:layout_marginBottom="4dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Book trusted veterinarians at your doorstep"
-                        android:textSize="14sp"
-                        android:textColor="#222222" />
-
-                    <Button
-                        android:id="@+id/btnBookVet"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Book Now"
-                        android:textColor="@android:color/white"
-                        android:backgroundTint="@color/acqua_green"
-                        android:textStyle="bold"
-                        android:layout_marginTop="10dp"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:paddingTop="8dp"
-                        android:paddingBottom="8dp" />
-                </LinearLayout>
-            </FrameLayout>
+                android:layout_weight="1"
+                android:contentDescription="Doctor"
+                android:scaleType="fitCenter"
+                android:src="@drawable/home_first" />
         </LinearLayout>
 
+        <!-- Vet Appointment Card (New) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_banner_wave"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
 
+            <!-- Left: Text Block -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pet Care,\nAt Your Door"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/acqua_green"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Book trusted vets for home visits"
+                    android:textSize="14sp"
+                    android:textColor="#444444" />
+
+                <Button
+                    android:id="@+id/vetBookNow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Book Now"
+                    android:textColor="@android:color/white"
+                    android:backgroundTint="@color/acqua_green"
+                    android:textStyle="bold"
+                    android:layout_marginTop="10dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp" />
+            </LinearLayout>
+
+            <!-- Right: Vet Illustration -->
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="150dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:contentDescription="Vet"
+                android:scaleType="fitCenter"
+                android:src="@drawable/home_vet" />
+        </LinearLayout>
 
 
 

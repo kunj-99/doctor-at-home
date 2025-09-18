@@ -34,7 +34,7 @@
         <View
             android:id="@+id/gradientOverlay"
             android:layout_width="0dp"
-            android:layout_height="80dp"
+            android:layout_height="60dp"
             android:background="@drawable/gradient_bottom_to_top"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -68,6 +68,7 @@
                 android:layout_height="wrap_content"
                 android:text="Animal"
                 android:textStyle="bold"
+                android:textAlignment="center"
                 android:textSize="18sp"
                 android:textColor="@android:color/white"
                 android:shadowColor="#80000000"
@@ -77,19 +78,7 @@
                 android:ellipsize="end"
                 android:maxLines="1" />
 
-            <TextView
-                android:id="@+id/tvAnimalSpecies"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Species"
-                android:textSize="14sp"
-                android:textColor="#CCFFFFFF"
-                android:shadowColor="#80000000"
-                android:shadowDx="0"
-                android:shadowDy="2"
-                android:shadowRadius="4"
-                android:ellipsize="end"
-                android:maxLines="1" />
+
 
         </LinearLayout>
 

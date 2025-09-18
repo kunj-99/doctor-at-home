@@ -61,11 +61,13 @@ public class HomeFragment extends Fragment {
         appointmentStatRecyclerView = view.findViewById(R.id.appointmentStatRecyclerView);
         servicesRecyclerView = view.findViewById(R.id.servicesRecyclerView);
         articlesRecyclerView = view.findViewById(R.id.articlesRecyclerView);
-        Button btnBookVet = view.findViewById(R.id.btnBookVet);
+        Button btnBookVet = view.findViewById(R.id.vetBookNow);
+
         btnBookVet.setOnClickListener(v -> {
             Intent i = new Intent(requireContext(), VetAnimalsActivity.class);
             startActivity(i);
         });
+        
 
         // If no network is available, show loader immediately
         if (!isNetworkAvailable()) {
