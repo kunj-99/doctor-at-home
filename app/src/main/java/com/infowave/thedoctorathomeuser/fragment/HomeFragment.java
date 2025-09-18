@@ -67,7 +67,7 @@ public class HomeFragment extends Fragment {
             Intent i = new Intent(requireContext(), VetAnimalsActivity.class);
             startActivity(i);
         });
-        
+
 
         // If no network is available, show loader immediately
         if (!isNetworkAvailable()) {
