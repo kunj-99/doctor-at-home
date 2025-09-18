@@ -69,7 +69,7 @@ public class HomeFragment extends Fragment {
         }
 
 
-        Button btnbookpatient = view.findViewById(R.id.btnBookPatient);
+        Button btnbookpatient = view.findViewById(R.id.homebookNow);
         btnbookpatient.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -79,7 +79,7 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        Button btnBookVet = view.findViewById(R.id.btnBookVet);
+        Button btnBookVet = view.findViewById(R.id.vetBookNow);
         btnBookVet.setOnClickListener(v -> {
             Intent i = new Intent(requireContext(), VetAnimalsActivity.class);
             startActivity(i);
