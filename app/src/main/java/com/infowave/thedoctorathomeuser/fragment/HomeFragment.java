@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.*;
+import androidx.viewpager.widget.ViewPager;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -38,6 +39,7 @@ public class HomeFragment extends Fragment {
     private RecyclerView servicesRecyclerView, articlesRecyclerView;
 
     private Handler handler;
+    private ViewPager vp;
     private Runnable runnable;
     private int currentPosition = 0;
 
@@ -61,13 +63,27 @@ public class HomeFragment extends Fragment {
         appointmentStatRecyclerView = view.findViewById(R.id.appointmentStatRecyclerView);
         servicesRecyclerView = view.findViewById(R.id.servicesRecyclerView);
         articlesRecyclerView = view.findViewById(R.id.articlesRecyclerView);
-        Button btnBookVet = view.findViewById(R.id.vetBookNow);
 
+        if (getActivity() instanceof MainActivity) {
+            vp = ((MainActivity) getActivity()).findViewById(R.id.vp);
+        }
+
+
+        Button btnbookpatient = view.findViewById(R.id.btnBookPatient);
+        btnbookpatient.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if (vp != null) vp.setCurrentItem(1);
+
+            }
+        });
+
+        Button btnBookVet = view.findViewById(R.id.btnBookVet);
         btnBookVet.setOnClickListener(v -> {
             Intent i = new Intent(requireContext(), VetAnimalsActivity.class);
             startActivity(i);
         });
-
 
         // If no network is available, show loader immediately
         if (!isNetworkAvailable()) {

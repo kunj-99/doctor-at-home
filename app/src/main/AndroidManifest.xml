@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
@@ -18,7 +18,6 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-
     <application
         android:name=".MyApp"
         android:allowBackup="true"
@@ -32,9 +31,10 @@
         android:theme="@style/Theme.TheDoctorAtHomeUser"
         android:usesCleartextTraffic="true"
         tools:ignore="WrongManifestParent"
-        tools:targetApi="n" >
+        tools:targetApi="n"
+        android:enableOnBackInvokedCallback="true"> <!-- Added this line to enable OnBackInvokedCallback -->
 
-        <!-- Add inside <application> ... </application> -->
+        <!-- Activities -->
         <activity
             android:name=".VetAnimalsActivity"
             android:exported="false" />
@@ -47,6 +47,7 @@
             android:name=".SpacesItemDecoration"
             android:exported="false"
             tools:ignore="MissingClass" />
+
         <activity
             android:name=".RefundStatus"
             android:exported="false" />
@@ -82,7 +83,6 @@
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -121,28 +121,23 @@
             android:exported="false" />
         <activity
             android:name=".login"
-            android:exported="true" >
-
-            <!-- <intent-filter> -->
-            <!-- <action android:name="android.intent.action.MAIN" /> -->
-
-
-            <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
-            <!-- </intent-filter> -->
-        </activity>
+            android:exported="true" />
         <activity
             android:name=".MainActivity"
-            android:exported="false" /> <!-- <meta-data -->
+            android:exported="false" />
+
+        <!-- Meta-data for Google API -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key"
             tools:replace="android:value" />
 
+        <!-- Using legacy library -->
         <uses-library
             android:name="org.apache.http.legacy"
             android:required="false" />
 
-
+        <!-- Firebase Messaging Service -->
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">
