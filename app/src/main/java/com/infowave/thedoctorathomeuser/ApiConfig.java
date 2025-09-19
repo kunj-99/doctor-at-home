@@ -3,7 +3,7 @@ package com.infowave.thedoctorathomeuser;
 public class ApiConfig {
 
     // 🌐 Base URL (change only here)
-    public static final String BASE_URL = "http://sxm.a58.mytemp.website/";
+    public static final String BASE_URL = "https://thedoctorathome.in/";
 
     // 👉 Simple endpoint (no params)
     // Example: ApiConfig.endpoint("login.php")
