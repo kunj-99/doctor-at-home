@@ -69,7 +69,7 @@ public class HomeFragment extends Fragment {
         }
 
 
-        Button btnbookpatient = view.findViewById(R.id.btnBookPatient);
+        Button btnbookpatient = view.findViewById(R.id.homebookNow);
         btnbookpatient.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -79,7 +79,7 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        Button btnBookVet = view.findViewById(R.id.btnBookVet);
+        Button btnBookVet = view.findViewById(R.id.vetBookNow);
         btnBookVet.setOnClickListener(v -> {
             Intent i = new Intent(requireContext(), VetAnimalsActivity.class);
             startActivity(i);
@@ -224,7 +224,7 @@ public class HomeFragment extends Fragment {
                         try {
                             int count = response.getInt("completed_count");
                             List<AppointmentStat> stats = new ArrayList<>();
-                            stats.add(new AppointmentStat("Appointments Completed", count, R.drawable.ic_check_circle));
+                            stats.add(new AppointmentStat("Appointments Completed", count, R.drawable.out_check));
                             AppointmentStatAdapter statAdapter = new AppointmentStatAdapter(getContext(), stats);
                             appointmentStatRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
                             appointmentStatRecyclerView.setAdapter(statAdapter);

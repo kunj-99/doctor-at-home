@@ -250,4 +250,8 @@
 
     <string name="vet_appointment_header_desc">Veterinary appointment booking</string>
 
+    <!-- res/values/strings.xml -->
+    <string name="select_date_hint">Select date</string>
+    <string name="select_time_hint">Select time</string>
+
 </resources>

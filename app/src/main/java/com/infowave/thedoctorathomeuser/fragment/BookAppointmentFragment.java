@@ -2,7 +2,6 @@ package com.infowave.thedoctorathomeuser.fragment;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
-// import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
@@ -34,11 +33,11 @@ public class BookAppointmentFragment extends Fragment {
     private List<String> categoryNames = new ArrayList<>();
     private List<String> prices = new ArrayList<>();
     private List<String> categoryIds = new ArrayList<>();
+    private List<String> categoryImages = new ArrayList<>(); // Added for images
 
     private book_AppointmentAdapter adapter;
 
     private static final String API_URL = ApiConfig.endpoint("bookappointment.php");
-
 
     @Nullable
     @Override
@@ -46,9 +45,12 @@ public class BookAppointmentFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_book_appointment, container, false);
 
         recyclerView = view.findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        // Use GridLayoutManager for 2 columns
+        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        recyclerView.setClipToPadding(false);
+        recyclerView.setClipChildren(false);
 
-        adapter = new book_AppointmentAdapter(getContext(), categoryNames, prices, categoryIds);
+        adapter = new book_AppointmentAdapter(getContext(), categoryNames, prices, categoryIds, categoryImages);
         recyclerView.setAdapter(adapter);
 
         fetchDoctorCategories();
@@ -61,15 +63,9 @@ public class BookAppointmentFragment extends Fragment {
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, API_URL, null,
                 response -> {
-                    // Log.d("API_RESPONSE", "Response: " + response.toString());
                     parseDoctorCategories(response);
                 },
                 error -> {
-                    // Log.e("API_ERROR", "Volley Error: " + error.toString());
-                    // if (error.networkResponse != null) {
-                    //     String errorData = new String(error.networkResponse.data);
-                    //     Log.e("API_ERROR", "Error Response: " + errorData);
-                    // }
                     Toast.makeText(getContext(), "Unable to load available categories. Please check your connection.", Toast.LENGTH_LONG).show();
                 });
 
@@ -81,6 +77,7 @@ public class BookAppointmentFragment extends Fragment {
         categoryNames.clear();
         prices.clear();
         categoryIds.clear();
+        categoryImages.clear();
 
         try {
             for (int i = 0; i < response.length(); i++) {
@@ -88,11 +85,10 @@ public class BookAppointmentFragment extends Fragment {
                 categoryIds.add(obj.getString("id"));
                 categoryNames.add(obj.getString("category_name"));
                 prices.add("₹" + obj.getString("price") + "/-");
+                categoryImages.add(obj.optString("category_image", "")); // Add image URL/path if present
             }
             adapter.notifyDataSetChanged();
         } catch (Exception e) {
-            // Log.e("JSON_ERROR", "Parsing Error: " + e.getMessage());
-            // e.printStackTrace();
             Toast.makeText(getContext(), "Sorry, something went wrong. Please try again later.", Toast.LENGTH_SHORT).show();
         }
     }

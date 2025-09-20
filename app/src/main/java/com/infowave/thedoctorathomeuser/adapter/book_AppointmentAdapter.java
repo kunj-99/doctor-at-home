@@ -5,11 +5,13 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.diseases;
 
@@ -20,13 +22,16 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
     private final Context context;
     private final List<String> categoryNames;
     private final List<String> prices;
-    private final List<String> categoryIds; // Store category IDs
+    private final List<String> categoryIds;
+    private final List<String> categoryImages; // Add images
 
-    public book_AppointmentAdapter(Context context, List<String> categoryNames, List<String> prices, List<String> categoryIds) {
+    // Updated constructor: accept images too
+    public book_AppointmentAdapter(Context context, List<String> categoryNames, List<String> prices, List<String> categoryIds, List<String> categoryImages) {
         this.context = context;
         this.categoryNames = categoryNames;
         this.prices = prices;
         this.categoryIds = categoryIds;
+        this.categoryImages = categoryImages;
     }
 
     @NonNull
@@ -41,14 +46,27 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
         holder.categoryTextView.setText(categoryNames.get(position));
         holder.priceTextView.setText(prices.get(position));
 
-        // Set click listener for the RecyclerView item
+        // Load image with Glide
+        String imgUrl = categoryImages.get(position);
+        if (imgUrl == null || imgUrl.isEmpty()) {
+            holder.imageBackground.setImageResource(R.drawable.plaseholder_error); // fallback image
+        } else {
+            Glide.with(context)
+                    .load(imgUrl)
+                    .placeholder(R.drawable.plaseholder_error)
+                    .error(R.drawable.plaseholder_error)
+                    .centerCrop()
+                    .into(holder.imageBackground);
+        }
+
+        // Set click listener
         holder.itemView.setOnClickListener(v -> {
-            String categoryId = categoryIds.get(position); // Fetch category ID
-            String categoryName = categoryNames.get(position); // Fetch category Name
+            String categoryId = categoryIds.get(position);
+            String categoryName = categoryNames.get(position);
 
             Intent intent = new Intent(context, diseases.class);
-            intent.putExtra("category_id", categoryId); // Pass category ID
-            intent.putExtra("category_name", categoryName); // Pass category Name
+            intent.putExtra("category_id", categoryId);
+            intent.putExtra("category_name", categoryName);
             context.startActivity(intent);
         });
     }
@@ -59,12 +77,14 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
     }
 
     public static class AppointmentViewHolder extends RecyclerView.ViewHolder {
+        ImageView imageBackground;
         TextView categoryTextView, priceTextView;
 
         public AppointmentViewHolder(@NonNull View itemView) {
             super(itemView);
-            categoryTextView = itemView.findViewById(R.id.degreeTextView); // Ensure correct ID
-            priceTextView = itemView.findViewById(R.id.feeTextView); // Ensure correct ID
+            imageBackground = itemView.findViewById(R.id.imageBackground);
+            categoryTextView = itemView.findViewById(R.id.degreeTextView);
+            priceTextView = itemView.findViewById(R.id.feeTextView);
         }
     }
 }
