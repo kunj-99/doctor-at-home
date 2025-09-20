@@ -224,7 +224,7 @@ public class HomeFragment extends Fragment {
                         try {
                             int count = response.getInt("completed_count");
                             List<AppointmentStat> stats = new ArrayList<>();
-                            stats.add(new AppointmentStat("Appointments Completed", count, R.drawable.ic_check_circle));
+                            stats.add(new AppointmentStat("Appointments Completed", count, R.drawable.out_check));
                             AppointmentStatAdapter statAdapter = new AppointmentStatAdapter(getContext(), stats);
                             appointmentStatRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
                             appointmentStatRecyclerView.setAdapter(statAdapter);

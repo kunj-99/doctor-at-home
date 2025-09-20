@@ -12,10 +12,10 @@
 
     <ImageView
         android:id="@+id/statIcon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
         android:layout_marginEnd="12dp"
-        android:src="@drawable/ic_check_circle"
+        android:src="@drawable/out_check"
         app:tint="@color/navy_blue"
         android:contentDescription="Status Icon" />
 

@@ -561,10 +561,10 @@
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
                 app:cornerRadius="12dp"
-                app:icon="@drawable/ic_check_circle"
+                app:icon="@drawable/out_check"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp"
-                app:backgroundTint="#4C6EF5"
+                app:backgroundTint="@color/acqua_green"
                 style="@style/Widget.MaterialComponents.Button"
                 android:layout_marginBottom="24dp" />
             <!-- Just before the closing </LinearLayout> of the ScrollView's child -->
