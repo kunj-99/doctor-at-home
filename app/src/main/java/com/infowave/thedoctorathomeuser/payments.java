@@ -102,7 +102,6 @@ public class payments extends AppCompatActivity {
     }
 
     private void showRechargeDialog() {
-        Log.d(TAG, "Showing recharge dialog.");
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Recharge Wallet");
 
@@ -113,7 +112,6 @@ public class payments extends AppCompatActivity {
 
         builder.setPositiveButton("Recharge", (dialog, which) -> {
             String amountStr = input.getText().toString().trim();
-            Log.d(TAG, "Recharge amount entered: " + amountStr);
             if (!amountStr.isEmpty()) {
                 startRecharge(amountStr);
             } else {
@@ -126,7 +124,6 @@ public class payments extends AppCompatActivity {
     }
 
     private void startRecharge(String amount) {
-        Log.d(TAG, "Starting recharge with amount: " + amount);
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 createOrderUrl,
@@ -153,7 +150,6 @@ public class payments extends AppCompatActivity {
 
                         // ✅ Correct usage: pass launcher as 4th arg; method returns void
                         try {
-                            Log.d(TAG, "Launching PhonePe checkout page with token: " + token + " and orderId: " + orderId);
                             PhonePeKt.startCheckoutPage(this, token, orderId, checkoutLauncher);
                             Log.d(TAG, "Launched Standard Checkout: orderId=" + orderId);
                         } catch (Throwable t) {
@@ -172,25 +168,21 @@ public class payments extends AppCompatActivity {
                     Toast.makeText(this, "Network error creating order", Toast.LENGTH_SHORT).show();
                 }
         ) {
-            // inside startRecharge(...) -> new StringRequest(...){ getParams() { ... } }
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
                 map.put("patient_id", patientId);
                 map.put("amount", amount);
-                map.put("purpose", "WALLET_TOPUP");   // ✅ add this line
                 return map;
             }
-
         };
 
         Volley.newRequestQueue(this).add(request);
     }
 
     private void checkPaymentStatus(String merchantOrderId) {
-        Log.d(TAG, "Checking payment status for merchantOrderId: " + merchantOrderId);
         String url = statusUrl + "?merchantOrderId=" + merchantOrderId;
-        @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(
+        StringRequest request = new StringRequest(
                 Request.Method.GET,
                 url,
                 response -> {
@@ -204,16 +196,13 @@ public class payments extends AppCompatActivity {
 
                             switch (state) {
                                 case "COMPLETED":
-                                    Log.d(TAG, "Recharge completed successfully.");
                                     Toast.makeText(this, "Recharge successful!", Toast.LENGTH_SHORT).show();
                                     fetchTransactionHistory();
                                     break;
                                 case "FAILED":
-                                    Log.d(TAG, "Recharge failed.");
                                     Toast.makeText(this, "Recharge failed", Toast.LENGTH_SHORT).show();
                                     break;
                                 default:
-                                    Log.d(TAG, "Payment is pending.");
                                     Toast.makeText(this, "Payment pending", Toast.LENGTH_SHORT).show();
                             }
                         } else {
@@ -235,7 +224,6 @@ public class payments extends AppCompatActivity {
     }
 
     private void fetchWalletBalance() {
-        Log.d(TAG, "Fetching wallet balance.");
         @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(
                 Request.Method.POST,
                 fetchBalanceUrl,
@@ -268,7 +256,6 @@ public class payments extends AppCompatActivity {
     }
 
     private void fetchTransactionHistory() {
-        Log.d(TAG, "Fetching transaction history.");
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 fetchTransactionUrl,

@@ -69,24 +69,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         RequestQueue queue = Volley.newRequestQueue(ctx);
 
-        String url = ApiConfig.endpoint("save_patient_token.php");
-
+        String url = ApiConfig.endpoint("save_patient_token.php"); // Replace with your endpoint
 
         StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> Log.d(TAG, "token saved: " + resp),
-                err  -> Log.e(TAG, "token save error", err))
-        {
+                err  -> Log.e(TAG, "token save error", err)) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> m = new HashMap<>();
                 m.put("patient_id", String.valueOf(patientId));
-                m.put("fcm_token", token);
+                m.put("fcm_token", token); // Send the new token
                 return m;
             }
         };
         queue.add(req);
     }
-
 
     // ======================= NOTIFICATION HANDLING =========================
 

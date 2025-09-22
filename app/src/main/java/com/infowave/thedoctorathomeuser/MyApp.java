@@ -21,9 +21,9 @@ public class MyApp extends Application {
             // ✅ Standard Checkout init: PhonePeKt.init(...)
             boolean ok = PhonePeKt.init(
                     this,                                   // Context
-                    "SU2509171931032509641494",             // Client ID (Test)
+                    "TEST-M234ZHDNNC58R_25091",             // Client ID (Test)
                     "DAH-" + System.currentTimeMillis(),    // Flow ID (unique per session)
-                    PhonePeEnvironment.RELEASE,             // Environment (use RELEASE for production)
+                    PhonePeEnvironment.SANDBOX,             // Environment (use RELEASE for production)
                     true,                                   // Enable logging (false in production)
                     null                                    // appId (optional; keep null if not provided)
             );
