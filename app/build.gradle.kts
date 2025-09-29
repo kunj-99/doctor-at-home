@@ -85,14 +85,13 @@ dependencies {
 
         implementation ("pl.droidsonroids.gif:android-gif-drawable:1.2.23")
 
-    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
 
     // Messaging (must-have for notifications)
     implementation("com.google.firebase:firebase-messaging")
 
 
-    // Optional: Analytics (if you use in doctor app)
-     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-analytics")
 
     implementation("phonepe.intentsdk.android.release:IntentSDK:5.1.1")
 

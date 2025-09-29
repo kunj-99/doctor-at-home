@@ -134,11 +134,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private void createChannelIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = getSystemService(NotificationManager.class);
+            if (nm == null) return;
 
-            // Always delete existing channel for dev/test to force sound update (optional)
-            nm.deleteNotificationChannel(CHANNEL_ID);
+            // Do NOT delete channel; only create if missing
+            NotificationChannel existing = nm.getNotificationChannel(CHANNEL_ID);
+            if (existing != null) return;
 
-            // Use only .mp3 or .ogg, not .wav!
             Uri soundUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.sound);
             AudioAttributes attrs = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -151,7 +152,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     NotificationManager.IMPORTANCE_HIGH
             );
             ch.setDescription("Doctor At Home notifications for patients");
-            ch.setSound(soundUri, attrs); // Set custom sound
+            ch.setSound(soundUri, attrs);
             nm.createNotificationChannel(ch);
         }
     }

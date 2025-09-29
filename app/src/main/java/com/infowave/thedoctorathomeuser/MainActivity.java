@@ -235,7 +235,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         MyFirebaseMessagingService.requestNotificationPermissionIfNeeded(this);
-        MyFirebaseMessagingService.refreshTokenIfNeeded(this);
+        FcmTokenHelper.ensureTokenSynced(this);
+
     }
 
     private void rateApp() {
