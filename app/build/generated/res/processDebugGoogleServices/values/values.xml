@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="gcm_defaultSenderId" translatable="false">541977782479</string>
-    <string name="google_api_key" translatable="false">AIzaSyABdY7b4dP7W7n6aZxNMqyoZLKu5-ouJhE</string>
-    <string name="google_app_id" translatable="false">1:541977782479:android:fba18a021e76791ec42fba</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyABdY7b4dP7W7n6aZxNMqyoZLKu5-ouJhE</string>
-    <string name="google_storage_bucket" translatable="false">doctor-at-home-bf9f0.firebasestorage.app</string>
-    <string name="project_id" translatable="false">doctor-at-home-bf9f0</string>
-</resources>
