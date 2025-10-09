@@ -1,17 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/fragment_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F0F4FF">
+
+    <!-- Partition Tabs (Patient Ongoing | Vet Ongoing) -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/appointmentTabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="6dp"
+        app:tabMode="fixed"
+        app:tabGravity="fill"
+        app:tabIndicatorFullWidth="false"
+        app:tabIndicatorHeight="3dp"
+        app:tabIndicatorColor="@color/acqua_green"
+        app:tabTextColor="#7A7F8C"
+        app:tabSelectedTextColor="@android:color/black"
+        app:tabRippleColor="@android:color/transparent">
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Patient Ongoing" />
+
+        <com.google.android.material.tabs.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Vet Ongoing" />
+    </com.google.android.material.tabs.TabLayout>
+
+    <!-- Thin divider under tabs -->
+    <View
+        android:id="@+id/tabsDivider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/appointmentTabs"
+        android:background="#E4E8F5" />
 
     <!-- Pull-to-refresh container ABOVE the bottom button -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshOngoing"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_alignParentTop="true"
+        android:layout_below="@id/tabsDivider"
         android:layout_above="@id/bookButton">
 
         <androidx.recyclerview.widget.RecyclerView

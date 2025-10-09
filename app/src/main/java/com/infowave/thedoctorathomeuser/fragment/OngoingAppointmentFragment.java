@@ -22,10 +22,13 @@ import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.google.android.material.tabs.TabLayout; // tabs
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.MainActivity;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.adapter.OngoingAdapter;
+import com.infowave.thedoctorathomeuser.adapter.VetOngoingAdapter;   // NEW
+import com.infowave.thedoctorathomeuser.VetAppointment;              // NEW (as per your import path)
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -40,15 +43,18 @@ public class OngoingAppointmentFragment extends Fragment {
 
     private static final String API_URL = ApiConfig.endpoint("getOngoingAppointment.php");
 
-
     private ViewPager vp;
     private RecyclerView recyclerView;
     private Button bookAppointment;
     private SwipeRefreshLayout swipeRefresh;
-    private OngoingAdapter adapter;
+    private OngoingAdapter adapter; // patient adapter
+
+    // Tabs
+    private TabLayout appointmentTabs;
 
     private String patientId;
 
+    // ----- Patient data (AS-IS) -----
     private final List<String>  doctorNames      = new ArrayList<>();
     private final List<String>  specialties      = new ArrayList<>();
     private final List<String>  hospitals        = new ArrayList<>();
@@ -59,10 +65,15 @@ public class OngoingAppointmentFragment extends Fragment {
     private final List<String>  durations        = new ArrayList<>();
     private final List<Integer> doctorIds        = new ArrayList<>();
 
+    // ----- Vet (demo) -----
+    private VetOngoingAdapter vetAdapter;
+    private final List<VetAppointment> vetDemo = new ArrayList<>();
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
+        // IMPORTANT: make sure the XML file name matches this
         return inflater.inflate(R.layout.fragment_ongoing_appointment, container, false);
     }
 
@@ -75,15 +86,15 @@ public class OngoingAppointmentFragment extends Fragment {
         }
 
         // UI
-        swipeRefresh   = view.findViewById(R.id.swipeRefreshOngoing);
-        recyclerView   = view.findViewById(R.id.recyclerView);
-        bookAppointment= view.findViewById(R.id.bookButton);
+        appointmentTabs = view.findViewById(R.id.appointmentTabs);
+        swipeRefresh    = view.findViewById(R.id.swipeRefreshOngoing);
+        recyclerView    = view.findViewById(R.id.recyclerView);
+        bookAppointment = view.findViewById(R.id.bookButton);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         // Patient id
-        SharedPreferences sp = requireActivity()
-                .getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
         if (patientId == null || patientId.trim().isEmpty()) {
             Toast.makeText(getContext(),
@@ -92,6 +103,7 @@ public class OngoingAppointmentFragment extends Fragment {
             return;
         }
 
+        // Patient adapter (AS-IS)
         adapter = new OngoingAdapter(
                 requireContext(),
                 doctorNames,
@@ -104,13 +116,52 @@ public class OngoingAppointmentFragment extends Fragment {
                 durations,
                 doctorIds
         );
+
+        // Vet adapter (static demo)
+        seedVetDemo();
+        vetAdapter = new VetOngoingAdapter(requireContext(), vetDemo);
+
+        // Default: show Patient Ongoing (original behavior)
         recyclerView.setAdapter(adapter);
 
-        // Pull-to-refresh handler
-        swipeRefresh.setOnRefreshListener(() -> fetchOngoingAppointments(false));
+        // Tabs switching logic (no change to patient flow)
+        if (appointmentTabs != null) {
+            appointmentTabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+                @Override
+                public void onTabSelected(TabLayout.Tab tab) {
+                    if (tab.getPosition() == 0) {
+                        // Patient ongoing (original)
+                        recyclerView.setAdapter(adapter);
+                        // Optionally refresh patient silently so UI stays snappy
+                        fetchOngoingAppointments(true);
+                    } else {
+                        // Vet ongoing (demo data)
+                        recyclerView.setAdapter(vetAdapter);
+                        // Stop spinner if any
+                        stopRefreshingUI();
+                    }
+                }
+                @Override public void onTabUnselected(TabLayout.Tab tab) {}
+                @Override public void onTabReselected(TabLayout.Tab tab) {}
+            });
+            // Ensure Patient tab is selected by default
+            TabLayout.Tab patientTab = appointmentTabs.getTabAt(0);
+            if (patientTab != null) patientTab.select();
+        }
 
-        // Optional spinner colors
-        // swipeRefresh.setColorSchemeResources(R.color.navy_blue, R.color.acqua_green, R.color.purple_500);
+        // Pull-to-refresh handler
+        swipeRefresh.setOnRefreshListener(() -> {
+            int pos = (appointmentTabs != null) ? appointmentTabs.getSelectedTabPosition() : 0;
+            if (pos == 0) {
+                // Patient refresh (original)
+                fetchOngoingAppointments(false);
+            } else {
+                // Vet refresh (demo reseed)
+                seedVetDemo();
+                vetAdapter.notifyDataSetChanged();
+                stopRefreshingUI();
+            }
+        });
 
         // Initial load (show the swipe spinner programmatically)
         swipeRefresh.setRefreshing(true);
@@ -120,10 +171,7 @@ public class OngoingAppointmentFragment extends Fragment {
         bookAppointment.setOnClickListener(v -> {
             if (vp != null) vp.setCurrentItem(1);
         });
-
-
-
-            }
+    }
 
     private void stopRefreshingUI() {
         if (swipeRefresh != null && swipeRefresh.isRefreshing()) {
@@ -185,8 +233,7 @@ public class OngoingAppointmentFragment extends Fragment {
                                 "Unable to connect. Please check your internet and try again.",
                                 Toast.LENGTH_SHORT).show();
                     }
-                }
-        ) {
+                }) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String,String> p = new HashMap<>();
@@ -198,5 +245,20 @@ public class OngoingAppointmentFragment extends Fragment {
         Volley.newRequestQueue(requireContext()).add(req);
     }
 
-
+    // Static demo data for Vet ongoing (cards)
+    private void seedVetDemo() {
+        vetDemo.clear();
+        vetDemo.add(new VetAppointment(
+                "Bruno (Dog)", "Skin allergy consultation", "Dr. K. Desai",
+                "Thu, 09 Oct • 02:15 PM", "₹650", "Ongoing", "https://i.imgur.com/7kQ7K.png"
+        ));
+        vetDemo.add(new VetAppointment(
+                "Misty (Cat)", "Deworming", "Dr. A. Shah",
+                "Thu, 09 Oct • 04:00 PM", "₹350", "Scheduled", "https://i.imgur.com/xp8Zp.png"
+        ));
+        vetDemo.add(new VetAppointment(
+                "Sheru (Dog)", "Vaccination", "Dr. P. Rana",
+                "Fri, 10 Oct • 11:20 AM", "₹500", "Ongoing", "https://i.imgur.com/3yQpL.png"
+        ));
+    }
 }
