@@ -12,10 +12,12 @@ import android.util.DisplayMetrics;
 //import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.GravityCompat;
 
@@ -24,6 +26,9 @@ import com.google.firebase.FirebaseApp;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.viewpager.widget.ViewPager;
 
@@ -63,9 +68,39 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
+        setContentView(R.layout.activity_main);
         FirebaseApp.initializeApp(this);
+        final View statusScrim = findViewById(R.id.status_bar_scrim);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.tb), (v, insets) -> {
+            final Insets status = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+
+            // Put the black scrim under the status bar area
+            ViewGroup.LayoutParams lp = statusScrim.getLayoutParams();
+            lp.height = status.top;
+            statusScrim.setLayoutParams(lp);
+
+            // Toolbar no longer needs extra top padding
+            v.setPadding(v.getPaddingLeft(), 0, v.getPaddingRight(), v.getPaddingBottom());
+            return insets;
+        });
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.drawer_layout), (v, insets) -> {
+            final Insets system = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(system.left, 0, system.right, system.bottom);
+            return insets;
+        });
+
+// White icons on black bar
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+
+// (Optional) also set runtime color to be safe
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, android.R.color.black));
+
 
         // Initialize UI components
         vp = findViewById(R.id.vp);

@@ -22,6 +22,7 @@
         android:name=".MyApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/app_logo"
         android:label="@string/app_name"
@@ -31,23 +32,22 @@
         android:theme="@style/Theme.TheDoctorAtHomeUser"
         android:usesCleartextTraffic="true"
         tools:ignore="WrongManifestParent"
-        tools:targetApi="n"
-        android:enableOnBackInvokedCallback="true"> <!-- Added this line to enable OnBackInvokedCallback -->
-
+        tools:targetApi="n">
+        <activity
+            android:name=".news"
+            android:exported="false" />
+        <!-- Added this line to enable OnBackInvokedCallback -->
         <!-- Activities -->
         <activity
             android:name=".VetAnimalsActivity"
             android:exported="false" />
-
         <activity
             android:name=".VetAppointmentActivity"
             android:exported="false" />
-
         <activity
             android:name=".SpacesItemDecoration"
             android:exported="false"
             tools:ignore="MissingClass" />
-
         <activity
             android:name=".RefundStatus"
             android:exported="false" />
@@ -80,9 +80,10 @@
             android:exported="false" />
         <activity
             android:name=".splash"
-            android:exported="true" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -124,28 +125,21 @@
             android:exported="true" />
         <activity
             android:name=".MainActivity"
-            android:exported="false" />
-
-        <!-- Meta-data for Google API -->
+            android:exported="false" /> <!-- Meta-data for Google API -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key"
-            tools:replace="android:value" />
-
-        <!-- Using legacy library -->
+            tools:replace="android:value" /> <!-- Using legacy library -->
         <uses-library
             android:name="org.apache.http.legacy"
-            android:required="false" />
-
-        <!-- Firebase Messaging Service -->
+            android:required="false" /> <!-- Firebase Messaging Service -->
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
     </application>
 
 </manifest>
