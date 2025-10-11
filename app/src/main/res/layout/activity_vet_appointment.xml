@@ -36,184 +36,11 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Appointment Details Section -->
+            <!-- Owner Details Section -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Appointment Details"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#2D3748"
-                android:layout_marginBottom="16dp"
-                android:drawablePadding="8dp"
-                android:drawableStart="@drawable/ic_calendar_month" />
-
-            <!-- Date -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
-                app:strokeColor="#E2E8F0"
-                app:strokeWidth="1dp"
-                app:cardBackgroundColor="@android:color/white">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_calendar"
-                        app:tint="#4A5568" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingStart="16dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Select Date"
-                            android:textColor="#4A5568"
-                            android:textSize="12sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etDate"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="e.g., 24 October 2023"
-                            android:textSize="16sp"
-                            android:textColor="#2D3748"
-                            android:inputType="none"
-                            android:focusable="false"
-                            android:background="@null" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Time -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
-                app:strokeColor="#E2E8F0"
-                app:strokeWidth="1dp"
-                app:cardBackgroundColor="@android:color/white">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_clock"
-                        app:tint="#4A5568" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingStart="16dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Select Time"
-                            android:textColor="#4A5568"
-                            android:textSize="12sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etTime"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="e.g., 10:00 AM"
-                            android:textSize="16sp"
-                            android:textColor="#2D3748"
-                            android:inputType="none"
-                            android:focusable="false"
-                            android:background="@null" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Reason for Visit -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
-                app:strokeColor="#E2E8F0"
-                app:strokeWidth="1dp"
-                app:cardBackgroundColor="@android:color/white">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_marginTop="-60dp"
-                        android:src="@drawable/ic_description"
-                        app:tint="#4A5568" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingStart="16dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Reason for Visit"
-                            android:textColor="#4A5568"
-                            android:textSize="12sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etReason"
-                            android:layout_width="match_parent"
-                            android:layout_height="120dp"
-                            android:gravity="top"
-                            android:hint="Describe the reason for your visit or any symptoms..."
-                            android:textSize="16sp"
-                            android:textColor="#2D3748"
-                            android:inputType="textMultiLine"
-                            android:maxLines="5"
-                            android:background="@null" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Your Details Section -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Your Details"
+                android:text="Owner Details"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#2D3748"
@@ -221,7 +48,7 @@
                 android:drawablePadding="8dp"
                 android:drawableStart="@drawable/ic_person" />
 
-            <!-- Full Name -->
+            <!-- Owner Name -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -255,13 +82,13 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Full Name"
+                            android:text="Name"
                             android:textColor="#4A5568"
                             android:textSize="12sp"
                             android:layout_marginBottom="4dp" />
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etFullName"
+                            android:id="@+id/etOwnerName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="Enter your full name"
@@ -274,7 +101,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Phone Number -->
+            <!-- Owner Phone -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -314,10 +141,10 @@
                             android:layout_marginBottom="4dp" />
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etPhone"
+                            android:id="@+id/etOwnerPhone"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="e.g., +1 234 567 8900"
+                            android:hint="e.g., +91 98765 43210"
                             android:textSize="16sp"
                             android:textColor="#2D3748"
                             android:inputType="phone"
@@ -327,7 +154,60 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Email Address -->
+            <!-- Owner Pincode -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_location"
+                        app:tint="#4A5568" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Pincode"
+                            android:textColor="#4A5568"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="4dp" />
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etOwnerPincode"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="e.g., 360001"
+                            android:textSize="16sp"
+                            android:textColor="#2D3748"
+                            android:inputType="number"
+                            android:maxLines="1"
+                            android:background="@null" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Owner Address -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -348,7 +228,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/ic_mail_outline"
+                        android:src="@drawable/ic_home"
                         app:tint="#4A5568" />
 
                     <LinearLayout
@@ -361,20 +241,21 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Email Address"
+                            android:text="Address"
                             android:textColor="#4A5568"
                             android:textSize="12sp"
                             android:layout_marginBottom="4dp" />
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etEmail"
+                            android:id="@+id/etOwnerAddress"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="e.g., yourname@example.com"
+                            android:layout_height="120dp"
+                            android:gravity="top"
+                            android:hint="House/Street, Area, City"
                             android:textSize="16sp"
                             android:textColor="#2D3748"
-                            android:inputType="textEmailAddress"
-                            android:maxLines="1"
+                            android:inputType="textMultiLine"
+                            android:maxLines="5"
                             android:background="@null" />
                     </LinearLayout>
                 </LinearLayout>
@@ -392,7 +273,7 @@
                 android:drawablePadding="8dp"
                 android:drawableStart="@drawable/ic_pets" />
 
-            <!-- Pet's Name -->
+            <!-- Animal Name -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -426,16 +307,16 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Pet's Name"
+                            android:text="Animal Name"
                             android:textColor="#4A5568"
                             android:textSize="12sp"
                             android:layout_marginBottom="4dp" />
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etPetName"
+                            android:id="@+id/etAnimalName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="e.g., Buddy"
+                            android:hint="e.g., Bruno"
                             android:textSize="16sp"
                             android:textColor="#2D3748"
                             android:inputType="text"
@@ -445,64 +326,11 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Breed -->
+            <!-- Animal Age -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
-                app:strokeColor="#E2E8F0"
-                app:strokeWidth="1dp"
-                app:cardBackgroundColor="@android:color/white">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_pets"
-                        app:tint="#4A5568" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingStart="16dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Breed"
-                            android:textColor="#4A5568"
-                            android:textSize="12sp"
-                            android:layout_marginBottom="4dp" />
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etBreed"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="e.g., Golden Retriever"
-                            android:textSize="16sp"
-                            android:textColor="#2D3748"
-                            android:inputType="text"
-                            android:maxLines="1"
-                            android:background="@null" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Age -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="4dp"
                 app:strokeColor="#E2E8F0"
@@ -532,16 +360,16 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Age"
+                            android:text="Animal Age"
                             android:textColor="#4A5568"
                             android:textSize="12sp"
                             android:layout_marginBottom="4dp" />
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etAge"
+                            android:id="@+id/etAnimalAge"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="e.g., 5 years"
+                            android:hint="e.g., 3"
                             android:textSize="16sp"
                             android:textColor="#2D3748"
                             android:inputType="number"
@@ -550,6 +378,265 @@
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Breed (Spinner) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_pets"
+                        app:tint="#4A5568" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Animal Breed"
+                            android:textColor="#4A5568"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="4dp" />
+
+                        <Spinner
+                            android:id="@+id/spBreed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:spinnerMode="dropdown" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Visit or Vaccination -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Appointment Type"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#2D3748"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnVisit"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Visit"
+                    android:textAllCaps="false"
+                    app:strokeColor="@color/acqua_green"
+                    app:icon="@drawable/ic_description"
+                    app:iconPadding="8dp"
+                    app:iconGravity="textStart" />
+
+                <Space
+                    android:layout_width="12dp"
+                    android:layout_height="1dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnVaccination"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="Vaccination"
+                    android:textAllCaps="false"
+                    app:strokeColor="@color/acqua_green"
+                    app:iconPadding="8dp"
+                    app:iconGravity="textStart" />
+            </LinearLayout>
+
+            <!-- Reason (Visible only when Visit selected) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardReason"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_description"
+                        app:tint="#4A5568" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Reason"
+                            android:textColor="#4A5568"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="4dp" />
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etReason"
+                            android:layout_width="match_parent"
+                            android:layout_height="120dp"
+                            android:gravity="top"
+                            android:hint="Describe the reason for your visit or any symptoms..."
+                            android:textSize="16sp"
+                            android:textColor="#2D3748"
+                            android:inputType="textMultiLine"
+                            android:maxLines="5"
+                            android:background="@null" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Vaccination Type (Visible only when Vaccination selected) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardVaccination"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        app:tint="#4A5568" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Vaccination Type"
+                            android:textColor="#4A5568"
+                            android:textSize="12sp"
+                            android:layout_marginBottom="4dp" />
+
+                        <Spinner
+                            android:id="@+id/spVaccination"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:spinnerMode="dropdown" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+
+
+            <!-- Google Map Location -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Location"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#2D3748"
+                android:layout_marginBottom="16dp"
+                android:drawablePadding="8dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#E2E8F0"
+                app:strokeWidth="1dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPickLocation"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="Use Current Location"
+                        android:textAllCaps="false"
+                        app:icon="@drawable/ic_location"
+                        app:iconPadding="8dp"
+                        app:iconGravity="textStart"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                    <!-- MAP VIEW -->
+                    <com.google.android.gms.maps.MapView
+                        android:id="@+id/mapView"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:layout_marginTop="12dp" />
+
+                    <TextView
+                        android:id="@+id/tvLatLng"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Lat: -, Lng: -"
+                        android:textColor="#2D3748"
+                        android:textSize="14sp"
+                        android:layout_marginTop="12dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
 
             <!-- Confirm Appointment Button -->
             <com.google.android.material.button.MaterialButton
@@ -567,7 +654,7 @@
                 app:backgroundTint="@color/acqua_green"
                 style="@style/Widget.MaterialComponents.Button"
                 android:layout_marginBottom="24dp" />
-            <!-- Just before the closing </LinearLayout> of the ScrollView's child -->
+
             <ProgressBar
                 android:id="@+id/progressSubmit"
                 style="?android:attr/progressBarStyle"
