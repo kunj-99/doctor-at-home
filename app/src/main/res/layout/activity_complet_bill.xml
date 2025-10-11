@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/white">
+
+    <!-- TOP: black status bar scrim (height set in code) -->
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
 
     <!-- Header -->
     <RelativeLayout
@@ -25,10 +33,11 @@
 
     <!-- Content -->
     <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="16dp"
         android:id="@+id/bill_layout"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="16dp"
         android:padding="16dp">
 
         <LinearLayout
@@ -69,7 +78,6 @@
                             android:id="@+id/tv_bill_date"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="2025-05-03"
                             android:textStyle="bold"
                             android:layout_marginTop="8dp"
                             android:layout_marginBottom="10dp"
@@ -86,7 +94,6 @@
                             android:id="@+id/tv_bill_patient_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Kunj"
                             android:layout_marginTop="8dp"
                             android:layout_marginBottom="10dp"
                             android:textColor="@color/black" />
@@ -102,7 +109,6 @@
                             android:id="@+id/tv_bill_doctor_name"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Dr. Hetanshi Mandanka"
                             android:layout_marginTop="8dp"
                             android:layout_marginBottom="10dp"
                             android:textColor="@color/black" />
@@ -281,6 +287,7 @@
                             android:textSize="18sp"
                             android:textColor="@color/black" />
                     </LinearLayout>
+
                     <!-- Payment Method -->
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -380,7 +387,6 @@
                             android:layout_marginTop="4dp" />
                     </LinearLayout>
 
-
                     <!-- Divider -->
                     <TextView
                         android:layout_width="match_parent"
@@ -434,4 +440,12 @@
                 android:textStyle="bold" />
         </LinearLayout>
     </ScrollView>
+
+    <!-- BOTTOM: black navigation bar scrim (height set in code; 0 on gesture nav) -->
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
+
 </LinearLayout>

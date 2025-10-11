@@ -2,14 +2,14 @@ package com.infowave.thedoctorathomeuser;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
-// import android.util.Log;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.content.Intent;
 import android.view.View;
 import android.widget.Button;
 
@@ -17,6 +17,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -41,14 +45,28 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Track doctor's live location screen with PERFECT black status bars (top & bottom)
+ * implemented via scrim Views sized from system bar insets.
+ *
+ * Layout requirements:
+ * - Root view id: @+id/root_container (LinearLayout)
+ * - Top scrim View id: @+id/status_bar_scrim
+ * - Bottom scrim View id: @+id/navigation_bar_scrim
+ * - MapView id: @+id/mapView
+ * - Buttons: @+id/button_bill, @+id/button_done
+ * - Distance/Duration: @+id/tvDistance, @+id/tvDuration
+ */
 public class track_doctor extends AppCompatActivity implements OnMapReadyCallback {
 
-    // private static final String TAG = "TrackDoctor";
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
-    private static final String GET_LOCATION_URL = ApiConfig.endpoint("get_live_location.php");
-
-    private static final String API_KEY = "AIzaSyCkUxQSJ1jNt0q_CcugieFl5vezsNAUxe0";
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+
+    // If you keep this, it’s unused now (we build full URL inline). Safe to remove.
+    // private static final String GET_LOCATION_URL = ApiConfig.endpoint("get_live_location.php");
+
+    // Your Directions API key (already present in your original)
+    private static final String API_KEY = "AIzaSyCkUxQSJ1jNt0q_CcugieFl5vezsNAUxe0";
 
     private MapView mapView;
     private GoogleMap googleMap;
@@ -67,11 +85,49 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     private TextView tvDistance, tvDuration;
     private RequestQueue requestQueue;
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Lifecycle
+    // ─────────────────────────────────────────────────────────────────────────────
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_track_doctor);
+
+        // ── Perfect black system bars using scrim Views (top & bottom) ──────────
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, android.R.color.black));
+        getWindow().setNavigationBarColor(ContextCompat.getColor(this, android.R.color.black));
+
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);     // white icons
+        controller.setAppearanceLightNavigationBars(false); // white icons
+
+        final View statusScrim = findViewById(R.id.status_bar_scrim);
+        final View navScrim = findViewById(R.id.navigation_bar_scrim);
+        final View root = findViewById(R.id.root_container);
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            if (statusScrim != null) {
+                ViewGroup.LayoutParams lpTop = statusScrim.getLayoutParams();
+                lpTop.height = sys.top;
+                statusScrim.setLayoutParams(lpTop);
+                statusScrim.setVisibility(sys.top > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            if (navScrim != null) {
+                ViewGroup.LayoutParams lpBot = navScrim.getLayoutParams();
+                lpBot.height = sys.bottom; // 0 on gesture nav
+                navScrim.setLayoutParams(lpBot);
+                navScrim.setVisibility(sys.bottom > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            return insets; // Don’t consume; let child views layout normally
+        });
+        // ────────────────────────────────────────────────────────────────────────
 
         tvDistance = findViewById(R.id.tvDistance);
         tvDuration = findViewById(R.id.tvDuration);
@@ -84,7 +140,6 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
             finish();
             return;
         }
-        // Log.d(TAG, "Doctor ID: " + doctorId + ", Appointment ID: " + appointmentId);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -118,7 +173,6 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
             startActivity(intent);
             finish();
         });
-
     }
 
     @Override
@@ -154,18 +208,13 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                             double lon = response.getDouble("live_longitude");
                             updateDoctorMarker(lat, lon);
                         } else {
-                            // Log.e(TAG, "Latitude or Longitude not found in response");
                             Toast.makeText(track_doctor.this, "Doctor location not yet available.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (Exception e) {
-                        // Log.e(TAG, "Error parsing doctor location data", e);
                         Toast.makeText(track_doctor.this, "Could not update doctor location.", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> {
-                    // Log.e(TAG, "Fetch doctor location error", error);
-                    Toast.makeText(track_doctor.this, "Unable to get doctor location. Please check your internet.", Toast.LENGTH_SHORT).show();
-                });
+                error -> Toast.makeText(track_doctor.this, "Unable to get doctor location. Please check your internet.", Toast.LENGTH_SHORT).show());
         requestQueue.add(request);
     }
 
@@ -194,7 +243,6 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
             if (location != null) {
                 userLocation = new LatLng(location.getLatitude(), location.getLongitude());
-                // Log.d(TAG, "User location: " + userLocation);
                 if (googleMap != null) {
                     if (userMarker == null) {
                         userMarker = googleMap.addMarker(new MarkerOptions()
@@ -209,7 +257,6 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                     calculateDistanceAndDuration(doctorMarker.getPosition(), userLocation);
                 }
             } else {
-                // Log.e(TAG, "Unable to fetch user location");
                 Toast.makeText(this, "Unable to access your location.", Toast.LENGTH_SHORT).show();
             }
         });
@@ -251,14 +298,10 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                             currentPolyline = googleMap.addPolyline(polylineOptions);
                         }
                     } catch (Exception e) {
-                        // Log.e(TAG, "Error parsing directions response", e);
                         Toast.makeText(this, "Unable to show route.", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> {
-                    // Log.e(TAG, "Directions API error", error);
-                    Toast.makeText(this, "Could not connect to directions service.", Toast.LENGTH_SHORT).show();
-                });
+                error -> Toast.makeText(this, "Could not connect to directions service.", Toast.LENGTH_SHORT).show());
         requestQueue.add(request);
     }
 

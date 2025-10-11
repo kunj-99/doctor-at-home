@@ -1,15 +1,20 @@
 package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
-//import android.util.Log;
-//import android.view.View;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
@@ -26,12 +31,50 @@ public class doctor_details extends AppCompatActivity {
     private RatingBar doctorRating;
     private ImageView doctorImage, backButton;
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_doctor_details);
+
+        // ===== PERFECT BLACK TOP & BOTTOM USING VIEW SCRIMS =====
+        // Draw edge-to-edge so our scrim Views can occupy status/nav bar areas
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        // Paint system bars black to avoid any flash
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+
+        // White system icons on dark bars
+        WindowInsetsControllerCompat wic =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        wic.setAppearanceLightStatusBars(false);
+        wic.setAppearanceLightNavigationBars(false);
+
+        // Optional: reduce OEM contrast/divider effects
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getWindow().setNavigationBarDividerColor(Color.BLACK);
+        }
+
+        // Size scrim views from WindowInsets
+        final android.view.View statusScrim = findViewById(R.id.status_bar_scrim);
+        final android.view.View navScrim    = findViewById(R.id.navigation_bar_scrim);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            if (statusScrim != null) {
+                statusScrim.getLayoutParams().height = sys.top;
+                statusScrim.requestLayout();
+                statusScrim.setVisibility(sys.top > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
+            if (navScrim != null) {
+                navScrim.getLayoutParams().height = sys.bottom;
+                navScrim.requestLayout();
+                navScrim.setVisibility(sys.bottom > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
+            return insets;
+        });
 
         // Initialize UI elements
         doctorName = findViewById(R.id.doctorName);
@@ -61,10 +104,10 @@ public class doctor_details extends AppCompatActivity {
     }
 
     private void fetchDoctorDetails(String doctorId) {
-
         String url = ApiConfig.endpoint("fetch_doctor.php", "doctor_id", doctorId);
 
-        @SuppressLint("SetTextI18n") JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        @SuppressLint("SetTextI18n")
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     if (response.optBoolean("success")) {
                         JSONObject doctorData = response.optJSONObject("data");
@@ -96,9 +139,7 @@ public class doctor_details extends AppCompatActivity {
                         Toast.makeText(this, "Sorry, we could not load this doctor's details.", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> {
-                    Toast.makeText(this, "Could not connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
-                });
+                error -> Toast.makeText(this, "Could not connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show());
 
         request.setRetryPolicy(new DefaultRetryPolicy(
                 5000,

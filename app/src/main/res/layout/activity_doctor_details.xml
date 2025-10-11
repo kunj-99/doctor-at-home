@@ -1,260 +1,281 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Doctor Details with black top/bottom bars via scrim Views -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FA"
-    android:padding="16dp">
+    android:orientation="vertical"
+    android:background="#F5F7FA">
 
-    <LinearLayout
+    <!-- TOP: black status bar scrim (height set from WindowInsets in code) -->
+    <View
+        android:id="@+id/status_bar_scrim"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingBottom="24dp">
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
 
-        <!-- Header Section -->
-        <ImageView
-            android:id="@+id/backButton"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginBottom="24dp"
-            android:src="@drawable/ic_back"
-            app:tint="#2D3748"
-            android:contentDescription="Back" />
+    <!-- Scrollable content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp">
 
-        <!-- Profile Card -->
-        <androidx.cardview.widget.CardView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@android:color/white"
-            android:layout_marginBottom="24dp">
+            android:orientation="vertical"
+            android:paddingBottom="24dp">
 
-            <LinearLayout
+            <!-- Header Section -->
+            <ImageView
+                android:id="@+id/backButton"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginBottom="24dp"
+                android:src="@drawable/ic_back"
+                app:tint="#2D3748"
+                android:contentDescription="Back" />
+
+            <!-- Profile Card -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white"
+                android:layout_marginBottom="24dp">
 
-                <!-- Doctor Image -->
-                <ImageView
-                    android:id="@+id/doctorImage"
-                    android:layout_width="100dp"
-                    android:layout_height="100dp"
-                    android:scaleType="centerCrop"
-                    android:background="@drawable/rounded_square_background"
-                    android:adjustViewBounds="true"
-                    android:contentDescription="Doctor Image"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
-                    android:clipToOutline="true"
-                    android:padding="2dp"/>
-                <!-- Profile Info -->
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:paddingStart="16dp">
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
 
-                    <TextView
-                        android:id="@+id/doctorName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Dr. Pediatrician"
-                        android:textSize="22sp"
-                        android:textColor="#1A202C"
-                        android:textStyle="bold"
-                        android:fontFamily="sans-serif-medium" />
+                    <!-- Doctor Image -->
+                    <ImageView
+                        android:id="@+id/doctorImage"
+                        android:layout_width="100dp"
+                        android:layout_height="100dp"
+                        android:scaleType="centerCrop"
+                        android:background="@drawable/rounded_square_background"
+                        android:adjustViewBounds="true"
+                        android:contentDescription="Doctor Image"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:clipToOutline="true"
+                        android:padding="2dp"/>
 
-                    <TextView
-                        android:id="@+id/doctor_specialty"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Specialization"
-                        android:textSize="16sp"
-                        android:textColor="#718096"
-                        android:layout_marginTop="4dp" />
-
-                    <!-- Rating Section -->
+                    <!-- Profile Info -->
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginTop="12dp">
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp">
 
-                        <RatingBar
-                            android:id="@+id/doctor_rating"
-                            style="@style/Widget.AppCompat.RatingBar.Small"
-                            android:layout_width="wrap_content"
+                        <TextView
+                            android:id="@+id/doctorName"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:isIndicator="true"
-                            android:numStars="5"
-                            android:stepSize="0.5"
-                            android:rating="5"
-                            android:progressTint="@color/navy_blue"
-                            android:progressBackgroundTint="#E2E8F0" />
+                            android:text="Dr. Pediatrician"
+                            android:textSize="22sp"
+                            android:textColor="#1A202C"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium" />
 
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_marginStart="8dp"
-                            android:src="@drawable/ic_trusted"
-                             />
+                        <TextView
+                            android:id="@+id/doctor_specialty"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Specialization"
+                            android:textSize="16sp"
+                            android:textColor="#718096"
+                            android:layout_marginTop="4dp" />
+
+                        <!-- Rating Section -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginTop="12dp">
+
+                            <RatingBar
+                                android:id="@+id/doctor_rating"
+                                style="@style/Widget.AppCompat.RatingBar.Small"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:isIndicator="true"
+                                android:numStars="5"
+                                android:stepSize="0.5"
+                                android:rating="5"
+                                android:progressTint="@color/navy_blue"
+                                android:progressBackgroundTint="#E2E8F0" />
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_marginStart="8dp"
+                                android:src="@drawable/ic_trusted" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+            </androidx.cardview.widget.CardView>
 
-        <!-- Details Card -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@android:color/white">
-
-            <LinearLayout
+            <!-- Details Card -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@android:color/white">
 
-                <!-- Hospital Section -->
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Hospital Affiliation"
-                    android:textColor="@color/navy_blue"
-                    android:textStyle="bold"
-                    android:textSize="14sp"
-                    android:letterSpacing="0.03"
-                    android:textAllCaps="true"
-                    android:layout_marginBottom="4dp" />
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-                <TextView
-                    android:id="@+id/doctor_hospital"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Hospital Name"
-                    android:textSize="16sp"
-                    android:textColor="#1A202C"
-                    android:layout_marginBottom="16dp" />
+                    <!-- Hospital Section -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Hospital Affiliation"
+                        android:textColor="@color/navy_blue"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:letterSpacing="0.03"
+                        android:textAllCaps="true"
+                        android:layout_marginBottom="4dp" />
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#EDF2F7"
-                    android:layout_marginVertical="8dp" />
+                    <TextView
+                        android:id="@+id/doctor_hospital"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Hospital Name"
+                        android:textSize="16sp"
+                        android:textColor="#1A202C"
+                        android:layout_marginBottom="16dp" />
 
-                <!-- Experience Section -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Experience"
-                    android:textColor="@color/navy_blue"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.03"
-                    android:textAllCaps="true"
-                    android:layout_marginBottom="4dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#EDF2F7"
+                        android:layout_marginVertical="8dp" />
 
-                <TextView
-                    android:id="@+id/experienceDetails"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="5 years"
-                    android:textSize="16sp"
-                    android:textColor="#1A202C"
-                    android:layout_marginBottom="16dp" />
+                    <!-- Experience -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Experience"
+                        android:textColor="@color/navy_blue"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.03"
+                        android:textAllCaps="true"
+                        android:layout_marginBottom="4dp" />
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#EDF2F7"
-                    android:layout_marginVertical="8dp" />
+                    <TextView
+                        android:id="@+id/experienceDetails"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="5 years"
+                        android:textSize="16sp"
+                        android:textColor="#1A202C"
+                        android:layout_marginBottom="16dp" />
 
-                <!-- Education Section -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Education"
-                    android:textColor="@color/navy_blue"
-                    android:textStyle="bold"
-                    android:textSize="14sp"
-                    android:letterSpacing="0.03"
-                    android:textAllCaps="true"
-                    android:layout_marginBottom="4dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#EDF2F7"
+                        android:layout_marginVertical="8dp" />
 
-                <TextView
-                    android:id="@+id/degreeDetails"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="MBBS - XYZ University"
-                    android:textSize="16sp"
-                    android:textColor="#1A202C"
-                    android:layout_marginBottom="16dp" />
+                    <!-- Education -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Education"
+                        android:textColor="@color/navy_blue"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:letterSpacing="0.03"
+                        android:textAllCaps="true"
+                        android:layout_marginBottom="4dp" />
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#EDF2F7"
-                    android:layout_marginVertical="8dp" />
+                    <TextView
+                        android:id="@+id/degreeDetails"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="MBBS - XYZ University"
+                        android:textSize="16sp"
+                        android:textColor="#1A202C"
+                        android:layout_marginBottom="16dp" />
 
-                <!-- Fee Section -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Consultation Fee"
-                    android:textStyle="bold"
-                    android:textColor="@color/navy_blue"
-                    android:textSize="14sp"
-                    android:letterSpacing="0.03"
-                    android:textAllCaps="true"
-                    android:layout_marginBottom="4dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#EDF2F7"
+                        android:layout_marginVertical="8dp" />
 
-                <TextView
-                    android:id="@+id/doctor_fee"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="¥500"
-                    android:textSize="16sp"
-                    android:textColor="#1A202C"
-                    android:layout_marginBottom="16dp" />
+                    <!-- Fee -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Consultation Fee"
+                        android:textStyle="bold"
+                        android:textColor="@color/navy_blue"
+                        android:textSize="14sp"
+                        android:letterSpacing="0.03"
+                        android:textAllCaps="true"
+                        android:layout_marginBottom="4dp" />
 
-                <!-- Divider -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#EDF2F7"
-                    android:layout_marginVertical="8dp" />
+                    <TextView
+                        android:id="@+id/doctor_fee"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="₹500"
+                        android:textSize="16sp"
+                        android:textColor="#1A202C"
+                        android:layout_marginBottom="16dp" />
 
-                <!-- Availability Section -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Availability"
-                    android:textStyle="bold"
-                    android:textColor="@color/navy_blue"
-                    android:textSize="14sp"
-                    android:letterSpacing="0.03"
-                    android:textAllCaps="true"
-                    android:layout_marginBottom="4dp" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#EDF2F7"
+                        android:layout_marginVertical="8dp" />
 
-                <TextView
-                    android:id="@+id/doctor_availability"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Monday - Friday, 10 AM – 5 PM"
-                    android:textSize="16sp"
-                    android:textColor="#1A202C" />
+                    <!-- Availability -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Availability"
+                        android:textStyle="bold"
+                        android:textColor="@color/navy_blue"
+                        android:textSize="14sp"
+                        android:letterSpacing="0.03"
+                        android:textAllCaps="true"
+                        android:layout_marginBottom="4dp" />
 
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </LinearLayout>
-</ScrollView>
+                    <TextView
+                        android:id="@+id/doctor_availability"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Monday - Friday, 10 AM – 5 PM"
+                        android:textSize="16sp"
+                        android:textColor="#1A202C" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- BOTTOM: black nav bar scrim (height set from WindowInsets; 0 on gesture nav) -->
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
+</LinearLayout>

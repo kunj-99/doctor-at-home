@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Vertical layout so we can place black scrims above and below.
+  Heights of scrims are set from WindowInsets in the Activity.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
     android:orientation="vertical">
+
+    <!-- TOP: black status bar scrim (height set in code) -->
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
 
     <!-- Header (Fixed) -->
     <TextView
@@ -15,7 +27,6 @@
         android:padding="16dp"
         android:layout_marginBottom="16dp"
         android:text="Loading...."
-
         android:textColor="#FFFFFF"
         android:textSize="20sp"
         android:textStyle="bold" />
@@ -223,7 +234,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
                 android:layout_margin="16dp" />
-
         </LinearLayout>
     </ScrollView>
 
@@ -239,5 +249,12 @@
         android:textColor="#FFF"
         android:textSize="16sp"
         android:textStyle="bold" />
+
+    <!-- BOTTOM: black navigation bar scrim (height set in code; 0 on gesture nav) -->
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
 
 </LinearLayout>

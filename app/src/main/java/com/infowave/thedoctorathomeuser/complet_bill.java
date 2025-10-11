@@ -26,6 +26,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -56,7 +60,41 @@ public class complet_bill extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_complet_bill);
+        // ----- PERFECT black bars via scrim Views -----
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
 
+        WindowInsetsControllerCompat wic =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        wic.setAppearanceLightStatusBars(false);     // white status icons
+        wic.setAppearanceLightNavigationBars(false); // white nav icons
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(false); // avoid gray overlay
+        }
+
+        final android.view.View root = findViewById(R.id.root_container);
+        final android.view.View statusScrim = findViewById(R.id.status_bar_scrim);
+        final android.view.View navScrim = findViewById(R.id.navigation_bar_scrim);
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            final int top = insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.statusBars()).top;
+            final int bottom = insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.navigationBars()).bottom;
+
+            if (statusScrim != null) {
+                android.view.ViewGroup.LayoutParams lpTop = statusScrim.getLayoutParams();
+                lpTop.height = top;
+                statusScrim.setLayoutParams(lpTop);
+                statusScrim.setVisibility(top > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
+            if (navScrim != null) {
+                android.view.ViewGroup.LayoutParams lpBot = navScrim.getLayoutParams();
+                lpBot.height = bottom; // 0 on gesture nav (correct)
+                navScrim.setLayoutParams(lpBot);
+                navScrim.setVisibility(bottom > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
+            return insets;
+        });
         appointmentId = getIntent().getIntExtra("appointment_id", -1);
 
         if (appointmentId == -1) {

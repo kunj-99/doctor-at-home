@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,6 +20,12 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -68,6 +76,58 @@ public class payments extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_payments);
 
+        // ===== PERFECT BLACK TOP & BOTTOM USING VIEW SCRIMS =====
+        // Draw edge-to-edge so our scrim Views can occupy the status/nav bar zones
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        // Paint bars black to avoid any flash
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+
+        // White system icons on dark bars
+        WindowInsetsControllerCompat wic =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        wic.setAppearanceLightStatusBars(false);
+        wic.setAppearanceLightNavigationBars(false);
+
+        // Reduce OEM contrast/dividers for a solid black look
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getWindow().setNavigationBarDividerColor(Color.BLACK);
+        }
+
+        // Size the scrim Views from WindowInsets
+        final android.view.View statusScrim = findViewById(R.id.status_bar_scrim);
+        final android.view.View navScrim    = findViewById(R.id.navigation_bar_scrim);
+        final ConstraintLayout root         = findViewById(R.id.root_container);
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            // top
+            if (statusScrim != null) {
+                ConstraintLayout.LayoutParams lp =
+                        (ConstraintLayout.LayoutParams) statusScrim.getLayoutParams();
+                lp.height = sys.top;
+                statusScrim.setLayoutParams(lp);
+                statusScrim.setVisibility(sys.top > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
+
+            // bottom
+            if (navScrim != null) {
+                ConstraintLayout.LayoutParams lp =
+                        (ConstraintLayout.LayoutParams) navScrim.getLayoutParams();
+                lp.height = sys.bottom;
+                navScrim.setLayoutParams(lp);
+                navScrim.setVisibility(sys.bottom > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
+
+            return insets;
+        });
+        // ========================================================
+
         tvWalletBalance = findViewById(R.id.tvTotalBalance);
         btnRecharge = findViewById(R.id.btnRecharge);
         rvTransactions = findViewById(R.id.rvTransactions);
@@ -103,7 +163,6 @@ public class payments extends AppCompatActivity {
         // Don’t trust result codes; always check server
         Log.d(TAG, "Returned from PhonePe (resultCode=" + result.getResultCode() + ")");
         if (merchantOrderId != null) {
-            // prevent rapid double-polling if activity is recreated
             if (!awaitingSdkResult) {
                 awaitingSdkResult = true;
                 checkPaymentStatusWithBackoff(merchantOrderId);
@@ -113,7 +172,6 @@ public class payments extends AppCompatActivity {
         } else {
             Log.w(TAG, "Returned from PhonePe but merchantOrderId is null");
         }
-        // allow new recharges after we started polling
         btnRecharge.setEnabled(true);
     }
 
@@ -171,7 +229,6 @@ public class payments extends AppCompatActivity {
                         }
 
                         try {
-                            // Standard Checkout
                             PhonePeKt.startCheckoutPage(this, token, orderId, checkoutLauncher);
                             Log.d(TAG, "Launched Standard Checkout: orderId=" + orderId + ", env=" + env);
                         } catch (Throwable t) {
@@ -198,7 +255,7 @@ public class payments extends AppCompatActivity {
                 Map<String, String> map = new HashMap<>();
                 map.put("patient_id", patientId);
                 map.put("amount", amount);
-                map.put("purpose", "WALLET_TOPUP"); // explicit for clarity
+                map.put("purpose", "WALLET_TOPUP");
                 return map;
             }
         };
@@ -207,14 +264,13 @@ public class payments extends AppCompatActivity {
     }
 
     private void checkPaymentStatusWithBackoff(String moid) {
-        // Poll up to ~5 times with 2s -> 4s -> 6s -> 8s -> 10s
         final int[] attempts = {0};
         final Runnable poll = new Runnable() {
             @Override public void run() {
                 attempts[0]++;
                 checkPaymentStatus(moid);
                 if (attempts[0] < 5) {
-                    int next = attempts[0] * 2000; // 2s,4s,6s,8s,10s
+                    int next = attempts[0] * 2000; // 2s, 4s, 6s, 8s, 10s
                     mainHandler.postDelayed(this, next);
                 } else {
                     awaitingSdkResult = false;
@@ -259,7 +315,6 @@ public class payments extends AppCompatActivity {
                                 awaitingSdkResult = false;
                                 break;
                             default:
-                                // PENDING – keep polling via backoff loop
                                 Log.d(TAG, "Payment pending…");
                         }
                     } catch (Exception e) {

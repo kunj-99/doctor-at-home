@@ -3,19 +3,20 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_primary"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    tools:context=".VetAnimalsActivity">
 
-    <!-- App Bar with Rounded Bottom Corners -->
+    <!-- App Bar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/appbar_rounded_bottom"
         android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
-        android:fitsSystemWindows="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -32,16 +33,16 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Search Bar positioned below AppBar -->
+    <!-- Search Bar -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/searchCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="14dp"
         app:cardCornerRadius="12dp"
-        app:cardElevation="8dp"
+        app:cardElevation="6dp"
         app:contentPadding="1dp"
         app:cardBackgroundColor="@color/surface_primary"
         app:layout_constraintTop_toBottomOf="@id/appBarLayout"
@@ -53,11 +54,12 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:background="@drawable/search_background"
-            android:padding="4dp">
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="2dp">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:layout_marginStart="12dp"
                 android:layout_marginTop="12dp"
                 android:layout_marginBottom="12dp"
@@ -68,13 +70,13 @@
                 android:id="@+id/etSearch"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
                 android:hint="Search animals..."
                 android:imeOptions="actionSearch"
                 android:inputType="text"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
                 android:maxLines="1"
                 android:paddingVertical="14dp"
                 android:textColor="@color/text_primary"
@@ -85,143 +87,68 @@
                 android:id="@+id/btnClearSearch"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:layout_marginEnd="4dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_close"
                 android:visibility="gone"
-                android:layout_marginEnd="4dp"
                 app:tint="?attr/colorOnSurfaceVariant" />
-
         </LinearLayout>
-
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Main Content Area -->
-    <androidx.core.widget.NestedScrollView
+    <!-- Animals Grid -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvAnimals"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:fillViewport="true"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:clipToPadding="false"
+        android:paddingTop="12dp"
+        android:paddingBottom="16dp"
+        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+        app:spanCount="2"
+        app:layout_constraintTop_toBottomOf="@id/searchCard"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Empty State -->
+    <LinearLayout
+        android:id="@+id/llEmptyState"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="48dp"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/searchCard"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:paddingBottom="16dp">
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_pets_24"
+            android:layout_marginBottom="16dp"
+            app:tint="@color/text_tertiary" />
 
-            <!-- Introduction Card -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="24dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp"
-                app:strokeColor="@color/stroke_primary"
-                app:strokeWidth="1dp"
-                app:cardBackgroundColor="@color/surface_primary">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No animals found"
+            android:textSize="18sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginBottom="8dp"
+            android:textStyle="bold" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Animal Collection"
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:id="@+id/tvSubtitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Select your favorite animal from our diverse collection below. Each animal has unique characteristics and habitats."
-                        android:textSize="14sp"
-                        android:textColor="@color/text_secondary"
-                        android:lineSpacingExtra="4dp"
-                        android:lineHeight="20dp" />
-
-                </LinearLayout>
-
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Grid Title -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="All Animals"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:paddingStart="24dp"
-                android:paddingEnd="24dp"
-                android:layout_marginBottom="16dp"/>
-
-            <!-- Animals Grid -->
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvAnimals"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:clipToPadding="false"
-                android:nestedScrollingEnabled="false"
-                android:paddingBottom="16dp"
-                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                app:spanCount="2" />
-
-            <!-- Empty State -->
-            <LinearLayout
-                android:id="@+id/llEmptyState"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="48dp"
-                android:visibility="gone">
-
-                <ImageView
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:src="@drawable/ic_pets_24"
-                    android:layout_marginBottom="16dp"
-                    app:tint="@color/text_tertiary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="No animals found"
-                    android:textSize="18sp"
-                    android:textColor="@color/text_secondary"
-                    android:layout_marginBottom="8dp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Try adjusting your search or filter criteria"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_tertiary"
-                    android:gravity="center" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Clear Search"
-                    android:layout_marginTop="16dp"
-                    android:visibility="gone"/>
-
-            </LinearLayout>
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Try adjusting your search"
+            android:textSize="14sp"
+            android:textColor="@color/text_tertiary"
+            android:gravity="center" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -71,35 +71,46 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
         FirebaseApp.initializeApp(this);
-        final View statusScrim = findViewById(R.id.status_bar_scrim);
+        // ✅ Set system bar colors and icons
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, android.R.color.black));
+        getWindow().setNavigationBarColor(ContextCompat.getColor(this, android.R.color.black));
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.tb), (v, insets) -> {
-            final Insets status = insets.getInsets(WindowInsetsCompat.Type.statusBars());
-
-            // Put the black scrim under the status bar area
-            ViewGroup.LayoutParams lp = statusScrim.getLayoutParams();
-            lp.height = status.top;
-            statusScrim.setLayoutParams(lp);
-
-            // Toolbar no longer needs extra top padding
-            v.setPadding(v.getPaddingLeft(), 0, v.getPaddingRight(), v.getPaddingBottom());
-            return insets;
-        });
-
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.drawer_layout), (v, insets) -> {
-            final Insets system = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(system.left, 0, system.right, system.bottom);
-            return insets;
-        });
-
-// White icons on black bar
         WindowInsetsControllerCompat controller =
                 new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
         controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
 
-// (Optional) also set runtime color to be safe
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        getWindow().setStatusBarColor(ContextCompat.getColor(this, android.R.color.black));
+        // ✅ Views for black overlays
+        final View statusScrim = findViewById(R.id.status_bar_scrim);
+        final View navScrim = findViewById(R.id.navigation_bar_scrim);
+
+        // Apply window insets
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root_container), (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            // Set height of black scrims
+            if (statusScrim != null) {
+                ViewGroup.LayoutParams lp = statusScrim.getLayoutParams();
+                lp.height = sys.top;
+                statusScrim.setLayoutParams(lp);
+                statusScrim.setVisibility(View.VISIBLE);
+            }
+
+            if (navScrim != null) {
+                ViewGroup.LayoutParams lp = navScrim.getLayoutParams();
+                lp.height = sys.bottom;
+                navScrim.setLayoutParams(lp);
+                navScrim.setVisibility(View.VISIBLE);
+            }
+
+            // Drawer padding for edges
+            View drawer = findViewById(R.id.drawer_layout);
+            if (drawer != null) {
+                drawer.setPadding(sys.left, 0, sys.right, 0);
+            }
+            return insets;
+        });
 
 
         // Initialize UI components

@@ -6,14 +6,16 @@
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
     tools:context=".MainActivity">
 
     <!-- Main Content Layout -->
     <LinearLayout
+        android:id="@+id/root_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
+
+        <!-- TOP scrim: height is set from WindowInsets -->
         <View
             android:id="@+id/status_bar_scrim"
             android:layout_width="match_parent"
@@ -25,10 +27,9 @@
             android:id="@+id/tb"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:navigationIconTint="@color/white"
-            android:background="@color/navy_blue">
+            android:background="@color/navy_blue"
+            app:navigationIconTint="@color/white">
 
-            <!-- Centered Title -->
             <TextView
                 android:id="@+id/toolbar_title"
                 android:layout_width="wrap_content"
@@ -38,12 +39,10 @@
                 android:textColor="@android:color/white"
                 android:textSize="26sp"
                 android:textStyle="bold"
-                android:textAppearance="@style/CustomToolbarTitle"
-                />
-
+                android:textAppearance="@style/CustomToolbarTitle"/>
         </androidx.appcompat.widget.Toolbar>
 
-        <!-- ViewPager for Swiping Content -->
+        <!-- ViewPager -->
         <androidx.viewpager.widget.ViewPager
             android:id="@+id/vp"
             android:layout_width="match_parent"
@@ -60,6 +59,13 @@
             app:itemIconTint="@color/nav_item_color"
             app:itemTextColor="@color/white"
             app:menu="@menu/bottom_nav_menu" />
+
+        <!-- BOTTOM scrim: height is set from WindowInsets -->
+        <View
+            android:id="@+id/navigation_bar_scrim"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@android:color/black"/>
     </LinearLayout>
 
     <!-- Navigation Drawer -->
@@ -70,9 +76,9 @@
         android:layout_gravity="start"
         android:background="@color/black"
         app:headerLayout="@layout/appbar_heder"
-        app:menu="@menu/app_bar"
-        app:itemTextColor="@color/white"
         app:itemIconTint="@color/white"
-        app:itemTextAppearance="@style/CustomNavigationDrawerItemText" />
+        app:itemTextAppearance="@style/CustomNavigationDrawerItemText"
+        app:itemTextColor="@color/white"
+        app:menu="@menu/app_bar" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

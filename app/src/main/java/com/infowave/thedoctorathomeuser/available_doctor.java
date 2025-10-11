@@ -3,11 +3,13 @@ package com.infowave.thedoctorathomeuser;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -15,6 +17,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -63,10 +69,44 @@ public class available_doctor extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_available_doctor);
 
+        // ---- Black bars via scrim views (null-safe) ----
+        final View statusScrim = findViewById(R.id.status_bar_scrim);
+        final View navScrim = findViewById(R.id.navigation_bar_scrim);
+        try {
+            getWindow().setStatusBarColor(Color.BLACK);
+            getWindow().setNavigationBarColor(Color.BLACK);
+            WindowInsetsControllerCompat ctrl =
+                    new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+            ctrl.setAppearanceLightStatusBars(false);
+            ctrl.setAppearanceLightNavigationBars(false);
+
+            View root = findViewById(android.R.id.content);
+            if (root != null) {
+                ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+                    Insets sb = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                    if (statusScrim != null) {
+                        ViewGroup.LayoutParams lp = statusScrim.getLayoutParams();
+                        lp.height = sb.top;
+                        statusScrim.setLayoutParams(lp);
+                        statusScrim.setVisibility(sb.top > 0 ? View.VISIBLE : View.GONE);
+                    }
+                    if (navScrim != null) {
+                        ViewGroup.LayoutParams lp = navScrim.getLayoutParams();
+                        lp.height = sb.bottom;
+                        navScrim.setLayoutParams(lp);
+                        navScrim.setVisibility(sb.bottom > 0 ? View.VISIBLE : View.GONE);
+                    }
+                    return insets;
+                });
+            }
+        } catch (Throwable ignored) { }
+        // -----------------------------------------------
+
+        // Volley queue
         queue = Volley.newRequestQueue(this);
 
-        // Initial blocking loader (your project utility)
-        loaderutil.showLoader(available_doctor.this);
+        // Loader (guarded)
+        try { loaderutil.showLoader(available_doctor.this); } catch (Throwable ignored) { }
 
         // Views
         btnBack = findViewById(R.id.btn_back);
@@ -90,10 +130,9 @@ public class available_doctor extends AppCompatActivity {
             finish();
         });
 
-        // Pull-to-refresh: refresh current list (silent loader; uses swipe spinner)
+        // Pull-to-refresh
         swipeRefresh.setOnRefreshListener(() -> {
             if (!userPincode.isEmpty() && categoryId != null) {
-                // Optionally ping auto-status before refreshing the list
                 updateDoctorAutoStatus(() -> fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false));
             } else {
                 swipeRefresh.setRefreshing(false);
@@ -102,13 +141,12 @@ public class available_doctor extends AppCompatActivity {
 
         // Pincode watcher
         edtPincode.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (s.length() == 6) {
                     hideKeyboard();
                     userPincode = s.toString().trim();
                     if (categoryId != null) {
-                        // Explicit user search → show swipe spinner briefly for consistency
                         swipeRefresh.setRefreshing(true);
                         fetchDoctorsByPincodeAndCategory(userPincode, categoryId, true);
                     }
@@ -135,58 +173,54 @@ public class available_doctor extends AppCompatActivity {
             }
         });
 
-        // First-time flow: update auto-status, then resolve user's default pincode, finally load list
+        // First load: update auto-status → resolve default pincode → load list
         updateDoctorAutoStatus(() -> {
             SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
             String userId = sp.getString("user_id", "");
             if (!userId.isEmpty()) {
                 fetchUserPincode(userId);
             } else {
-                loaderutil.hideLoader();
+                try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
                 Toast.makeText(available_doctor.this, "Could not find your user profile. Please log in again.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void fetchUserPincode(String userId) {
-
         String url = ApiConfig.endpoint("user_pincode.php", "user_id", userId);
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
-                        if (response.has("pincode") && !response.getString("pincode").isEmpty()) {
-                            defaultPincode = response.getString("pincode");
+                        String pin = response.has("pincode") ? response.getString("pincode") : "";
+                        if (pin != null && !pin.isEmpty()) {
+                            defaultPincode = pin;
                             userPincode = defaultPincode;
                         } else {
-                            loaderutil.hideLoader();
-                            Toast.makeText(available_doctor.this, "No pincode found for your profile.", Toast.LENGTH_SHORT).show();
+                            try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
+                            Toast.makeText(this, "No pincode found for your profile.", Toast.LENGTH_SHORT).show();
                             return;
                         }
                     } catch (JSONException e) {
-                        loaderutil.hideLoader();
-                        Toast.makeText(available_doctor.this, "Could not read your pincode. Please try again.", Toast.LENGTH_SHORT).show();
+                        try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
+                        Toast.makeText(this, "Could not read your pincode. Please try again.", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    // Initial list load (we use swipe spinner for consistency)
                     swipeRefresh.setRefreshing(true);
                     fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
                 },
                 error -> {
-                    loaderutil.hideLoader();
-                    Toast.makeText(available_doctor.this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                    try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
+                    Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
                 }
         );
-        queue.add(request);
+        queue.add(req);
     }
 
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
-
-
         String url = ApiConfig.endpoint("getDoctorsByCategory.php", "pincode", pincode, "category_id", categoryId);
 
-
-        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, url, null,
+        JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {
                     ArrayList<String> newDoctorIds = new ArrayList<>();
                     ArrayList<String> newNames = new ArrayList<>();
@@ -199,21 +233,19 @@ public class available_doctor extends AppCompatActivity {
 
                     try {
                         for (int i = 0; i < response.length(); i++) {
-                            JSONObject doctor = response.getJSONObject(i);
-                            newDoctorIds.add(doctor.getString("doctor_id"));
-                            newNames.add(doctor.getString("full_name"));
-                            newSpecialties.add(doctor.getString("specialization"));
-                            newHospitals.add(doctor.getString("hospital_affiliation"));
-                            newRatings.add((float) doctor.optDouble("rating", 0));
-                            String profilePicUrl = doctor.optString("profile_picture", "");
+                            JSONObject d = response.getJSONObject(i);
+                            newDoctorIds.add(d.optString("doctor_id", ""));
+                            newNames.add(d.optString("full_name", ""));
+                            newSpecialties.add(d.optString("specialization", ""));
+                            newHospitals.add(d.optString("hospital_affiliation", ""));
+                            newRatings.add((float) d.optDouble("rating", 0));
+                            String profilePicUrl = d.optString("profile_picture", "");
                             if (profilePicUrl.isEmpty() || "null".equalsIgnoreCase(profilePicUrl)) {
-
                                 profilePicUrl = ApiConfig.endpoint("doctor_images/default.png");
-
                             }
                             newImageUrls.add(profilePicUrl);
-                            newDuration.add(doctor.optString("experience_duration", ""));
-                            newAutoStatuses.add(doctor.optString("auto_status", "Inactive"));
+                            newDuration.add(d.optString("experience_duration", ""));
+                            newAutoStatuses.add(d.optString("auto_status", "Inactive"));
                         }
 
                         boolean changed = !newDoctorIds.equals(doctorIds) || !newAutoStatuses.equals(autoStatuses);
@@ -242,58 +274,53 @@ public class available_doctor extends AppCompatActivity {
                             recyclerView.animate().alpha(1f).setDuration(300).start();
                         }
 
-                        // Empty state + visibility
                         tvNoDoctors.setVisibility(doctorIds.isEmpty() ? View.VISIBLE : View.GONE);
                         recyclerView.setVisibility(doctorIds.isEmpty() ? View.GONE : View.VISIBLE);
 
                         if (doctorIds.isEmpty()) {
-                            Toast.makeText(available_doctor.this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
                         }
 
                     } catch (JSONException e) {
-                        Toast.makeText(available_doctor.this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
                     } finally {
-                        // Stop loaders
-                        loaderutil.hideLoader();
+                        try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
                         if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
                     }
                 },
                 error -> {
                     tvNoDoctors.setVisibility(View.VISIBLE);
                     recyclerView.setVisibility(View.GONE);
-                    Toast.makeText(available_doctor.this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
 
-                    // Stop loaders
-                    loaderutil.hideLoader();
+                    try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
                     if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
                 }
         );
 
-        request.setShouldCache(false);
-        queue.add(request);
+        req.setShouldCache(false);
+        queue.add(req);
     }
 
     private void updateDoctorAutoStatus(final Runnable onComplete) {
-
         String updateUrl = ApiConfig.endpoint("update_doctor_status.php");
 
-        StringRequest updateRequest = new StringRequest(Request.Method.GET, updateUrl,
+        StringRequest req = new StringRequest(Request.Method.GET, updateUrl,
                 response -> { if (onComplete != null) onComplete.run(); },
                 error -> { if (onComplete != null) onComplete.run(); }
         );
-        queue.add(updateRequest);
+        queue.add(req);
     }
 
     private void hideKeyboard() {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
+        if (imm != null && edtPincode != null) {
             imm.hideSoftInputFromWindow(edtPincode.getWindowToken(), 0);
         }
     }
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         Intent intent = new Intent(available_doctor.this, MainActivity.class);
         intent.putExtra("open_fragment", 1);
         startActivity(intent);

@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/white"
-    android:paddingBottom="16dp">
+    android:background="@color/white">
 
-    <!-- Header Section -->
+    <!-- TOP: black status bar scrim (height set in code) -->
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
+
+    <!-- Header -->
     <TextView
         android:id="@+id/title"
         android:layout_width="match_parent"
@@ -20,7 +26,7 @@
         android:textStyle="bold"
         android:gravity="center" />
 
-    <!-- RecyclerView List -->
+    <!-- List -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
@@ -33,7 +39,7 @@
         android:clipToPadding="false"
         android:overScrollMode="never" />
 
-    <!-- Confirm Button -->
+    <!-- Confirm -->
     <Button
         android:id="@+id/confirm_button"
         android:layout_width="match_parent"
@@ -46,4 +52,12 @@
         android:textSize="16sp"
         android:textStyle="bold"
         android:letterSpacing="0.01" />
+
+    <!-- BOTTOM: black navigation bar scrim (height set in code; 0 on gesture nav) -->
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
+
 </LinearLayout>

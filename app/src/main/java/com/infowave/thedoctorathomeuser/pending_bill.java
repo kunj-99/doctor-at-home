@@ -3,7 +3,9 @@ package com.infowave.thedoctorathomeuser;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -20,6 +22,11 @@ import com.phonepe.intent.sdk.api.PhonePeKt; // Kotlin top-level API for Checkou
 import androidx.appcompat.app.AlertDialog;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -103,7 +110,44 @@ public class pending_bill extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pending_bill);
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
+        // 2) Paint actual system bars black to avoid flashes
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+
+        // 3) White icons (since backgrounds are dark)
+        WindowInsetsControllerCompat wic =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        wic.setAppearanceLightStatusBars(false);
+        wic.setAppearanceLightNavigationBars(false);
+
+        // 4) Tweak OEM contrast / divider (API level guards)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getWindow().setNavigationBarDividerColor(Color.BLACK);
+        }
+
+        // 5) Size scrim <View>s from WindowInsets
+        final View statusScrim = findViewById(R.id.status_bar_scrim);
+        final View navScrim    = findViewById(R.id.navigation_bar_scrim);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            if (statusScrim != null) {
+                statusScrim.getLayoutParams().height = sys.top;  // status bar height
+                statusScrim.requestLayout();
+                statusScrim.setVisibility(sys.top > 0 ? View.VISIBLE : View.GONE);
+            }
+            if (navScrim != null) {
+                navScrim.getLayoutParams().height = sys.bottom;  // nav bar height (0 on gesture nav)
+                navScrim.requestLayout();
+                navScrim.setVisibility(sys.bottom > 0 ? View.VISIBLE : View.GONE);
+            }
+            return insets;
+        });
         ppCheckoutLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {

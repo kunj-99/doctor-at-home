@@ -5,8 +5,10 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.widget.ArrayAdapter;
@@ -22,6 +24,11 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -32,10 +39,10 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
-import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -54,7 +61,7 @@ import java.util.List;
 public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
-    private static final int REQUEST_CHECK_SETTINGS         = 2001;
+    private static final int REQUEST_CHECK_SETTINGS = 2001;
 
     // UI
     private TextView headerBook;
@@ -66,14 +73,63 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     private String doctorId, doctorName, appointmentStatus;
 
     // Location / Map
-    private GoogleMap               mMap;
-    private LatLng                  selectedLocation = null;
+    private GoogleMap mMap;
+    private LatLng selectedLocation = null;
     private FusedLocationProviderClient fusedLocationClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_book_form);
+
+        // --------- TRUE-BLACK bars + white icons + scrims sized from insets ---------
+        // Edge-to-edge so scrim views can occupy bar areas
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        // Paint system bars black to avoid translucent flashes
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+
+        // White icons on both bars
+        WindowInsetsControllerCompat wic =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        wic.setAppearanceLightStatusBars(false);
+        wic.setAppearanceLightNavigationBars(false);
+
+        // Remove OEM contrast/divider tints where supported
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // If your device shows a divider line, this makes it black (invisible on black)
+            getWindow().setNavigationBarDividerColor(Color.BLACK);
+        }
+
+        // Size top/bottom scrims from system bar insets (status/nav)
+        final android.view.View statusScrim = findViewById(R.id.status_bar_scrim);
+        final android.view.View navScrim = findViewById(R.id.navigation_bar_scrim);
+
+        android.view.View root = findViewById(android.R.id.content);
+        if (root != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+                Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+                if (statusScrim != null) {
+                    android.view.ViewGroup.LayoutParams lp = statusScrim.getLayoutParams();
+                    lp.height = sys.top; // status bar height
+                    statusScrim.setLayoutParams(lp);
+                    statusScrim.setVisibility(sys.top > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+                }
+                if (navScrim != null) {
+                    android.view.ViewGroup.LayoutParams lp = navScrim.getLayoutParams();
+                    lp.height = sys.bottom; // nav bar height (0 on gesture nav)
+                    navScrim.setLayoutParams(lp);
+                    navScrim.setVisibility(sys.bottom > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
+                }
+                return insets;
+            });
+        }
+        // ---------------------------------------------------------------------------
 
         //── bind views ────────────────────────────────────────────────────────────
         headerBook     = findViewById(R.id.header_book);
@@ -97,13 +153,13 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         bookButton.setText(appointmentStatus != null ? appointmentStatus : "Book");
 
         //── prepare map fragment ──────────────────────────────────────────────────
-        SupportMapFragment mapFragment = (SupportMapFragment)
-                getSupportFragmentManager().findFragmentById(R.id.map_fragment);
+        SupportMapFragment mapFragment =
+                (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map_fragment);
         if (mapFragment != null) mapFragment.getMapAsync(this);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        //── initial spinner state: show placeholder & disable until data loads ───
+        //── initial spinner state: placeholder & disabled until data loads ────────
         List<String> placeholder = new ArrayList<>();
         placeholder.add("Select pincode");
         ArrayAdapter<String> initAdapter = new ArrayAdapter<>(
@@ -113,7 +169,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         pincodeSpinner.setAdapter(initAdapter);
         pincodeSpinner.setEnabled(false);
 
-        //── fetch real pincodes (with loader) ────────────────────────────────────
+        //── fetch real pincodes ───────────────────────────────────────────────────
         fetchPincodesForDoctor(doctorId);
 
         //── book button click ─────────────────────────────────────────────────────
@@ -138,7 +194,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 ((EditText)findViewById(R.id.problem)).setError("Please describe the problem.");
                 valid = false;
             }
-            // placeholder check
             if (pin.isEmpty() || pin.equals("Select pincode")) {
                 Toast.makeText(this, "Please select a pincode to continue.", Toast.LENGTH_SHORT).show();
                 valid = false;
@@ -198,13 +253,12 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         loaderutil.showLoader(this);
 
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
+        NetworkInfo ni = cm != null ? cm.getActiveNetworkInfo() : null;
         if (ni == null || !ni.isConnected()) {
             Toast.makeText(this, "No internet connection. Please check and try again.", Toast.LENGTH_SHORT).show();
         }
 
         String url = ApiConfig.endpoint("get_pincode.php", "doctor_id", doctorId);
-
         RequestQueue queue = Volley.newRequestQueue(this);
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
@@ -217,13 +271,10 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                             String pin = response.getString(i);
                             if (!pin.isEmpty()) pins.add(pin);
                         }
-                    } catch (JSONException e) {
-                        // If JSON error, fallback to placeholder only
-                    }
+                    } catch (JSONException ignored) { }
+
                     ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                            book_form.this,
-                            android.R.layout.simple_spinner_item,
-                            pins
+                            book_form.this, android.R.layout.simple_spinner_item, pins
                     );
                     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     pincodeSpinner.setAdapter(adapter);
@@ -242,24 +293,21 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        if (ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION)
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(
-                        this, Manifest.permission.ACCESS_COARSE_LOCATION)
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION)
                         != PackageManager.PERMISSION_GRANTED) {
             showLocationPermissionDialog();
         } else {
             checkLocationSettings();
         }
+
         mMap.setOnMapClickListener(latLng -> {
             selectedLocation = latLng;
             mMap.clear();
-            mMap.addMarker(new MarkerOptions()
-                    .position(latLng)
-                    .title("Selected Location"));
-            mMap.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(latLng, 15));
+            mMap.addMarker(new MarkerOptions().position(latLng).title("Selected Location"));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
         });
     }
 
@@ -270,10 +318,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 .setPositiveButton("OK", (d, w) ->
                         ActivityCompat.requestPermissions(
                                 book_form.this,
-                                new String[]{
-                                        Manifest.permission.ACCESS_FINE_LOCATION,
-                                        Manifest.permission.ACCESS_COARSE_LOCATION
-                                },
+                                new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION },
                                 LOCATION_PERMISSION_REQUEST_CODE
                         ))
                 .setNegativeButton("Cancel", null)
@@ -286,19 +331,15 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 .setInterval(10000)
                 .setFastestInterval(5000);
 
-        LocationSettingsRequest.Builder builder =
-                new LocationSettingsRequest.Builder().addLocationRequest(req);
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(req);
         SettingsClient client = LocationServices.getSettingsClient(this);
-        Task<LocationSettingsResponse> task =
-                client.checkLocationSettings(builder.build());
+        Task<LocationSettingsResponse> task = client.checkLocationSettings(builder.build());
 
         task.addOnSuccessListener(r -> setCurrentLocation())
                 .addOnFailureListener(e -> {
                     if (e instanceof ResolvableApiException) {
                         try {
-                            ((ResolvableApiException)e)
-                                    .startResolutionForResult(
-                                            book_form.this, REQUEST_CHECK_SETTINGS);
+                            ((ResolvableApiException) e).startResolutionForResult(book_form.this, REQUEST_CHECK_SETTINGS);
                         } catch (Exception ex) {
                             Toast.makeText(this, "Unable to update your location settings.", Toast.LENGTH_SHORT).show();
                         }
@@ -313,37 +354,29 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         fusedLocationClient.getLastLocation()
                 .addOnSuccessListener(location -> {
                     if (location != null) {
-                        selectedLocation = new LatLng(
-                                location.getLatitude(),
-                                location.getLongitude()
-                        );
+                        selectedLocation = new LatLng(location.getLatitude(), location.getLongitude());
                         mMap.clear();
-                        mMap.addMarker(new MarkerOptions()
-                                .position(selectedLocation)
-                                .title("Current Location"));
-                        mMap.animateCamera(
-                                CameraUpdateFactory.newLatLngZoom(selectedLocation, 15));
+                        mMap.addMarker(new MarkerOptions().position(selectedLocation).title("Current Location"));
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(selectedLocation, 15));
                     } else {
                         LocationRequest req = LocationRequest.create()
                                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                                 .setInterval(5000)
                                 .setFastestInterval(2000);
+
                         fusedLocationClient.requestLocationUpdates(
                                 req,
                                 new LocationCallback() {
                                     @Override
                                     public void onLocationResult(LocationResult result) {
-                                        if (result == null) return;
+                                        if (result == null || result.getLastLocation() == null) return;
                                         selectedLocation = new LatLng(
                                                 result.getLastLocation().getLatitude(),
                                                 result.getLastLocation().getLongitude()
                                         );
                                         mMap.clear();
-                                        mMap.addMarker(new MarkerOptions()
-                                                .position(selectedLocation)
-                                                .title("Current Location"));
-                                        mMap.animateCamera(
-                                                CameraUpdateFactory.newLatLngZoom(selectedLocation, 15));
+                                        mMap.addMarker(new MarkerOptions().position(selectedLocation).title("Current Location"));
+                                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(selectedLocation, 15));
                                         fusedLocationClient.removeLocationUpdates(this);
                                     }
                                 },
@@ -357,28 +390,21 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     }
 
     @Override
-    public void onRequestPermissionsResult(
-            int requestCode, @NonNull String[] permissions,
-            @NonNull int[] grantResults
-    ) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0
-                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 checkLocationSettings();
             } else {
                 Toast.makeText(this, "Location permission denied. Some features may not work.", Toast.LENGTH_SHORT).show();
             }
         } else {
-            super.onRequestPermissionsResult(
-                    requestCode, permissions, grantResults
-            );
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
     @Override
-    protected void onActivityResult(
-            int requestCode, int resultCode, Intent data
-    ) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CHECK_SETTINGS && resultCode == RESULT_OK) {
             setCurrentLocation();
         }

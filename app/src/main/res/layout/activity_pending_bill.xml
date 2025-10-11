@@ -2,10 +2,18 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
     android:orientation="vertical">
+
+    <!-- TOP: black status bar scrim (height set from insets) -->
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
 
     <!-- HEADER: title centered + wallet + icon at end -->
     <RelativeLayout
@@ -82,22 +90,19 @@
             android:textSize="16sp" />
     </LinearLayout>
 
-
     <!-- Scrollable Content -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginTop="16dp"
         android:background="@color/white"
         android:padding="16dp">
-
-
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
 
             <!-- Payment Info Card -->
             <androidx.cardview.widget.CardView
@@ -300,29 +305,22 @@
                             android:textColor="@color/black"/>
                     </LinearLayout>
 
-                    <!-- Deposit -->
+                    <!-- Deposit (dynamic line) -->
                     <LinearLayout
+                        android:id="@+id/deposit_row"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
-                        android:layout_marginTop="8dp">
-
-                        <TextView
-
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Deposit"
-                            android:textSize="15sp"
-                            android:textColor="#FF0000"/>
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone">
 
                         <TextView
                             android:id="@+id/tv_deposit"
-                            android:layout_width="wrap_content"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="₹ 50"
-                            android:textSize="18sp"
+                            android:text="Platform Charge"
+                            android:textSize="15sp"
                             android:textColor="@color/black"/>
                     </LinearLayout>
 
@@ -451,9 +449,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-
-            <!-- Two Payment Method Buttons (replacing the old RadioGroup) -->
-
             <!-- Proceed to Payment Button -->
             <Button
                 android:id="@+id/pay_button"
@@ -466,6 +461,7 @@
                 android:textColor="#FFF"
                 android:textSize="20sp"
                 android:textStyle="bold" />
+
             <Button
                 android:id="@+id/btn_recharge_wallet"
                 android:layout_width="match_parent"
@@ -478,4 +474,12 @@
 
         </LinearLayout>
     </ScrollView>
+
+    <!-- BOTTOM: black navigation bar scrim (height set from insets; 0 on gesture nav) -->
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
+
 </LinearLayout>
