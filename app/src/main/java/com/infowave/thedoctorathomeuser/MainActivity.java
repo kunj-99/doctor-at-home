@@ -272,7 +272,11 @@ public class MainActivity extends AppCompatActivity {
         MyFirebaseMessagingService.requestNotificationPermissionIfNeeded(this);
         FcmTokenHelper.ensureTokenSynced(this);
 
+
+
     }
+
+
 
     private void rateApp() {
         String appPackageName = getPackageName();
@@ -295,14 +299,25 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+        // 1) Close navigation drawer if open
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
-        } else if (vp.getCurrentItem() != 0) {
-            vp.setCurrentItem(0);
-        } else {
-            super.onBackPressed();
+            return;
         }
+
+        // 2) If ViewPager exists and not on 0th tab, go to 0th (with smooth scroll)
+        if (vp != null) {
+            int current = vp.getCurrentItem();
+            if (current > 0) {
+                vp.setCurrentItem(0, true); // true = smooth animation
+                return;
+            }
+        }
+
+        // 3) Otherwise, default back behavior
+        super.onBackPressed();
     }
+
 
     private void adjustNavigationDrawerWidth() {
         DisplayMetrics metrics = new DisplayMetrics();

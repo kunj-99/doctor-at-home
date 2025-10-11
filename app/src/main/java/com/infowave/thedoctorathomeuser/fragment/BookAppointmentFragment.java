@@ -27,7 +27,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-/** @noinspection ALL*/
 public class BookAppointmentFragment extends Fragment {
 
     private RecyclerView recyclerView;

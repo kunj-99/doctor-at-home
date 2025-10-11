@@ -173,11 +173,35 @@ public class OngoingAppointmentFragment extends Fragment {
         });
     }
 
+
     private void stopRefreshingUI() {
         if (swipeRefresh != null && swipeRefresh.isRefreshing()) {
             swipeRefresh.setRefreshing(false);
         }
     }
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                this,
+                new androidx.activity.OnBackPressedCallback(true) {
+                    @Override
+                    public void handleOnBackPressed() {
+                        // Get the ViewPager reference from MainActivity
+                        ViewPager vp = requireActivity().findViewById(R.id.vp);
+
+                        if (vp != null && vp.getCurrentItem() > 0) {
+                            vp.setCurrentItem(0, true); // swipe to 0th fragment
+                        } else {
+                            setEnabled(false); // allow default behavior next time
+                            requireActivity().onBackPressed();
+                        }
+                    }
+                }
+        );
+    }
+
 
     private void fetchOngoingAppointments(boolean silent) {
         @SuppressLint("NotifyDataSetChanged")
