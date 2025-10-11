@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -20,6 +21,19 @@ import com.infowave.thedoctorathomeuser.adapter.AnimalAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
+// Volley
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+
+// JSON
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapter.OnAnimalClickListener {
 
     private RecyclerView recyclerView;
@@ -29,6 +43,9 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
     private EditText etSearch;
     private ImageButton btnClearSearch;
     private LinearLayout llEmptyState;
+
+    // Volley
+    private RequestQueue requestQueue;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -42,7 +59,6 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
-
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
         // Initialize views
@@ -54,26 +70,26 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         recyclerView.addItemDecoration(new GridSpacingDecoration(16)); // spacing between cards
 
-        seedAnimals(); // add animals
-        filteredAnimals.addAll(animals);
+        // Volley
+        requestQueue = Volley.newRequestQueue(this);
+
+        // Adapter (start empty; we’ll fill after API call)
         adapter = new AnimalAdapter(filteredAnimals, this);
         recyclerView.setAdapter(adapter);
 
-        // Setup search functionality
+        // Fetch categories from API
+        fetchCategoriesFromApi();
+
+        // Search
         setupSearch();
     }
 
     private void setupSearch() {
         // Text watcher for search functionality
         etSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
                 filterAnimals(s.toString());
                 updateClearButtonVisibility();
             }
@@ -87,14 +103,9 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
 
         // Show/hide clear button based on whether there's text
         etSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) {
                 updateClearButtonVisibility();
             }
         });
@@ -108,6 +119,7 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void filterAnimals(String query) {
         filteredAnimals.clear();
 
@@ -116,7 +128,7 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         } else {
             String lowerCaseQuery = query.toLowerCase();
             for (Animal animal : animals) {
-                if (animal.getName().toLowerCase().contains(lowerCaseQuery)) {
+                if (animal.getName() != null && animal.getName().toLowerCase().contains(lowerCaseQuery)) {
                     filteredAnimals.add(animal);
                 }
             }
@@ -136,22 +148,75 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         }
     }
 
-    private void seedAnimals() {
-        // Add your drawables in res/drawable and reference here.
-        // Replace sample names with your actual images.
-        animals.add(new Animal("Dog", R.drawable.animal_dog));
-        animals.add(new Animal("Cat", R.drawable.animal_cat));
-        animals.add(new Animal("Cow", R.drawable.animal_cow));
-        animals.add(new Animal("Buffalo", R.drawable.animal_buffalo));
-        animals.add(new Animal("Goat", R.drawable.animal_goat));
-        // Add more animals as needed
+    // === API CALL: get_animal_category.php ===
+    private void fetchCategoriesFromApi() {
+        llEmptyState.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.VISIBLE);
+
+        final String url = ApiConfig.endpoint("get_animal_category.php");
+
+        StringRequest req = new StringRequest(
+                Request.Method.GET,
+                url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject root = new JSONObject(response);
+                            boolean success = root.optBoolean("success", false);
+
+                            animals.clear();
+                            filteredAnimals.clear();
+
+                            if (success) {
+                                JSONArray data = root.optJSONArray("data");
+                                if (data != null) {
+                                    for (int i = 0; i < data.length(); i++) {
+                                        JSONObject item = data.getJSONObject(i);
+                                        int id = item.optInt("category_id");
+                                        String name = item.optString("category_name", "");
+                                        String imageUrl = item.optString("category_image", ""); // full URL from PHP
+
+                                        // Build Animal with id + image URL (ensure Animal has these)
+                                        Animal a = new Animal(id, name, imageUrl); // requires the 3-arg constructor
+                                        animals.add(a);
+                                    }
+                                }
+                            }
+
+                            filteredAnimals.addAll(animals);
+                            adapter.notifyDataSetChanged();
+                            updateEmptyState();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            showEmptyWithMessage();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        showEmptyWithMessage();
+                    }
+                }
+        );
+
+        requestQueue.add(req);
+    }
+
+    private void showEmptyWithMessage() {
+        filteredAnimals.clear();
+        adapter.notifyDataSetChanged();
+        updateEmptyState();
     }
 
     @Override
     public void onAnimalClick(Animal animal) {
         // Navigate to your vet appointment flow with selected animal
         Intent i = new Intent(this, VetAppointmentActivity.class);
-        i.putExtra("animal_name", animal.getName());
+        i.putExtra("category_id", animal.getId());   // ✅ pass category_id
+       // i.putExtra("animal_name", animal.getName()); // optional: name
         startActivity(i);
     }
 }

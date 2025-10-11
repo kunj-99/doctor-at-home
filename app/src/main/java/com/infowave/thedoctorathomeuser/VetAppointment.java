@@ -20,6 +20,8 @@ public class VetAppointment {
         this.imageUrl = imageUrl;
     }
 
+
+
     public String getPetTitle() { return petTitle; }
     public String getReason() { return reason; }
     public String getVetName() { return vetName; }

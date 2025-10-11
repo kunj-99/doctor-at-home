@@ -77,6 +77,7 @@ public class OngoingAppointmentFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_ongoing_appointment, container, false);
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void onViewCreated(@NonNull View view,
                               @Nullable Bundle savedInstanceState) {

@@ -5,6 +5,8 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.util.Log;
 import android.widget.Button;
@@ -12,6 +14,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,8 +25,6 @@ import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.adapter.TransactionAdapter;
-
-// ✅ Correct API: Kotlin top-level PhonePeKt
 import com.phonepe.intent.sdk.api.PhonePeKt;
 
 import org.json.JSONArray;
@@ -34,25 +35,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** Wallet screen: creates SDK order, launches PhonePe UI, polls status (SANDBOX). */
 public class payments extends AppCompatActivity {
 
     private static final String TAG = "PHONEPE";
 
-    TextView tvWalletBalance;
-    Button btnRecharge;
-    RecyclerView rvTransactions;
+    private TextView tvWalletBalance;
+    private Button btnRecharge;
+    private RecyclerView rvTransactions;
 
-    List<TransactionAdapter.TransactionItem> transactionList = new ArrayList<>();
-    TransactionAdapter adapter;
+    private final List<TransactionAdapter.TransactionItem> transactionList = new ArrayList<>();
+    private TransactionAdapter adapter;
 
     // API endpoints
-    String createOrderUrl        = ApiConfig.endpoint("create_order.php");
-    String statusUrl             = ApiConfig.endpoint("check_status.php");
-    String fetchBalanceUrl       = ApiConfig.endpoint("get_wallet_balance.php");
-    String fetchTransactionUrl   = ApiConfig.endpoint("fetch_wallet_transactions.php");
+    private final String createOrderUrl      = ApiConfig.endpoint("create_order.php");
+    private final String statusUrl           = ApiConfig.endpoint("check_status.php");
+    private final String fetchBalanceUrl     = ApiConfig.endpoint("get_wallet_balance.php");
+    private final String fetchTransactionUrl = ApiConfig.endpoint("fetch_wallet_transactions.php");
 
     private String patientId;
     private String merchantOrderId;
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean awaitingSdkResult = false;
 
     // Launcher for PhonePe checkout result
     private ActivityResultLauncher<Intent> checkoutLauncher;
@@ -86,19 +91,30 @@ public class payments extends AppCompatActivity {
         fetchWalletBalance();
         fetchTransactionHistory();
 
-        // When PhonePe returns, verify final state with server
         checkoutLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (merchantOrderId != null) {
-                        Log.d(TAG, "Returned from PhonePe. Checking status for " + merchantOrderId);
-                        checkPaymentStatus(merchantOrderId);
-                    } else {
-                        Log.w(TAG, "Returned from PhonePe but merchantOrderId is null");
-                    }
-                });
+                this::onCheckoutResult
+        );
 
-        btnRecharge.setOnClickListener(view -> showRechargeDialog());
+        btnRecharge.setOnClickListener(v -> showRechargeDialog());
+    }
+
+    private void onCheckoutResult(ActivityResult result) {
+        // Don’t trust result codes; always check server
+        Log.d(TAG, "Returned from PhonePe (resultCode=" + result.getResultCode() + ")");
+        if (merchantOrderId != null) {
+            // prevent rapid double-polling if activity is recreated
+            if (!awaitingSdkResult) {
+                awaitingSdkResult = true;
+                checkPaymentStatusWithBackoff(merchantOrderId);
+            } else {
+                checkPaymentStatus(merchantOrderId);
+            }
+        } else {
+            Log.w(TAG, "Returned from PhonePe but merchantOrderId is null");
+        }
+        // allow new recharges after we started polling
+        btnRecharge.setEnabled(true);
     }
 
     private void showRechargeDialog() {
@@ -124,6 +140,9 @@ public class payments extends AppCompatActivity {
     }
 
     private void startRecharge(String amount) {
+        btnRecharge.setEnabled(false);
+        awaitingSdkResult = false;
+
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 createOrderUrl,
@@ -135,37 +154,43 @@ public class payments extends AppCompatActivity {
                         if (!"success".equalsIgnoreCase(obj.optString("status"))) {
                             Log.e(TAG, "create_order failed: " + obj);
                             Toast.makeText(this, "Create order failed", Toast.LENGTH_SHORT).show();
+                            btnRecharge.setEnabled(true);
                             return;
                         }
 
                         merchantOrderId = obj.optString("merchantOrderId", null);
-                        String token   = obj.optString("token", "");
-                        String orderId = obj.optString("orderId", "");
+                        String token    = obj.optString("token", "");
+                        String orderId  = obj.optString("orderId", "");
+                        String env      = obj.optString("env", "SANDBOX");
 
                         if (token.isEmpty() || orderId.isEmpty()) {
                             Log.e(TAG, "Missing token/orderId in response: " + obj);
                             Toast.makeText(this, "Invalid order response", Toast.LENGTH_SHORT).show();
+                            btnRecharge.setEnabled(true);
                             return;
                         }
 
-                        // ✅ Correct usage: pass launcher as 4th arg; method returns void
                         try {
+                            // Standard Checkout
                             PhonePeKt.startCheckoutPage(this, token, orderId, checkoutLauncher);
-                            Log.d(TAG, "Launched Standard Checkout: orderId=" + orderId);
+                            Log.d(TAG, "Launched Standard Checkout: orderId=" + orderId + ", env=" + env);
                         } catch (Throwable t) {
                             Log.e(TAG, "startCheckoutPage failed", t);
                             Toast.makeText(this, "Unable to open PhonePe UI", Toast.LENGTH_SHORT).show();
+                            btnRecharge.setEnabled(true);
                         }
 
                     } catch (Exception e) {
                         Log.e(TAG, "create_order parse error", e);
                         Toast.makeText(this, "Create order parse error", Toast.LENGTH_SHORT).show();
+                        btnRecharge.setEnabled(true);
                     }
                 },
                 error -> {
                     String msg = (error == null || error.getMessage() == null) ? "unknown" : error.getMessage();
                     Log.e(TAG, "create_order network error: " + msg, error);
                     Toast.makeText(this, "Network error creating order", Toast.LENGTH_SHORT).show();
+                    btnRecharge.setEnabled(true);
                 }
         ) {
             @Override
@@ -173,6 +198,7 @@ public class payments extends AppCompatActivity {
                 Map<String, String> map = new HashMap<>();
                 map.put("patient_id", patientId);
                 map.put("amount", amount);
+                map.put("purpose", "WALLET_TOPUP"); // explicit for clarity
                 return map;
             }
         };
@@ -180,8 +206,26 @@ public class payments extends AppCompatActivity {
         Volley.newRequestQueue(this).add(request);
     }
 
-    private void checkPaymentStatus(String merchantOrderId) {
-        String url = statusUrl + "?merchantOrderId=" + merchantOrderId;
+    private void checkPaymentStatusWithBackoff(String moid) {
+        // Poll up to ~5 times with 2s -> 4s -> 6s -> 8s -> 10s
+        final int[] attempts = {0};
+        final Runnable poll = new Runnable() {
+            @Override public void run() {
+                attempts[0]++;
+                checkPaymentStatus(moid);
+                if (attempts[0] < 5) {
+                    int next = attempts[0] * 2000; // 2s,4s,6s,8s,10s
+                    mainHandler.postDelayed(this, next);
+                } else {
+                    awaitingSdkResult = false;
+                }
+            }
+        };
+        mainHandler.post(poll);
+    }
+
+    private void checkPaymentStatus(String moid) {
+        String url = statusUrl + "?merchantOrderId=" + moid;
         StringRequest request = new StringRequest(
                 Request.Method.GET,
                 url,
@@ -189,25 +233,34 @@ public class payments extends AppCompatActivity {
                     Log.d(TAG, "check_status response: " + response);
                     try {
                         JSONObject obj = new JSONObject(response);
-                        if ("success".equals(obj.optString("status"))) {
-                            String state = obj.optString("state", "PENDING");
-                            String balance = obj.optString("wallet_balance", "0.00");
-                            tvWalletBalance.setText("₹" + balance);
-
-                            switch (state) {
-                                case "COMPLETED":
-                                    Toast.makeText(this, "Recharge successful!", Toast.LENGTH_SHORT).show();
-                                    fetchTransactionHistory();
-                                    break;
-                                case "FAILED":
-                                    Toast.makeText(this, "Recharge failed", Toast.LENGTH_SHORT).show();
-                                    break;
-                                default:
-                                    Toast.makeText(this, "Payment pending", Toast.LENGTH_SHORT).show();
-                            }
-                        } else {
+                        if (!"success".equals(obj.optString("status"))) {
                             Log.e(TAG, "Status check failed: " + obj);
                             Toast.makeText(this, "Status check failed", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        String state   = obj.optString("state", "PENDING");
+                        String balance = obj.optString("wallet_balance", "0.00");
+                        tvWalletBalance.setText("₹" + balance);
+
+                        switch (state) {
+                            case "COMPLETED":
+                                Toast.makeText(this, "Recharge successful!", Toast.LENGTH_SHORT).show();
+                                fetchTransactionHistory();
+                                awaitingSdkResult = false;
+                                break;
+                            case "FAILED":
+                                Toast.makeText(this, "Recharge failed", Toast.LENGTH_SHORT).show();
+                                awaitingSdkResult = false;
+                                break;
+                            case "CANCELLED":
+                            case "TIMED_OUT":
+                                Toast.makeText(this, "Payment " + state.toLowerCase(), Toast.LENGTH_SHORT).show();
+                                awaitingSdkResult = false;
+                                break;
+                            default:
+                                // PENDING – keep polling via backoff loop
+                                Log.d(TAG, "Payment pending…");
                         }
                     } catch (Exception e) {
                         Log.e(TAG, "status parse error", e);

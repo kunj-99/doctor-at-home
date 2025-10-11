@@ -35,12 +35,30 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputEditText;
 
+// Volley
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+
+// JSON
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
 public class VetAppointmentActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    // Intent extras
+    private int categoryId = -1;
+    private String categoryNameFromIntent = "";
 
     // Owner Details
     private TextInputEditText etOwnerName, etOwnerPhone, etOwnerPincode, etOwnerAddress;
@@ -75,11 +93,9 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
     private Calendar now = Calendar.getInstance();
 
-    // Dropdown data (array in activity, as requested)
-    private final List<String> breedItems = Arrays.asList(
-            "Select Breed", "Mixed", "Golden Retriever", "Labrador Retriever",
-            "German Shepherd", "Pug", "Persian Cat", "Siamese Cat"
-    );
+    // Dropdown data
+    private final List<String> breedItems = new ArrayList<>(); // filled from API
+    private ArrayAdapter<String> breedAdapter;
 
     private final List<String> vaccinationItems = Arrays.asList(
             "Select Vaccination", "Anti-Rabies (ARV)", "DHPPi", "Leptospirosis",
@@ -89,14 +105,22 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     // MapView key
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
 
+    // Volley
+    private RequestQueue requestQueue;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vet_appointment);
 
+        // Read intent
+        categoryId = getIntent().getIntExtra("category_id", -1);
+        categoryNameFromIntent = getIntent().getStringExtra("animal_name");
+        if (categoryNameFromIntent == null) categoryNameFromIntent = "";
+
         initViews();
         setupToolbar();
-        setupDropdowns();
+        setupDropdowns();         // init adapters
         setupModeToggle();
         setupLocation();
         setupConfirm();
@@ -111,6 +135,17 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         }
         mapView.onCreate(mapViewBundle);
         mapView.getMapAsync(this);
+
+        // Volley
+        requestQueue = Volley.newRequestQueue(this);
+
+        // Pre-fill animal name from category (optional UX)
+        if (!TextUtils.isEmpty(categoryNameFromIntent)) {
+            etAnimalName.setText(categoryNameFromIntent);
+        }
+
+        // Load breeds for selected category
+        loadBreedsForCategory();
     }
 
     private void initViews() {
@@ -149,15 +184,22 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
+            // Optionally show selected category in title
+            if (!TextUtils.isEmpty(categoryNameFromIntent)) {
+                getSupportActionBar().setTitle("Book Vet - " + categoryNameFromIntent);
+            }
         }
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
     }
 
     private void setupDropdowns() {
-        ArrayAdapter<String> breedAdapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_dropdown_item, breedItems);
+        // Breed spinner (start with "Select Breed" until API loads)
+        breedItems.clear();
+        breedItems.add("Select Breed");
+        breedAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, breedItems);
         spBreed.setAdapter(breedAdapter);
 
+        // Vaccination spinner
         ArrayAdapter<String> vaccinationAdapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_dropdown_item, vaccinationItems);
         spVaccination.setAdapter(vaccinationAdapter);
@@ -403,16 +445,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                 ? String.format(Locale.getDefault(), "%.6f,%.6f", currentLatLng.latitude, currentLatLng.longitude)
                 : "-,-";
 
-        // Log (debug)
-        System.out.println("---- Vet Appointment Submission ----");
-        System.out.println("Owner: " + ownerName + " | " + ownerPhone + " | " + ownerPincode);
-        System.out.println("Address: " + ownerAddress);
-        System.out.println("Animal: " + animalName + " | Age: " + animalAge + " | Breed: " + breed);
-        System.out.println("Type: " + type + " | Reason: " + reason + " | Vaccination: " + vaccination);
-        System.out.println("Location: " + latLngShown);
-        System.out.println("------------------------------------");
-
-        // TODO: integrate with backend (Volley/Retrofit) and send lat/lng.
+        // TODO: integrate with backend (Volley/Retrofit) and send lat/lng and categoryId.
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             progressSubmit.setVisibility(View.GONE);
@@ -423,6 +456,73 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                     : ("Vaccination booked (" + vaccination + ") for " + animalName);
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
         }, 1200);
+    }
+
+    // --- Load breeds for selected category via API ---
+    private void loadBreedsForCategory() {
+        // Guard
+        if (categoryId <= 0) {
+            // no category id; keep only default option
+            breedItems.clear();
+            breedItems.add("Select Breed");
+            if (breedAdapter != null) breedAdapter.notifyDataSetChanged();
+            return;
+        }
+
+        // 🔴 Old
+        // String url = "https://yourdomain.com/get_breeds.php?category_id=" + categoryId;
+
+        // 🟢 New (per your rule)
+        final String url = ApiConfig.endpoint("get_animal_breed.php", "category_id", String.valueOf(categoryId));
+
+        StringRequest req = new StringRequest(
+                Request.Method.GET,
+                url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            JSONObject root = new JSONObject(response);
+                            boolean success = root.optBoolean("success", false);
+
+                            breedItems.clear();
+                            breedItems.add("Select Breed"); // index 0
+
+                            if (success) {
+                                JSONArray data = root.optJSONArray("data");
+                                if (data != null) {
+                                    for (int i = 0; i < data.length(); i++) {
+                                        JSONObject item = data.getJSONObject(i);
+                                        String breedName = item.optString("breed_name", "");
+                                        if (!TextUtils.isEmpty(breedName)) {
+                                            breedItems.add(breedName);
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (breedAdapter != null) {
+                                breedAdapter.notifyDataSetChanged();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            // keep default list
+                            if (breedAdapter != null) breedAdapter.notifyDataSetChanged();
+                        }
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        error.printStackTrace();
+                        // keep default list
+                        if (breedAdapter != null) breedAdapter.notifyDataSetChanged();
+                    }
+                }
+        );
+
+        if (requestQueue == null) requestQueue = Volley.newRequestQueue(this);
+        requestQueue.add(req);
     }
 
     // --- MapView lifecycle passthrough ---
