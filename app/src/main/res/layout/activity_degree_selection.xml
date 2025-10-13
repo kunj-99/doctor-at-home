@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Edge-to-edge layout with black top/bottom scrims sized via WindowInsets.
+  Content sits between the scrims.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/root_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/bg_gradient_modern"
+    tools:context=".DegreeSelectionActivity">
+
+    <!-- TOP scrim (status bar). Height set at runtime from WindowInsets -->
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
+
+    <!-- Enhanced App Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_header_gradient"
+        android:elevation="12dp"
+        app:liftOnScroll="true">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent"
+            app:navigationIcon="@drawable/ic_arrow_back_white"
+            app:title="Choose Doctor Qualification"
+            app:titleCentered="true"
+            app:titleTextColor="@android:color/white" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Main Content Area -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:padding="16dp"
+        android:background="@drawable/bg_content_gradient">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header Section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Select Doctor's Qualification Level"
+                android:textColor="#6B7280"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="16dp"
+                android:letterSpacing="0.01" />
+
+            <!-- Description -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Choose the qualification level that best matches your veterinary needs"
+                android:textColor="#9CA3AF"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:paddingBottom="24dp"
+                android:lineSpacingExtra="4dp" />
+
+            <!-- Cards Container (populated in code) -->
+            <LinearLayout
+                android:id="@+id/cardsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="24dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- BOTTOM scrim (navigation bar / gesture area). Height set from WindowInsets.
+         Will be 0dp on gesture nav (so it disappears). -->
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
+</LinearLayout>

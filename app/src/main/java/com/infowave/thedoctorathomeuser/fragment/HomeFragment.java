@@ -80,8 +80,10 @@ public class HomeFragment extends Fragment {
         });
 
         Button btnBookVet = view.findViewById(R.id.vetBookNow);
+        // in your Fragment (where the button exists)
+//        Button btnBookVet = view.findViewById(R.id.vetBookNow);
         btnBookVet.setOnClickListener(v -> {
-            Intent i = new Intent(requireContext(), VetAnimalsActivity.class);
+            Intent i = new Intent(requireContext(), DegreeSelectionActivity.class);
             startActivity(i);
         });
 

@@ -26,6 +26,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
             // signingConfig = signingConfigs.getByName("release") // Optional: release keystore set करें
         }
         getByName("debug") {
@@ -37,6 +38,7 @@ android {
                 "proguard-rules.pro"
             )
         }
+
     }
 
     compileOptions {

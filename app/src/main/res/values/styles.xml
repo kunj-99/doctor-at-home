@@ -2,7 +2,25 @@
 <resources>
 
 
+    <style name="ToolbarTitle" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
 
+    <!-- Filter Chip Style -->
+    <style name="FilterChip" parent="Widget.Material3.Chip.Filter">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textAppearance">@style/ChipText</item>
+        <item name="chipMinTouchTargetSize">0dp</item>
+    </style>
+
+    <style name="ChipText" parent="TextAppearance.Material3.LabelMedium">
+    <item name="android:textSize">13sp</item>
+    <item name="android:textStyle">normal</item>
+
+    </style>
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="colorPrimary">#2196F3</item> <!-- Your toolbar background color -->
         <item name="colorPrimaryDark">#1976D2</item>

@@ -34,6 +34,11 @@
         tools:ignore="WrongManifestParent"
         tools:targetApi="n">
         <activity
+            android:name=".DegreeSelectionActivity"
+            android:exported="false"
+           />
+
+        <activity
             android:name=".news"
             android:exported="false" />
         <!-- Added this line to enable OnBackInvokedCallback -->

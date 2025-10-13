@@ -1,17 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8FAFD"
-    android:orientation="vertical">
+    android:background="#F8FAFD">
+
+    <!-- TOP scrim (status bar area). Height set at runtime via WindowInsets -->
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:color/black"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- App Bar with Rounded Bottom -->
     <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
+        android:id="@+id/appBar"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@drawable/appbar_rounded_bottom"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:layout_constraintTop_toBottomOf="@id/status_bar_scrim"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
@@ -25,11 +40,16 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:id="@+id/scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:fillViewport="true"
         android:padding="16dp"
-        android:background="#F8FAFD">
+        android:background="#F8FAFD"
+        app:layout_constraintTop_toBottomOf="@id/appBar"
+        app:layout_constraintBottom_toTopOf="@id/navigation_bar_scrim"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -427,7 +447,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Visit or Vaccination -->
+            <!-- Appointment Type -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -474,7 +494,7 @@
                     app:iconGravity="textStart" />
             </LinearLayout>
 
-            <!-- Reason (Visible only when Visit selected) -->
+            <!-- Reason (Visit) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardReason"
                 android:layout_width="match_parent"
@@ -530,7 +550,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Vaccination Type (Visible only when Vaccination selected) -->
+            <!-- Vaccination (Vaccination) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardVaccination"
                 android:layout_width="match_parent"
@@ -579,9 +599,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-
-
-            <!-- Google Map Location -->
+            <!-- Location -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -619,7 +637,6 @@
                         app:iconGravity="textStart"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
-                    <!-- MAP VIEW -->
                     <com.google.android.gms.maps.MapView
                         android:id="@+id/mapView"
                         android:layout_width="match_parent"
@@ -637,8 +654,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-
-            <!-- Confirm Appointment Button -->
+            <!-- Confirm Appointment -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnConfirm"
                 android:layout_width="match_parent"
@@ -666,4 +682,15 @@
                 android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
-</LinearLayout>
+
+    <!-- BOTTOM scrim (nav bar / gesture area). Height set at runtime via WindowInsets -->
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

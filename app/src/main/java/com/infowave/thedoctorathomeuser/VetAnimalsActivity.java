@@ -2,10 +2,13 @@ package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -13,6 +16,11 @@ import android.widget.LinearLayout;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,7 +29,6 @@ import com.infowave.thedoctorathomeuser.adapter.AnimalAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
-// Volley
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
@@ -29,7 +36,6 @@ import com.android.volley.toolbox.Volley;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 
-// JSON
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,6 +50,9 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
     private ImageButton btnClearSearch;
     private LinearLayout llEmptyState;
 
+    // Scrims
+    private View statusScrim, navScrim;
+
     // Volley
     private RequestQueue requestQueue;
 
@@ -52,7 +61,47 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vet_animals);
 
-        // Setup toolbar
+        // --- Edge-to-edge so scrims can occupy system bar areas ---
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        // Force true-black bars behind scrims (baseline)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(Color.BLACK);
+            getWindow().setNavigationBarColor(Color.BLACK);
+        }
+
+        // Keep icons white on black bars
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
+
+        // Hook scrims & size them from real insets
+        statusScrim = findViewById(R.id.status_bar_scrim);
+        navScrim = findViewById(R.id.navigation_bar_scrim);
+
+        View root = findViewById(android.R.id.content);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            final Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            if (statusScrim != null) {
+                ViewGroup.LayoutParams lp = statusScrim.getLayoutParams();
+                lp.height = sys.top; // status bar height
+                statusScrim.setLayoutParams(lp);
+                statusScrim.setVisibility(sys.top > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            if (navScrim != null) {
+                ViewGroup.LayoutParams lp = navScrim.getLayoutParams();
+                lp.height = sys.bottom; // nav bar height (0 on gesture nav)
+                navScrim.setLayoutParams(lp);
+                navScrim.setVisibility(sys.bottom > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            return insets; // don’t consume; let child behaviors work
+        });
+
+        // Toolbar
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -61,23 +110,23 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         }
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
-        // Initialize views
+        // Views
         etSearch = findViewById(R.id.etSearch);
         btnClearSearch = findViewById(R.id.btnClearSearch);
         llEmptyState = findViewById(R.id.llEmptyState);
 
         recyclerView = findViewById(R.id.rvAnimals);
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-        recyclerView.addItemDecoration(new GridSpacingDecoration(16)); // spacing between cards
+        recyclerView.addItemDecoration(new GridSpacingDecoration(16)); // your spacing decorator
 
         // Volley
         requestQueue = Volley.newRequestQueue(this);
 
-        // Adapter (start empty; we’ll fill after API call)
+        // Adapter
         adapter = new AnimalAdapter(filteredAnimals, this);
         recyclerView.setAdapter(adapter);
 
-        // Fetch categories from API
+        // Load data
         fetchCategoriesFromApi();
 
         // Search
@@ -85,55 +134,40 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
     }
 
     private void setupSearch() {
-        // Text watcher for search functionality
-        etSearch.addTextChangedListener(new TextWatcher() {
+        TextWatcher watcher = new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) {
                 filterAnimals(s.toString());
                 updateClearButtonVisibility();
             }
-        });
+        };
+        etSearch.addTextChangedListener(watcher);
 
-        // Clear search button
         btnClearSearch.setOnClickListener(v -> {
             etSearch.setText("");
             etSearch.clearFocus();
         });
-
-        // Show/hide clear button based on whether there's text
-        etSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(Editable s) {
-                updateClearButtonVisibility();
-            }
-        });
+        updateClearButtonVisibility();
     }
 
     private void updateClearButtonVisibility() {
-        if (etSearch.getText().toString().isEmpty()) {
-            btnClearSearch.setVisibility(View.GONE);
-        } else {
-            btnClearSearch.setVisibility(View.VISIBLE);
-        }
+        btnClearSearch.setVisibility(etSearch.getText().toString().isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     @SuppressLint("NotifyDataSetChanged")
     private void filterAnimals(String query) {
         filteredAnimals.clear();
-
-        if (query.isEmpty()) {
+        if (query == null || query.isEmpty()) {
             filteredAnimals.addAll(animals);
         } else {
-            String lowerCaseQuery = query.toLowerCase();
-            for (Animal animal : animals) {
-                if (animal.getName() != null && animal.getName().toLowerCase().contains(lowerCaseQuery)) {
-                    filteredAnimals.add(animal);
+            String q = query.toLowerCase();
+            for (Animal a : animals) {
+                if (a.getName() != null && a.getName().toLowerCase().contains(q)) {
+                    filteredAnimals.add(a);
                 }
             }
         }
-
         adapter.notifyDataSetChanged();
         updateEmptyState();
     }
@@ -159,8 +193,7 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
                 Request.Method.GET,
                 url,
                 new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
+                    @Override public void onResponse(String response) {
                         try {
                             JSONObject root = new JSONObject(response);
                             boolean success = root.optBoolean("success", false);
@@ -175,11 +208,9 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
                                         JSONObject item = data.getJSONObject(i);
                                         int id = item.optInt("category_id");
                                         String name = item.optString("category_name", "");
-                                        String imageUrl = item.optString("category_image", ""); // full URL from PHP
+                                        String imageUrl = item.optString("category_image", "");
 
-                                        // Build Animal with id + image URL (ensure Animal has these)
-                                        Animal a = new Animal(id, name, imageUrl); // requires the 3-arg constructor
-                                        animals.add(a);
+                                        animals.add(new Animal(id, name, imageUrl));
                                     }
                                 }
                             }
@@ -188,15 +219,12 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
                             adapter.notifyDataSetChanged();
                             updateEmptyState();
                         } catch (JSONException e) {
-                            e.printStackTrace();
                             showEmptyWithMessage();
                         }
                     }
                 },
                 new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
+                    @Override public void onErrorResponse(VolleyError error) {
                         showEmptyWithMessage();
                     }
                 }
@@ -213,10 +241,8 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
 
     @Override
     public void onAnimalClick(Animal animal) {
-        // Navigate to your vet appointment flow with selected animal
         Intent i = new Intent(this, VetAppointmentActivity.class);
-        i.putExtra("category_id", animal.getId());   // ✅ pass category_id
-       // i.putExtra("animal_name", animal.getName()); // optional: name
+        i.putExtra("category_id", animal.getId());
         startActivity(i);
     }
 }

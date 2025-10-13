@@ -3,11 +3,15 @@ package com.infowave.thedoctorathomeuser;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsetsController;
 import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
@@ -21,6 +25,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -35,7 +42,6 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputEditText;
 
-// Volley
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
@@ -43,14 +49,12 @@ import com.android.volley.toolbox.Volley;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 
-// JSON
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
@@ -87,14 +91,8 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     private MaterialButton btnConfirm;
     private ProgressBar progressSubmit;
 
-    // State
-    private enum Mode { VISIT, VACCINATION }
-    private Mode currentMode = Mode.VISIT;
-
-    private Calendar now = Calendar.getInstance();
-
-    // Dropdown data
-    private final List<String> breedItems = new ArrayList<>(); // filled from API
+    // Data
+    private final List<String> breedItems = new ArrayList<>();
     private ArrayAdapter<String> breedAdapter;
 
     private final List<String> vaccinationItems = Arrays.asList(
@@ -108,10 +106,54 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     // Volley
     private RequestQueue requestQueue;
 
+    // Mode
+    private enum Mode { VISIT, VACCINATION }
+    private Mode currentMode = Mode.VISIT;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vet_appointment);
+
+        // Solid black bars (system colors)
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+        WindowInsetsController controller = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            controller = getWindow().getInsetsController();
+        }
+        if (controller != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                controller.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                controller.setSystemBarsAppearance(0, WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+            }
+        }
+
+        // Scrims sizing from insets (for perfect black at top & bottom using Views)
+        final View statusScrim = findViewById(R.id.status_bar_scrim);
+        final View navScrim = findViewById(R.id.navigation_bar_scrim);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root), (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            if (statusScrim != null) {
+                ViewGroup.LayoutParams lp = statusScrim.getLayoutParams();
+                lp.height = sys.top; // status bar height
+                statusScrim.setLayoutParams(lp);
+                statusScrim.setVisibility(sys.top > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            if (navScrim != null) {
+                ViewGroup.LayoutParams lp = navScrim.getLayoutParams();
+                lp.height = sys.bottom; // nav bar height (0 on gesture nav)
+                navScrim.setLayoutParams(lp);
+                navScrim.setVisibility(sys.bottom > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            // No extra paddings needed for content; we keep decorFits true via layout root.
+            return insets;
+        });
 
         // Read intent
         categoryId = getIntent().getIntExtra("category_id", -1);
@@ -120,7 +162,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
         initViews();
         setupToolbar();
-        setupDropdowns();         // init adapters
+        setupDropdowns();
         setupModeToggle();
         setupLocation();
         setupConfirm();
@@ -129,17 +171,14 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         applyMode(Mode.VISIT);
 
         // MapView init
-        Bundle mapViewBundle = null;
-        if (savedInstanceState != null) {
-            mapViewBundle = savedInstanceState.getBundle(MAPVIEW_BUNDLE_KEY);
-        }
+        Bundle mapViewBundle = (savedInstanceState != null) ? savedInstanceState.getBundle(MAPVIEW_BUNDLE_KEY) : null;
         mapView.onCreate(mapViewBundle);
         mapView.getMapAsync(this);
 
         // Volley
         requestQueue = Volley.newRequestQueue(this);
 
-        // Pre-fill animal name from category (optional UX)
+        // Pre-fill animal name (optional)
         if (!TextUtils.isEmpty(categoryNameFromIntent)) {
             etAnimalName.setText(categoryNameFromIntent);
         }
@@ -184,7 +223,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
-            // Optionally show selected category in title
             if (!TextUtils.isEmpty(categoryNameFromIntent)) {
                 getSupportActionBar().setTitle("Book Vet - " + categoryNameFromIntent);
             }
@@ -216,7 +254,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         if (mode == Mode.VISIT) {
             cardReason.setVisibility(View.VISIBLE);
             cardVaccination.setVisibility(View.GONE);
-
             btnVisit.setChecked(true);
             btnVisit.setStrokeWidth(3);
             btnVaccination.setChecked(false);
@@ -224,7 +261,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         } else {
             cardReason.setVisibility(View.GONE);
             cardVaccination.setVisibility(View.VISIBLE);
-
             btnVaccination.setChecked(true);
             btnVaccination.setStrokeWidth(3);
             btnVisit.setChecked(false);
@@ -272,9 +308,9 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             } else {
                 Toast.makeText(this, "Unable to get location. Try again.", Toast.LENGTH_SHORT).show();
             }
-        }).addOnFailureListener(e -> {
-            Toast.makeText(this, "Location error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        });
+        }).addOnFailureListener(e ->
+                Toast.makeText(this, "Location error: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+        );
     }
 
     private void setMarkerAndCamera(LatLng latLng, boolean animate) {
@@ -306,7 +342,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         googleMap = gMap;
         enableMyLocationLayerIfPermitted();
 
-        // Initial camera: India center-ish if no location yet
+        // Initial camera
         LatLng indiaCenter = new LatLng(22.9734, 78.6569);
         setMarkerAndCamera(indiaCenter, false);
 
@@ -338,65 +374,38 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
     private boolean validateForm() {
         boolean ok = true;
-
         clearErrors();
 
-        // Owner validations
-        if (isEmpty(etOwnerName)) {
-            etOwnerName.setError("Name is required");
-            ok = false;
-        }
+        if (isEmpty(etOwnerName)) { etOwnerName.setError("Name is required"); ok = false; }
         String phone = valueOf(etOwnerPhone);
-        if (TextUtils.isEmpty(phone)) {
-            etOwnerPhone.setError("Phone number is required");
-            ok = false;
-        } else if (!android.util.Patterns.PHONE.matcher(phone).matches()) {
-            etOwnerPhone.setError("Enter a valid phone number");
-            ok = false;
+        if (TextUtils.isEmpty(phone)) { etOwnerPhone.setError("Phone number is required"); ok = false; }
+        else if (!android.util.Patterns.PHONE.matcher(phone).matches()) {
+            etOwnerPhone.setError("Enter a valid phone number"); ok = false;
         }
 
         String pin = valueOf(etOwnerPincode);
-        if (TextUtils.isEmpty(pin)) {
-            etOwnerPincode.setError("Pincode is required");
-            ok = false;
-        } else if (pin.length() < 5) {
-            etOwnerPincode.setError("Enter a valid pincode");
-            ok = false;
-        }
+        if (TextUtils.isEmpty(pin)) { etOwnerPincode.setError("Pincode is required"); ok = false; }
+        else if (pin.length() < 5) { etOwnerPincode.setError("Enter a valid pincode"); ok = false; }
 
-        if (isEmpty(etOwnerAddress)) {
-            etOwnerAddress.setError("Address is required");
-            ok = false;
-        }
+        if (isEmpty(etOwnerAddress)) { etOwnerAddress.setError("Address is required"); ok = false; }
 
-        // Animal validations
-        if (isEmpty(etAnimalName)) {
-            etAnimalName.setError("Animal name is required");
-            ok = false;
-        }
-        if (isEmpty(etAnimalAge)) {
-            etAnimalAge.setError("Animal age is required");
-            ok = false;
-        }
+        if (isEmpty(etAnimalName)) { etAnimalName.setError("Animal name is required"); ok = false; }
+        if (isEmpty(etAnimalAge)) { etAnimalAge.setError("Animal age is required"); ok = false; }
+
         if (spBreed.getSelectedItemPosition() == 0) {
             Toast.makeText(this, "Please select animal breed", Toast.LENGTH_SHORT).show();
             ok = false;
         }
 
-        // Mode-specific validations
         if (currentMode == Mode.VISIT) {
-            if (isEmpty(etReason)) {
-                etReason.setError("Reason is required for Visit");
-                ok = false;
-            }
-        } else { // VACCINATION
+            if (isEmpty(etReason)) { etReason.setError("Reason is required for Visit"); ok = false; }
+        } else {
             if (spVaccination.getSelectedItemPosition() == 0) {
                 Toast.makeText(this, "Please select vaccination type", Toast.LENGTH_SHORT).show();
                 ok = false;
             }
         }
 
-        // Location validation (ensure chosen)
         if (currentLatLng == null) {
             Toast.makeText(this, "Please select location on map", Toast.LENGTH_SHORT).show();
             ok = false;
@@ -412,7 +421,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         etOwnerAddress.setError(null);
         etAnimalName.setError(null);
         etAnimalAge.setError(null);
-        etReason.setError(null);
+        if (etReason != null) etReason.setError(null);
     }
 
     private boolean isEmpty(TextInputEditText et) {
@@ -427,66 +436,35 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         progressSubmit.setVisibility(View.VISIBLE);
         btnConfirm.setEnabled(false);
 
-        // Collect data
-        String ownerName    = valueOf(etOwnerName);
-        String ownerPhone   = valueOf(etOwnerPhone);
-        String ownerPincode = valueOf(etOwnerPincode);
-        String ownerAddress = valueOf(etOwnerAddress);
-
-        String animalName   = valueOf(etAnimalName);
-        String animalAge    = valueOf(etAnimalAge);
-        String breed        = (String) spBreed.getSelectedItem();
-
-        String type         = (currentMode == Mode.VISIT) ? "Visit" : "Vaccination";
-        String reason       = (currentMode == Mode.VISIT) ? valueOf(etReason) : "";
-        String vaccination  = (currentMode == Mode.VACCINATION) ? (String) spVaccination.getSelectedItem() : "";
-
-        String latLngShown  = (currentLatLng != null)
-                ? String.format(Locale.getDefault(), "%.6f,%.6f", currentLatLng.latitude, currentLatLng.longitude)
-                : "-,-";
-
-        // TODO: integrate with backend (Volley/Retrofit) and send lat/lng and categoryId.
+        // TODO: integrate with backend
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             progressSubmit.setVisibility(View.GONE);
             btnConfirm.setEnabled(true);
-
-            String msg = (currentMode == Mode.VISIT)
-                    ? ("Visit booked for " + animalName)
-                    : ("Vaccination booked (" + vaccination + ") for " + animalName);
-            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-        }, 1200);
+            Toast.makeText(this, "Appointment submitted.", Toast.LENGTH_LONG).show();
+        }, 1000);
     }
 
     // --- Load breeds for selected category via API ---
     private void loadBreedsForCategory() {
-        // Guard
         if (categoryId <= 0) {
-            // no category id; keep only default option
             breedItems.clear();
             breedItems.add("Select Breed");
             if (breedAdapter != null) breedAdapter.notifyDataSetChanged();
             return;
         }
 
-        // 🔴 Old
-        // String url = "https://yourdomain.com/get_breeds.php?category_id=" + categoryId;
-
-        // 🟢 New (per your rule)
         final String url = ApiConfig.endpoint("get_animal_breed.php", "category_id", String.valueOf(categoryId));
-
         StringRequest req = new StringRequest(
-                Request.Method.GET,
-                url,
+                Request.Method.GET, url,
                 new Response.Listener<String>() {
-                    @Override
-                    public void onResponse(String response) {
+                    @Override public void onResponse(String response) {
                         try {
                             JSONObject root = new JSONObject(response);
                             boolean success = root.optBoolean("success", false);
 
                             breedItems.clear();
-                            breedItems.add("Select Breed"); // index 0
+                            breedItems.add("Select Breed");
 
                             if (success) {
                                 JSONArray data = root.optJSONArray("data");
@@ -494,74 +472,33 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                                     for (int i = 0; i < data.length(); i++) {
                                         JSONObject item = data.getJSONObject(i);
                                         String breedName = item.optString("breed_name", "");
-                                        if (!TextUtils.isEmpty(breedName)) {
-                                            breedItems.add(breedName);
-                                        }
+                                        if (!TextUtils.isEmpty(breedName)) breedItems.add(breedName);
                                     }
                                 }
                             }
-
-                            if (breedAdapter != null) {
-                                breedAdapter.notifyDataSetChanged();
-                            }
+                            if (breedAdapter != null) breedAdapter.notifyDataSetChanged();
                         } catch (JSONException e) {
-                            e.printStackTrace();
-                            // keep default list
                             if (breedAdapter != null) breedAdapter.notifyDataSetChanged();
                         }
                     }
                 },
                 new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        error.printStackTrace();
-                        // keep default list
+                    @Override public void onErrorResponse(VolleyError error) {
                         if (breedAdapter != null) breedAdapter.notifyDataSetChanged();
                     }
                 }
         );
-
         if (requestQueue == null) requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(req);
     }
 
-    // --- MapView lifecycle passthrough ---
-    @Override
-    protected void onStart() {
-        super.onStart();
-        mapView.onStart();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mapView.onResume();
-        enableMyLocationLayerIfPermitted();
-    }
-
-    @Override
-    protected void onPause() {
-        mapView.onPause();
-        super.onPause();
-    }
-
-    @Override
-    protected void onStop() {
-        mapView.onStop();
-        super.onStop();
-    }
-
-    @Override
-    protected void onDestroy() {
-        mapView.onDestroy();
-        super.onDestroy();
-    }
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        mapView.onLowMemory();
-    }
+    // MapView lifecycle
+    @Override protected void onStart() { super.onStart(); mapView.onStart(); }
+    @Override protected void onResume() { super.onResume(); mapView.onResume(); enableMyLocationLayerIfPermitted(); }
+    @Override protected void onPause() { mapView.onPause(); super.onPause(); }
+    @Override protected void onStop() { mapView.onStop(); super.onStop(); }
+    @Override protected void onDestroy() { mapView.onDestroy(); super.onDestroy(); }
+    @Override public void onLowMemory() { super.onLowMemory(); mapView.onLowMemory(); }
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
