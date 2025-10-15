@@ -240,9 +240,11 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
     }
 
     @Override
+
     public void onAnimalClick(Animal animal) {
-        Intent i = new Intent(this, VetAppointmentActivity.class);
-        i.putExtra("category_id", animal.getId());
-        startActivity(i);
+        Intent intent = new Intent(this, VetDoctorsActivity.class);
+        intent.putExtra("category_id", animal.getId());
+        intent.putExtra("animal_name", animal.getName());
+        startActivity(intent);
     }
 }

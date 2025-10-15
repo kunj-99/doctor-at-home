@@ -34,6 +34,9 @@
         tools:ignore="WrongManifestParent"
         tools:targetApi="n">
         <activity
+            android:name=".VetDoctorsActivity"
+            android:exported="false" />
+        <activity
             android:name=".DegreeSelectionActivity"
             android:exported="false"
            />
