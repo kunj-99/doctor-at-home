@@ -3,9 +3,7 @@ package com.infowave.thedoctorathomeuser;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -16,22 +14,14 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-
-import com.phonepe.intent.sdk.api.PhonePeKt; // Kotlin top-level API for Checkout
-
 import androidx.appcompat.app.AlertDialog;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.phonepe.intent.sdk.api.PhonePeKt;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -46,7 +36,6 @@ import java.util.Map;
 public class pending_bill extends AppCompatActivity {
 
     private static final String TAG = "PendingBill";
-    private static final int UPI_PAYMENT_REQUEST_CODE = 123;
 
     // Dynamic charges (from API)
     private static double APPOINTMENT_CHARGE;
@@ -65,16 +54,15 @@ public class pending_bill extends AppCompatActivity {
     private double distanceKm = 0.0;
     private double distanceCharge = 0.0;
     private double gstAmount = 0.0;
-    private double finalCost = 0.0; // what UI shows as “Total Pay”
+    private double finalCost = 0.0;      // raw total (double)
+    private long   finalPayRupees = 0L;  // rounded ceil for UI
 
     // Coords
     private double docLat = 0.0, docLng = 0.0, userLat = 0.0, userLng = 0.0;
 
-    // UPI (legacy)
-    private String merchantUpiId, merchantName, transactionNote, currency;
-
     // Booking data
-    private String patientName, age, gender, problem, address, doctorId, doctorName, Status, selectedPaymentMethod = "";
+    private String patientName, age, gender, problem, address, doctorId, doctorName, Status;
+    private String selectedPaymentMethod = "Online"; // Default ONLINE selected
     private String patientId, pincode, googleMapsLink = "";
 
     // UI
@@ -82,15 +70,15 @@ public class pending_bill extends AppCompatActivity {
     private TextView tvBillDate, tvBillTime, tvBillPatientName, tvBillDoctorName;
     private TextView tvAppointmentCharge, tvDeposit, tvConsultingFeeValue, tvDistanceKmValue, tvDistanceChargeValue, tvGstValue, tvTotalPaidValue, tvWalletBalance;
 
-    // Row control to remove blank space
-    private View depositRow;         // container of value
-    private View depositLabelView;   // optional label view (if present in layout)
+    // Deposit row container
+    private View depositRow;
+    private View depositLabelView; // optional label
 
-    // PhonePe (reuse the same backend endpoints you already have)
+    // PhonePe endpoints
     private final String ppCreateOrderUrl = ApiConfig.endpoint("create_order.php");
     private final String ppStatusUrl      = ApiConfig.endpoint("check_status.php");
 
-    // Track the PG order for this appointment payment
+    // Track PG order
     private String ppMerchantOrderId;
 
     // Result launcher for PhonePe UI
@@ -110,49 +98,12 @@ public class pending_bill extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pending_bill);
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
-        // 2) Paint actual system bars black to avoid flashes
-        getWindow().setStatusBarColor(Color.BLACK);
-        getWindow().setNavigationBarColor(Color.BLACK);
-
-        // 3) White icons (since backgrounds are dark)
-        WindowInsetsControllerCompat wic =
-                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
-        wic.setAppearanceLightStatusBars(false);
-        wic.setAppearanceLightNavigationBars(false);
-
-        // 4) Tweak OEM contrast / divider (API level guards)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            getWindow().setNavigationBarContrastEnforced(false);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            getWindow().setNavigationBarDividerColor(Color.BLACK);
-        }
-
-        // 5) Size scrim <View>s from WindowInsets
-        final View statusScrim = findViewById(R.id.status_bar_scrim);
-        final View navScrim    = findViewById(R.id.navigation_bar_scrim);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
-            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-
-            if (statusScrim != null) {
-                statusScrim.getLayoutParams().height = sys.top;  // status bar height
-                statusScrim.requestLayout();
-                statusScrim.setVisibility(sys.top > 0 ? View.VISIBLE : View.GONE);
-            }
-            if (navScrim != null) {
-                navScrim.getLayoutParams().height = sys.bottom;  // nav bar height (0 on gesture nav)
-                navScrim.requestLayout();
-                navScrim.setVisibility(sys.bottom > 0 ? View.VISIBLE : View.GONE);
-            }
-            return insets;
-        });
+        // PhonePe result launcher
         ppCheckoutLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (ppMerchantOrderId != null) {
-                        // Verify final state with server; no wallet credit for appointment
                         checkPhonePeStatus(ppMerchantOrderId);
                     } else {
                         Log.w(TAG, "Returned from PhonePe but merchantOrderId is null");
@@ -169,7 +120,6 @@ public class pending_bill extends AppCompatActivity {
             return;
         }
 
-        // Loader while inputs load
         loaderutil.showLoader(this);
 
         // Intent extras
@@ -219,32 +169,28 @@ public class pending_bill extends AppCompatActivity {
         btnRechargeWallet     = findViewById(R.id.btn_recharge_wallet);
         payButton             = findViewById(R.id.pay_button);
 
-        // Locate a real "row" container to hide without leaving a gap
+        // Deposit row refs
         depositRow = tvDeposit != null ? (View) tvDeposit.getParent() : null;
-        // try to find a label view (optional) so we can hide it too
         int labelId = getResources().getIdentifier("tv_deposit_label", "id", getPackageName());
-        if (labelId != 0) {
-            depositLabelView = findViewById(labelId);
-        } else {
-            depositLabelView = null;
-        }
-        hideDepositRow(); // start hidden
+        depositLabelView = (labelId != 0) ? findViewById(labelId) : null;
+        hideDepositRow();
 
-        // Initial UI
-        btnRechargeWallet.setVisibility(View.GONE);
+        // Header details
         if (patientName != null) tvBillPatientName.setText(patientName);
         if (doctorName  != null) tvBillDoctorName.setText(doctorName);
-
         String curDate = new SimpleDateFormat("dd MMMM, yyyy", Locale.getDefault()).format(new Date());
         String curTime = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
         tvBillDate.setText(curDate);
         tvBillTime.setText(curTime);
 
+        // Default selection = Online
         setButtonNeutralState();
+        selectedPaymentMethod = "Online";
+        stylePaymentButtons();
         disablePayButton();
 
         // Start data flow
-        fetchUpiConfig(doctorId);
+        fetchAppConfig();
         fetchDoctorLocation(doctorId);
 
         // Wallet auto-refresh
@@ -259,6 +205,12 @@ public class pending_bill extends AppCompatActivity {
         btnOfflinePayment.setOnClickListener(v -> {
             selectedPaymentMethod = "Offline";
             stylePaymentButtons();
+            if (walletBalance < DEPOSIT) {
+                Toast.makeText(this,
+                        "You need at least ₹" + (int) DEPOSIT + " in your wallet to book Offline.",
+                        Toast.LENGTH_SHORT).show();
+
+            }
             recomputeTotalsAndUI();
         });
 
@@ -276,7 +228,8 @@ public class pending_bill extends AppCompatActivity {
         // Pay
         payButton.setOnClickListener(v -> new AlertDialog.Builder(pending_bill.this)
                 .setTitle("Confirm Appointment")
-                .setMessage("Are you sure?\n\nBooking appointment charge will be ₹" + String.format(Locale.getDefault(), "%.0f", DEPOSIT) + " if you cancel.")
+                .setMessage("Are you sure?\n\nBooking appointment charge will be ₹" +
+                        String.format(Locale.getDefault(), "%.0f", DEPOSIT) + " if you cancel.")
                 .setCancelable(false)
                 .setPositiveButton("Proceed", (dialog, which) -> {
                     loaderutil.showLoader(pending_bill.this);
@@ -287,21 +240,27 @@ public class pending_bill extends AppCompatActivity {
                         return;
                     }
 
-                    // Snapshot of the deposit decision at the moment of confirmation
+                    // Safety: Offline must have deposit in wallet
+                    if ("Offline".equals(selectedPaymentMethod) && walletBalance < DEPOSIT) {
+                        loaderutil.hideLoader();
+                        Toast.makeText(this, "Wallet में ₹" + (int) DEPOSIT + " होने पर ही Offline booking होगी.", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    // Snapshot deposit plan
                     lastConfirmedDepositMode = (walletBalance >= DEPOSIT) ? DepositMode.WALLET : DepositMode.BILL;
 
                     if ("Offline".equals(selectedPaymentMethod)) {
-                        // Unified logic for Offline
+                        // Immediate booking; wallet debit if applicable
                         if (lastConfirmedDepositMode == DepositMode.WALLET) {
                             deductWalletCharge(DEPOSIT, "Platform charge for offline appointment booking");
                             setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
                         } else {
                             setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
                         }
-                        // Direct booking without PG
                         saveBookingData(googleMapsLink);
                     } else {
-                        // Online flow
+                        // Online with PhonePe
                         if (lastConfirmedDepositMode == DepositMode.WALLET) {
                             setDepositLine("Wallet will be debited: ₹" + (int) DEPOSIT, true);
                         } else {
@@ -317,10 +276,11 @@ public class pending_bill extends AppCompatActivity {
         );
     }
 
-    /** Create PhonePe SDK order (server) and open Standard Checkout UI (client). */
-    private void startPhonePeCheckout() {
-        loaderutil.showLoader(this);
 
+
+    // ------------------------- PhonePe -------------------------
+
+    private void startPhonePeCheckout() {
         StringRequest req = new StringRequest(
                 Request.Method.POST,
                 ppCreateOrderUrl,
@@ -346,7 +306,6 @@ public class pending_bill extends AppCompatActivity {
                         }
 
                         try {
-                            // ✅ No Intent returned; pass your launcher
                             PhonePeKt.startCheckoutPage(this, token, orderId, ppCheckoutLauncher);
                             Log.d(TAG, "Launched PhonePe checkout: orderId=" + orderId);
                         } catch (Throwable t) {
@@ -380,9 +339,7 @@ public class pending_bill extends AppCompatActivity {
         Volley.newRequestQueue(this).add(req);
     }
 
-    /** Verify on server; on COMPLETED → handle wallet (if needed) then save booking & payment history. */
     private void checkPhonePeStatus(String merchantOrderId) {
-        // For appointment flow we DO NOT credit wallet; PHP will respect skipWallet soon
         String url = ppStatusUrl + "?merchantOrderId=" + merchantOrderId + "&skipWallet=1";
 
         StringRequest req = new StringRequest(
@@ -401,7 +358,6 @@ public class pending_bill extends AppCompatActivity {
                         String state = obj.optString("state", "PENDING");
 
                         if ("COMPLETED".equalsIgnoreCase(state)) {
-                            // If the confirmed plan was wallet → debit now
                             if ("Online".equals(selectedPaymentMethod) && lastConfirmedDepositMode == DepositMode.WALLET) {
                                 deductWalletCharge(DEPOSIT, "Platform charge for online appointment (wallet debit)");
                                 setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
@@ -431,43 +387,35 @@ public class pending_bill extends AppCompatActivity {
         Volley.newRequestQueue(this).add(req);
     }
 
-    // ------------------------- DATA FETCHERS -------------------------
+    // ------------------------- CONFIG & DATA -------------------------
 
-    private void fetchUpiConfig(String doctorId) {
-        String url = ApiConfig.endpoint("get_upi_config.php");
+    /** Fetch pricing config (app_settings → gst_percent, base_distance, extra_cost_per_km, platform_charge) */
+    private void fetchAppConfig() {
+        String url = ApiConfig.endpoint("get_app_config.php"); // Your PHP that reads app_settings
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
-                    if (resp.optBoolean("success")) {
-                        merchantUpiId   = resp.optString("upi_id");
-                        merchantName    = resp.optString("merchant_name");
-                        transactionNote = resp.optString("transaction_note");
-                        currency        = resp.optString("currency", "INR");
-
-                        FREE_DISTANCE_KM = resp.optDouble("base_distance", 3.0);
-                        PER_KM_CHARGE    = resp.optDouble("extra_cost_per_km", 7.0);
-                        DEPOSIT          = resp.optDouble("platform_charge", 50.0);
-                        GST_PERCENT      = resp.optDouble("gst_percent", 10.0);
-                    } else {
-                        Log.e(TAG, "Config fetch failed: " + resp.optString("message"));
-                        // fail-safe defaults (will keep loader logic moving)
-                        FREE_DISTANCE_KM = 3.0;
-                        PER_KM_CHARGE    = 7.0;
-                        DEPOSIT          = 50.0;
-                        GST_PERCENT      = 10.0;
+                    if (!resp.optBoolean("success")) {
+                        String err = resp.optString("error", "CONFIG_FAILED");
+                        loaderutil.hideLoader();
+                        Toast.makeText(this, "Config error: " + err, Toast.LENGTH_LONG).show();
+                        finish();
+                        return;
                     }
+
+                    FREE_DISTANCE_KM = resp.optDouble("base_distance");
+                    PER_KM_CHARGE    = resp.optDouble("extra_cost_per_km");
+                    DEPOSIT          = resp.optDouble("platform_charge");
+                    GST_PERCENT      = resp.optDouble("gst_percent");
+
                     cfgLoaded = true;
                     fetchAppointmentCharge(doctorId);
                 },
                 err -> {
+                    loaderutil.hideLoader();
                     Log.e(TAG, "Network error fetching config", err);
-                    // fail-safe defaults
-                    FREE_DISTANCE_KM = 3.0;
-                    PER_KM_CHARGE    = 7.0;
-                    DEPOSIT          = 50.0;
-                    GST_PERCENT      = 10.0;
-                    cfgLoaded = true;
-                    fetchAppointmentCharge(doctorId);
+                    Toast.makeText(this, "Config network error", Toast.LENGTH_LONG).show();
+                    finish();
                 }
         );
 
@@ -580,7 +528,6 @@ public class pending_bill extends AppCompatActivity {
             }
         } catch (JSONException e) {
             Log.e(TAG, "Routes parse error", e);
-            // keep defaults
         }
 
         distanceReady = true;
@@ -589,92 +536,102 @@ public class pending_bill extends AppCompatActivity {
 
     // ------------------------- CORE MATH & UI -------------------------
 
-    /**
-     * Unified rule for both Online and Offline:
-     * - If wallet ≥ DEPOSIT → do NOT add deposit to bill; deposit will be taken from wallet.
-     * - If wallet < DEPOSIT → add deposit into bill.
-     * Deposit row shows the plan for both modes.
-     */
     @SuppressLint("SetTextI18n")
     private void recomputeTotalsAndUI() {
         boolean ready = cfgLoaded && chargeLoaded && distanceReady;
 
-        // Base bill (without deposit)
-        double baseTotal = consultingFee + gstAmount + distanceCharge;
+        // Recompute pieces
+        double distanceChargeRaw = (distanceKm <= FREE_DISTANCE_KM) ? 0.0 : (distanceKm * PER_KM_CHARGE);
+        double baseTotal         = consultingFee + gstAmount + distanceChargeRaw;
 
         boolean depositCoveredByWallet = walletBalance >= DEPOSIT;
         boolean addDepositToBill = false;
         String depositLine = "";
 
         if ("Online".equals(selectedPaymentMethod) || "Offline".equals(selectedPaymentMethod)) {
-            addDepositToBill = !depositCoveredByWallet; // add only when wallet insufficient
+            addDepositToBill = !depositCoveredByWallet;
+
             if (depositCoveredByWallet) {
                 depositLine = "Wallet will be debited: ₹" + (int) DEPOSIT;
             } else {
-                depositLine = "Platform Charge added to bill: ₹" + (int) DEPOSIT;
+                if ("Offline".equals(selectedPaymentMethod)) {
+                    depositLine = "   Offline booking requires ₹" + (int) DEPOSIT + " in your wallet.";
+
+                } else {
+                    depositLine = "Platform Charge added to bill: ₹" + (int) DEPOSIT;
+                }
             }
-        } else {
-            addDepositToBill = false;
-            depositLine = "";
         }
 
-        finalCost = baseTotal + (addDepositToBill ? DEPOSIT : 0);
+        double finalCostRaw = baseTotal + (addDepositToBill ? DEPOSIT : 0.0);
+        finalPayRupees = (long) Math.ceil(finalCostRaw);  // round UP to rupees
+        finalCost = finalCostRaw;
 
-        // --- UI atoms ---
+        // Update UI labels
         tvAppointmentCharge.setText("₹ " + (int) APPOINTMENT_CHARGE);
         tvConsultingFeeValue.setText("₹ " + (int) consultingFee);
         tvDistanceKmValue.setText(String.format(Locale.getDefault(),"%.1f km", distanceKm));
         tvGstValue.setText("₹ " + (int) gstAmount);
-        tvTotalPaidValue.setText("₹ " + (int) Math.round(finalCost));
+        tvDistanceChargeValue.setText(
+                distanceChargeRaw > 0 ? "₹ " + (int) Math.round(distanceChargeRaw)
+                        : "Free under " + (int) FREE_DISTANCE_KM + " km"
+        );
+        tvTotalPaidValue.setText("₹ " + finalPayRupees);
         tvWalletBalance.setText("₹" + String.format(Locale.getDefault(),"%.2f", walletBalance));
 
-        if (distanceCharge > 0) {
-            tvDistanceChargeValue.setText("₹ " + (int) distanceCharge);
-        } else {
-            tvDistanceChargeValue.setText("Free under " + (int) FREE_DISTANCE_KM + " km");
-        }
+        if (depositLine.isEmpty()) hideDepositRow(); else showDepositRow(depositLine);
 
-        // Deposit row visibility for both modes
-        if (depositLine.isEmpty()) {
-            hideDepositRow();
-        } else {
-            showDepositRow(depositLine);
-        }
-
-        // Loader + enable/disable logic
-        if (!ready) {
+        // Recharge + Pay state
+        if ("Offline".equals(selectedPaymentMethod) && walletBalance < DEPOSIT) {
+            btnRechargeWallet.setVisibility(View.VISIBLE);
             disablePayButton();
-            loaderutil.showLoader(this);
         } else {
-            loaderutil.hideLoader();
-
-            if ("Offline".equals(selectedPaymentMethod)) {
-                // Always allow proceed; rule is applied at booking
-                btnRechargeWallet.setVisibility(View.GONE);
-                enablePayButton();
-            } else if ("Online".equals(selectedPaymentMethod)) {
-                btnRechargeWallet.setVisibility(View.GONE);
-                enablePayButton();
-            } else {
+            btnRechargeWallet.setVisibility(View.GONE);
+            if (!ready) {
                 disablePayButton();
+                loaderutil.showLoader(this);
+            } else {
+                loaderutil.hideLoader();
+                enablePayButton();
             }
         }
 
+        // Visual hint for offline when not eligible
+        boolean canUseOffline = walletBalance >= DEPOSIT;
+        btnOfflinePayment.setAlpha(canUseOffline ? 1f : 0.7f);
+
         Log.d(TAG, "recomputeTotals → mode=" + selectedPaymentMethod
                 + " wallet=" + walletBalance
-                + " final=" + finalCost
+                + " finalRaw=" + finalCostRaw
+                + " ceil=" + finalPayRupees
                 + " addDepositToBill=" + addDepositToBill);
     }
 
-    // Hide/show helpers for the deposit row (avoid blank space)
+    // Deposit row helpers
     private void hideDepositRow() {
         if (depositRow != null) depositRow.setVisibility(View.GONE);
-        if (tvDeposit != null) tvDeposit.setText("");
+        if (depositLabelView != null) depositLabelView.setVisibility(View.GONE); // hide the red label too
+        if (tvDeposit != null) {
+            tvDeposit.setText("");
+            tvDeposit.setVisibility(View.GONE);
+        }
     }
 
     private void showDepositRow(String text) {
+        if (depositLabelView != null) depositLabelView.setVisibility(View.GONE); // always hide label for clean look
         if (depositRow != null) depositRow.setVisibility(View.VISIBLE);
-        if (tvDeposit != null) tvDeposit.setText(text);
+        if (tvDeposit != null) {
+            tvDeposit.setVisibility(View.VISIBLE);
+            tvDeposit.setSingleLine(false);
+            tvDeposit.setMaxLines(3);
+            tvDeposit.setEllipsize(null);
+            tvDeposit.setText(text); // e.g. "Offline booking requires ₹50 in your wallet."
+        }
+    }
+
+
+    private void setDepositLine(String text, boolean show) {
+        if (show) showDepositRow(text); else hideDepositRow();
     }
 
     private void setButtonNeutralState() {
@@ -849,7 +806,6 @@ public class pending_bill extends AppCompatActivity {
                 p.put("consultation_fee", String.format(Locale.getDefault(), "%.2f", consultingFee));
                 p.put("deposit", String.format(Locale.getDefault(), "%.2f", DEPOSIT));
 
-                // Unified status for both modes based on confirmation-time decision
                 if (lastConfirmedDepositMode == DepositMode.WALLET) {
                     p.put("deposit_status", "Wallet Debited");
                 } else if (lastConfirmedDepositMode == DepositMode.BILL) {
@@ -888,53 +844,10 @@ public class pending_bill extends AppCompatActivity {
         payButton.setAlpha(1f);
         payButton.setBackgroundColor(getResources().getColor(R.color.navy_blue));
     }
+
     private void disablePayButton() {
         payButton.setEnabled(false);
         payButton.setAlpha(0.5f);
         payButton.setBackgroundColor(getResources().getColor(R.color.custom_gray));
-    }
-
-    // ------------------------- LEGACY UPI -------------------------
-
-    @Override
-    protected void onActivityResult(int reqCode, int resCode, @Nullable Intent data) {
-        super.onActivityResult(reqCode, resCode, data);
-        if (reqCode == UPI_PAYMENT_REQUEST_CODE) {
-            String response = (data != null) ? data.getStringExtra("response") : null;
-            processUpiPaymentResponse(response);
-        }
-    }
-
-    @SuppressLint("SetTextI18n")
-    private void processUpiPaymentResponse(String response) {
-        loaderutil.hideLoader();
-        if (response == null || response.trim().isEmpty()) {
-            Toast.makeText(this, "Your payment was cancelled or did not go through.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        String status = "";
-        for (String part : response.split("&")) {
-            String[] kv = part.split("=");
-            if (kv.length >= 2 && "status".equalsIgnoreCase(kv[0])) {
-                status = kv[1].toLowerCase();
-                break;
-            }
-        }
-
-        if ("success".equals(status)) {
-            if ("Online".equals(selectedPaymentMethod) && lastConfirmedDepositMode == DepositMode.WALLET) {
-                deductWalletCharge(DEPOSIT, "Platform charge for online appointment (wallet debit)");
-                setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
-            }
-            Toast.makeText(this, "Payment completed successfully!", Toast.LENGTH_SHORT).show();
-            saveBookingData(googleMapsLink);
-        } else {
-            Toast.makeText(this, "Payment was not successful. Please try again.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // Convenience for setting the deposit line and ensuring the row is visible/hidden correctly
-    private void setDepositLine(String text, boolean show) {
-        if (show) showDepositRow(text); else hideDepositRow();
     }
 }
