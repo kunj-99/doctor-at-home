@@ -52,7 +52,7 @@ public class pending_bill extends AppCompatActivity {
     // Calculated
     private double consultingFee;
     private double distanceKm = 0.0;
-    private double distanceCharge = 0.0;
+    private double distanceCharge = 0.0;  // <- keep latest for saving
     private double gstAmount = 0.0;
     private double finalCost = 0.0;      // raw total (double)
     private long   finalPayRupees = 0L;  // rounded ceil for UI
@@ -92,6 +92,15 @@ public class pending_bill extends AppCompatActivity {
     // Deposit decision snapshot at confirmation time
     private enum DepositMode { NONE, WALLET, BILL }
     private DepositMode lastConfirmedDepositMode = DepositMode.NONE;
+
+    // -------- Lifecycle --------
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Recharge से लौटे तो balance/labels तुरंत refresh हों
+        fetchWalletBalance();
+        recomputeTotalsAndUI();
+    }
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -207,9 +216,8 @@ public class pending_bill extends AppCompatActivity {
             stylePaymentButtons();
             if (walletBalance < DEPOSIT) {
                 Toast.makeText(this,
-                        "You need at least ₹" + (int) DEPOSIT + " in your wallet to book Offline.",
+                        "Offline booking के लिए Wallet में कम से कम ₹" + (int) DEPOSIT + " चाहिए.",
                         Toast.LENGTH_SHORT).show();
-
             }
             recomputeTotalsAndUI();
         });
@@ -275,8 +283,6 @@ public class pending_bill extends AppCompatActivity {
                 .show()
         );
     }
-
-
 
     // ------------------------- PhonePe -------------------------
 
@@ -361,6 +367,8 @@ public class pending_bill extends AppCompatActivity {
                             if ("Online".equals(selectedPaymentMethod) && lastConfirmedDepositMode == DepositMode.WALLET) {
                                 deductWalletCharge(DEPOSIT, "Platform charge for online appointment (wallet debit)");
                                 setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
+                                // UI refresh immediately
+                                recomputeTotalsAndUI();
                             }
                             Toast.makeText(this, "Payment successful.", Toast.LENGTH_SHORT).show();
                             saveBookingData(googleMapsLink);
@@ -391,7 +399,7 @@ public class pending_bill extends AppCompatActivity {
 
     /** Fetch pricing config (app_settings → gst_percent, base_distance, extra_cost_per_km, platform_charge) */
     private void fetchAppConfig() {
-        String url = ApiConfig.endpoint("get_app_config.php"); // Your PHP that reads app_settings
+        String url = ApiConfig.endpoint("get_app_config.php"); // PHP reading app_settings
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
@@ -542,7 +550,8 @@ public class pending_bill extends AppCompatActivity {
 
         // Recompute pieces
         double distanceChargeRaw = (distanceKm <= FREE_DISTANCE_KM) ? 0.0 : (distanceKm * PER_KM_CHARGE);
-        double baseTotal         = consultingFee + gstAmount + distanceChargeRaw;
+        distanceCharge = distanceChargeRaw; // save latest
+        double baseTotal = consultingFee + gstAmount + distanceChargeRaw;
 
         boolean depositCoveredByWallet = walletBalance >= DEPOSIT;
         boolean addDepositToBill = false;
@@ -555,8 +564,7 @@ public class pending_bill extends AppCompatActivity {
                 depositLine = "Wallet will be debited: ₹" + (int) DEPOSIT;
             } else {
                 if ("Offline".equals(selectedPaymentMethod)) {
-                    depositLine = "   Offline booking requires ₹" + (int) DEPOSIT + " in your wallet.";
-
+                    depositLine = "Offline booking के लिए wallet में ₹" + (int) DEPOSIT + " होना ज़रूरी है.";
                 } else {
                     depositLine = "Platform Charge added to bill: ₹" + (int) DEPOSIT;
                 }
@@ -610,7 +618,7 @@ public class pending_bill extends AppCompatActivity {
     // Deposit row helpers
     private void hideDepositRow() {
         if (depositRow != null) depositRow.setVisibility(View.GONE);
-        if (depositLabelView != null) depositLabelView.setVisibility(View.GONE); // hide the red label too
+        if (depositLabelView != null) depositLabelView.setVisibility(View.GONE);
         if (tvDeposit != null) {
             tvDeposit.setText("");
             tvDeposit.setVisibility(View.GONE);
@@ -618,17 +626,16 @@ public class pending_bill extends AppCompatActivity {
     }
 
     private void showDepositRow(String text) {
-        if (depositLabelView != null) depositLabelView.setVisibility(View.GONE); // always hide label for clean look
+        if (depositLabelView != null) depositLabelView.setVisibility(View.GONE);
         if (depositRow != null) depositRow.setVisibility(View.VISIBLE);
         if (tvDeposit != null) {
             tvDeposit.setVisibility(View.VISIBLE);
             tvDeposit.setSingleLine(false);
             tvDeposit.setMaxLines(3);
             tvDeposit.setEllipsize(null);
-            tvDeposit.setText(text); // e.g. "Offline booking requires ₹50 in your wallet."
+            tvDeposit.setText(text);
         }
     }
-
 
     private void setDepositLine(String text, boolean show) {
         if (show) showDepositRow(text); else hideDepositRow();
@@ -668,6 +675,7 @@ public class pending_bill extends AppCompatActivity {
                         if ("success".equals(obj.optString("status"))) {
                             walletBalance = obj.optDouble("wallet_balance", 0.0);
                             tvWalletBalance.setText("₹" + String.format(Locale.getDefault(), "%.2f", walletBalance));
+                            // हर fetch के बाद UI अपडेट
                             recomputeTotalsAndUI();
                         }
                     } catch (JSONException ignored) { }
@@ -690,6 +698,8 @@ public class pending_bill extends AppCompatActivity {
         updateUserWallet(patientId, walletBalance);
         addWalletTransaction(Integer.parseInt(patientId), charge, "debit", reason);
         tvWalletBalance.setText("₹" + String.format(Locale.getDefault(), "%.2f", walletBalance));
+        // <<< IMPORTANT: debit के तुरंत बाद UI refresh >>>
+        recomputeTotalsAndUI();
     }
 
     private void saveBookingData(String googleMapsLink) {
