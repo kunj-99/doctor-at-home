@@ -1,50 +1,24 @@
 package com.infowave.thedoctorathomeuser;
 
 public class Animal {
-    private final String name;
-    private final int drawableRes;
-    private final String imageUrl;  // ✅ added for backend images
-    private int id;                 // ✅ optional (for category_id)
+    private int id;
+    private String name;
+    private String imageUrl;
+    private int drawableRes;
+    private double price; // NEW
 
-    // For local drawable images (existing constructor)
-    public Animal(String name, int drawableRes) {
-        this.name = name;
-        this.drawableRes = drawableRes;
-        this.imageUrl = null;
-    }
-
-    // For backend images (new constructor)
-    public Animal(String name, String imageUrl) {
-        this.name = name;
-        this.imageUrl = imageUrl;
-        this.drawableRes = 0;
-    }
-
-    // Optional constructor if you want both
     public Animal(int id, String name, String imageUrl) {
-        this.id = id;
-        this.name = name;
-        this.imageUrl = imageUrl;
-        this.drawableRes = 0;
+        this.id = id; this.name = name; this.imageUrl = imageUrl;
     }
 
-    public String getName() {
-        return name;
-    }
+    // getters
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public String getImageUrl() { return imageUrl; }
+    public int getDrawableRes() { return drawableRes; }
+    public double getPrice() { return price; } // NEW
 
-    public int getDrawableRes() {
-        return drawableRes;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
+    // setters
+    public void setDrawableRes(int drawableRes) { this.drawableRes = drawableRes; }
+    public void setPrice(double price) { this.price = price; } // NEW
 }

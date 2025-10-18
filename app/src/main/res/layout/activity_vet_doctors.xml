@@ -5,8 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/light_gray_background"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    tools:context=".VetDoctorsActivity">
 
+    <!-- Top AppBar & Header -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -20,7 +22,7 @@
             android:orientation="vertical"
             android:paddingTop="?attr/actionBarSize">
 
-            <!-- Header Section -->
+            <!-- Header text -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -42,10 +44,9 @@
                     android:text="Choose from our trusted veterinary specialists"
                     android:textColor="@color/text_gray"
                     android:textSize="16sp" />
-
             </LinearLayout>
 
-            <!-- Search Card -->
+            <!-- Pincode Search Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -61,15 +62,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:padding="8dp">
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="8dp">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
                         android:layout_gravity="center_vertical"
-                        android:layout_marginStart="12dp"
-                        android:layout_marginEnd="8dp"
-                        android:src="@drawable/ic_search"
+                        android:src="@drawable/ic_location"
                         app:tint="@color/blue" />
 
                     <EditText
@@ -77,11 +77,14 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:layout_marginStart="8dp"
                         android:background="@null"
-                        android:hint="Search by doctor name, specialization or zip code"
-                        android:imeOptions="actionSearch"
+                        android:digits="0123456789"
+                        android:inputType="number"
+                        android:hint="Enter 6-digit pincode"
+                        android:maxLength="6"
                         android:maxLines="1"
-                        android:paddingVertical="12dp"
+                        android:paddingVertical="10dp"
                         android:textColor="@color/black"
                         android:textColorHint="@color/text_gray"
                         android:textSize="16sp" />
@@ -92,18 +95,15 @@
                         android:layout_height="40dp"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:src="@drawable/ic_close"
-                        app:tint="@color/text_gray"
-                        android:visibility="gone" />
-
+                        android:contentDescription="@string/clear_search"
+                        android:visibility="gone"
+                        app:tint="@color/text_gray" />
                 </LinearLayout>
-
             </com.google.android.material.card.MaterialCardView>
-
         </LinearLayout>
-
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Main Content -->
+    <!-- Scrollable content -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -114,7 +114,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Stats Card -->
+            <!-- Stats card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -153,7 +153,6 @@
                             android:textColor="@color/white"
                             android:textSize="14sp"
                             android:alpha="0.9" />
-
                     </LinearLayout>
 
                     <LinearLayout
@@ -169,7 +168,7 @@
                             android:background="@drawable/bg_count_circle"
                             android:gravity="center"
                             android:padding="16dp"
-                            android:text="12"
+                            android:text="0"
                             android:textColor="@color/primary_200"
                             android:textSize="20sp"
                             android:textStyle="bold" />
@@ -181,74 +180,19 @@
                             android:text="Available"
                             android:textColor="@color/white"
                             android:textSize="12sp" />
-
                     </LinearLayout>
-
                 </LinearLayout>
-
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Filter Chips -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingHorizontal="20dp"
-                android:paddingBottom="16dp">
-
-                <com.google.android.material.chip.Chip
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="All"
-                    app:chipBackgroundColor="@color/primary_blue"
-                    app:chipStrokeColor="@color/primary_blue"
-                    android:textColor="@color/white" />
-
-                <com.google.android.material.chip.Chip
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Nearby"
-                    app:chipBackgroundColor="@color/white"
-                    app:chipStrokeColor="@color/border_gray"
-                    app:chipStrokeWidth="1dp"
-                    android:textColor="@color/text_gray" />
-
-
-                <com.google.android.material.chip.Chip
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Available Now"
-                    app:chipBackgroundColor="@color/white"
-                    app:chipStrokeColor="@color/border_gray"
-                    app:chipStrokeWidth="1dp"
-                    android:textColor="@color/text_gray" />
-
-
-            </LinearLayout>
-
-            <!-- Doctors List Title -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="20dp"
-                android:layout_marginBottom="12dp"
-                android:text="Top Veterinarians"
-                android:textColor="@color/black"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <!-- Doctors List -->
+            <!-- Doctors list -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvDoctors"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="20dp"
-                android:orientation="vertical"
                 tools:listitem="@layout/item_vet_doctor" />
 
-            <!-- Empty State -->
+            <!-- Empty state -->
             <LinearLayout
                 android:id="@+id/llEmptyState"
                 android:layout_width="match_parent"
@@ -278,73 +222,19 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:gravity="center"
-                    android:text="Try adjusting your search criteria or check back later for available veterinarians in your area."
+                    android:text="Try another pincode or check later."
                     android:textColor="@color/text_gray"
                     android:textSize="14sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:backgroundTint="@color/primary_blue"
-                    android:paddingHorizontal="32dp"
-                    android:text="Clear Search"
-                    android:textAllCaps="false"
-                    android:textColor="@color/white"
-                    app:cornerRadius="12dp"
-                    android:onClick="onClearSearchClick"/>
-
             </LinearLayout>
-
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Toolbar Overlay -->
+    <!-- Toolbar overlay (title/back/filter) -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@color/white"
-        app:contentInsetStart="0dp"
-        app:layout_collapseMode="pin">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp">
-
-            <ImageButton
-                android:id="@+id/btnBack"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_arrow_back"
-                app:tint="@color/black" />
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="Veterinarians"
-                android:textColor="@color/black"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <ImageButton
-                android:id="@+id/btnFilter"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_filter"
-                app:tint="@color/black" />
-
-        </LinearLayout>
-
-    </androidx.appcompat.widget.Toolbar>
+        app:contentInsetStart="0dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

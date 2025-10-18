@@ -3,11 +3,11 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="180dp"
-    android:layout_margin="8dp"
+    android:layout_height="200dp"
+    android:layout_margin="10dp"
     android:foreground="?attr/selectableItemBackgroundBorderless"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="6dp"
     app:strokeColor="@color/card_stroke"
     app:strokeWidth="1dp"
     android:clickable="true"
@@ -25,10 +25,45 @@
             android:scaleType="centerCrop"
             android:contentDescription="@string/animal_image_desc" />
 
-        <!-- Gradient Overlay -->
+        <!-- Top badges row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <!-- Category Badge -->
+            <TextView
+                android:id="@+id/tvCategory"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_category_badge"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="5dp"
+                android:text="ANIMAL"
+                android:textColor="@android:color/white"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <!-- Price Chip -->
+            <TextView
+                android:id="@+id/tvPriceChip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="5dp"
+            android:text="₹500"
+            android:textColor="@android:color/white"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Gradient Overlay bottom -->
         <View
             android:layout_width="match_parent"
-            android:layout_height="60dp"
+            android:layout_height="70dp"
             android:layout_alignParentBottom="true"
             android:background="@drawable/gradient_bottom" />
 
@@ -38,32 +73,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:layout_margin="16dp"
+            android:layout_margin="14dp"
             android:text="Animal Name"
             android:textStyle="bold"
             android:textSize="18sp"
             android:textColor="@android:color/white"
-            android:shadowColor="#80000000"
-            android:shadowDx="0"
-            android:shadowDy="2"
-            android:shadowRadius="4"
             android:ellipsize="end"
             android:maxLines="1" />
-
-        <!-- Category Badge -->
-        <TextView
-            android:id="@+id/tvCategory"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="12dp"
-            android:background="@drawable/bg_category_badge"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
-            android:text="PET"
-            android:textColor="@android:color/white"
-            android:textSize="10sp"
-            android:textStyle="bold" />
-
     </RelativeLayout>
-
 </com.google.android.material.card.MaterialCardView>

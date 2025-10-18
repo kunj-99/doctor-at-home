@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Edge-to-edge layout with black top/bottom scrims sized via WindowInsets.
-  Content sits between the scrims.
--->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -13,14 +9,14 @@
     android:background="@drawable/bg_gradient_modern"
     tools:context=".DegreeSelectionActivity">
 
-    <!-- TOP scrim (status bar). Height set at runtime from WindowInsets -->
+    <!-- TOP scrim -->
     <View
         android:id="@+id/status_bar_scrim"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/black" />
 
-    <!-- Enhanced App Bar -->
+    <!-- AppBar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBar"
         android:layout_width="match_parent"
@@ -35,28 +31,28 @@
             android:layout_height="?attr/actionBarSize"
             android:background="@android:color/transparent"
             app:navigationIcon="@drawable/ic_arrow_back_white"
-            app:title="Choose Doctor Qualification"
+            app:title="Choose Animal Category"
             app:titleCentered="true"
             app:titleTextColor="@android:color/white" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Main Content Area -->
+    <!-- Header & description (SCROLLABLE) -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scroll"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:fillViewport="true"
         android:clipToPadding="false"
         android:padding="16dp"
         android:background="@drawable/bg_content_gradient">
 
+        <!-- SINGLE direct child -->
         <LinearLayout
+            android:id="@+id/contentContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Header Section -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -68,7 +64,6 @@
                 android:padding="16dp"
                 android:letterSpacing="0.01" />
 
-            <!-- Description -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -76,22 +71,42 @@
                 android:textColor="#9CA3AF"
                 android:textSize="14sp"
                 android:gravity="center"
-                android:paddingBottom="24dp"
+                android:paddingBottom="12dp"
                 android:lineSpacingExtra="4dp" />
-
-            <!-- Cards Container (populated in code) -->
-            <LinearLayout
-                android:id="@+id/cardsContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingBottom="24dp" />
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- BOTTOM scrim (navigation bar / gesture area). Height set from WindowInsets.
-         Will be 0dp on gesture nav (so it disappears). -->
+    <!-- RecyclerView for categories -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="never"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp" />
+
+    <!-- Empty state (toggle from code) -->
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No categories found"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="#444" />
+    </LinearLayout>
+
+    <!-- BOTTOM scrim -->
     <View
         android:id="@+id/navigation_bar_scrim"
         android:layout_width="match_parent"

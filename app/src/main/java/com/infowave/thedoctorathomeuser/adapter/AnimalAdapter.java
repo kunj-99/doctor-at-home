@@ -42,22 +42,30 @@ public class AnimalAdapter extends RecyclerView.Adapter<AnimalAdapter.VH> {
         Animal a = data.get(position);
         h.tvName.setText(a.getName());
 
-        // Prefer backend URL when available; otherwise use drawable fallback
+        // Price chip
+        double price = a.getPrice();
+        if (price > 0) {
+            String p = (price % 1 == 0) ? "₹" + (int) price : "₹" + String.format("%.2f", price);
+            h.tvPriceChip.setText(p);
+            h.tvPriceChip.setVisibility(View.VISIBLE);
+        } else {
+            h.tvPriceChip.setVisibility(View.GONE);
+        }
+
+        // Category static label (you can map per item if backend sends type)
+        h.tvCategory.setText("ANIMAL");
+
+        // Load image
         String url = a.getImageUrl();
         if (url != null && !url.trim().isEmpty()) {
             Glide.with(h.img.getContext())
                     .load(url)
-                    .placeholder(R.drawable.plaseholder_error)   // optional, add in your drawables
-                    .error(R.drawable.plaseholder_error)         // optional fallback
+                    .placeholder(R.drawable.plaseholder_error)
+                    .error(R.drawable.plaseholder_error)
                     .into(h.img);
         } else {
             int resId = a.getDrawableRes();
-            if (resId != 0) {
-                h.img.setImageResource(resId);
-            } else {
-                // final safety fallback
-                h.img.setImageResource(R.drawable.plaseholder_error);
-            }
+            h.img.setImageResource(resId != 0 ? resId : R.drawable.plaseholder_error);
         }
 
         h.itemView.setOnClickListener(v -> {
@@ -66,17 +74,17 @@ public class AnimalAdapter extends RecyclerView.Adapter<AnimalAdapter.VH> {
     }
 
     @Override
-    public int getItemCount() {
-        return data.size();
-    }
+    public int getItemCount() { return data.size(); }
 
     static class VH extends RecyclerView.ViewHolder {
         ImageView img;
-        TextView tvName;
+        TextView tvName, tvCategory, tvPriceChip;
         VH(@NonNull View itemView) {
             super(itemView);
             img = itemView.findViewById(R.id.imgAnimal);
             tvName = itemView.findViewById(R.id.tvAnimalName);
+            tvCategory = itemView.findViewById(R.id.tvCategory);
+            tvPriceChip = itemView.findViewById(R.id.tvPriceChip);
         }
     }
 }

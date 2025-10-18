@@ -36,7 +36,6 @@
                 android:src="@drawable/ic_degree_bachelor"
                 android:contentDescription="@null"
                 app:tint="#FFFFFF" />
-
         </LinearLayout>
 
         <!-- Text Content -->
@@ -75,6 +74,16 @@
                     android:textStyle="bold"
                     android:paddingTop="2dp" />
 
+                <!-- NEW: Price -->
+                <TextView
+                    android:id="@+id/tvPrice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₹500"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#0F9D58"
+                    android:paddingTop="2dp"/>
             </LinearLayout>
 
             <!-- Description -->
@@ -90,15 +99,7 @@
 
         </LinearLayout>
 
-        <!-- Selection Indicator -->
-        <ImageView
-            android:id="@+id/selectionIndicator"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_gravity="center_vertical"
-            android:src="@drawable/ic_unselected_circle"
-            android:contentDescription="@null"
-            app:tint="#D1D5DB" />
+
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

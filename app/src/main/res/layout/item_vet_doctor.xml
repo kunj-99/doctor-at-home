@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <!-- Profile Image with Online Status -->
+            <!-- Profile Image -->
             <RelativeLayout
                 android:layout_width="80dp"
                 android:layout_height="80dp">
@@ -35,14 +35,12 @@
                     android:scaleType="centerCrop"
                     tools:src="@tools:sample/avatars" />
 
-                <!-- Online Status Badge -->
                 <View
                     android:layout_width="16dp"
                     android:layout_height="16dp"
                     android:layout_alignParentEnd="true"
                     android:layout_alignParentBottom="true"
                     android:background="@drawable/bg_online_status" />
-
             </RelativeLayout>
 
             <!-- Doctor Info -->
@@ -69,10 +67,9 @@
                     android:layout_marginTop="2dp"
                     android:text="Small Animal Specialist"
                     android:textColor="@color/primary_2"
-                    android:textSize="14sp"
-                    />
+                    android:textSize="14sp" />
 
-                <!-- Rating Row -->
+                <!-- Rating + counters row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -96,14 +93,45 @@
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <TextView
+                    <RatingBar
+                        android:id="@+id/ratingBar"
+                        style="?android:attr/ratingBarStyleSmall"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="2dp"
-                        android:text="(128 reviews)"
-                        android:textColor="@color/text_gray"
-                        android:textSize="12sp" />
+                        android:isIndicator="true"
+                        android:numStars="5"
+                        android:stepSize="0.5"
+                        android:layout_marginStart="8dp" />
 
+                    <TextView
+                        android:id="@+id/tvRequests"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="Requests: 0"
+                        android:textColor="@color/text_gray"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvPending"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="Pending: 0"
+                        android:textColor="@color/text_gray"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvEta"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="Next slot in ~15 min"
+                        android:textColor="@color/primary_2"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
                 <!-- Experience & Education -->
@@ -135,7 +163,6 @@
                             android:text="8 years exp"
                             android:textColor="@color/text_gray"
                             android:textSize="12sp" />
-
                     </LinearLayout>
 
                     <LinearLayout
@@ -159,13 +186,9 @@
                             android:text="DVM, Cornell"
                             android:textColor="@color/text_gray"
                             android:textSize="12sp" />
-
                     </LinearLayout>
-
                 </LinearLayout>
-
             </LinearLayout>
-
         </LinearLayout>
 
         <!-- Location & Availability -->
@@ -188,7 +211,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
-                android:text="123 Pet Care St, New York, NY 10001"
+                android:text="Ahmedabad, GJ"
                 android:textColor="@color/text_gray"
                 android:textSize="12sp" />
 
@@ -200,9 +223,7 @@
                 android:paddingVertical="4dp"
                 android:text="Available Today"
                 android:textColor="@color/green_500"
-                android:textSize="10sp"
-              />
-
+                android:textSize="10sp" />
         </LinearLayout>
 
         <!-- Divider -->
@@ -238,11 +259,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="$49"
+                    android:text="₹400"
                     android:textColor="@color/black"
                     android:textSize="20sp"
                     android:textStyle="bold" />
-
             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
@@ -251,7 +271,7 @@
                 android:layout_height="48dp"
                 android:backgroundTint="@color/primary_blue"
                 android:paddingHorizontal="32dp"
-                android:text="Book Now"
+                android:text="Book Appointment"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
                 android:textSize="14sp"
@@ -259,9 +279,6 @@
                 app:icon="@drawable/ic_calendar"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp" />
-
         </LinearLayout>
-
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>
