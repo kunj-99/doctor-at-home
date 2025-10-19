@@ -42,32 +42,30 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
     private static final String TAG = "VET_FLOW";
 
-    // UI
     private RecyclerView recyclerView;
     private VetDoctorsAdapter adapter;
-    private EditText etSearch;              // pincode search (6 digits)
+    private EditText etSearch;
     private ImageButton btnClearSearch;
     private LinearLayout llEmptyState;
     private TextView tvDoctorsCount;
 
-    // Data
     private final ArrayList<JSONObject> doctors = new ArrayList<>();
     private final ArrayList<JSONObject> filteredDoctors = new ArrayList<>();
 
     private View statusScrim, navScrim;
     private RequestQueue queue;
 
-    // Inputs
-    private int categoryId = -1;
+    // === Inputs from Intent ===
+    private int vetCategoryId = -1;         // from doctor_categories
+    private int animalCategoryId = -1;      // from animal_categories
     private String animalName = "";
-    private double catPrice = 0.0;
-    private String catImage = "";
+    private String doctorType = "";         // from intent
 
-    // pincodes
+    // === Pincode Management ===
     private String defaultPincode = "";
     private String activePincode  = "";
 
-    // prefs
+    // === SharedPreferences ===
     private static final String PREFS       = "UserPrefs";
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_PINCODE = "pincode";
@@ -77,21 +75,31 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vet_doctors);
 
-        Log.d(TAG, "VetDoctorsActivity.onCreate()");
+        Log.d(TAG, "VetDoctorsActivity.onCreate() initialized");
 
         initViews();
         setupEdgeToEdge();
 
-        // Read intent from VetAnimalsActivity
-        categoryId = getIntent().getIntExtra("category_id", -1);
-        animalName = getIntent().getStringExtra("animal_name");
-        catPrice   = getIntent().getDoubleExtra("category_price", 0.0);
-        catImage   = getIntent().getStringExtra("category_image");
+        // --- Read intent from VetAnimalsActivity ---
+        vetCategoryId    = getIntent().getIntExtra("vet_category_id", -1);
+        animalCategoryId = getIntent().getIntExtra("animal_category_id", -1);
+        animalName       = getIntent().getStringExtra("animal_category_name"); // CORRECT key
+        doctorType       = getIntent().getStringExtra("doctor_type"); // CORRECT key
 
-        Log.d(TAG, "RECEIVED VetDoctorsActivity <- VetAnimalsActivity: " +
-                "category_id=" + categoryId + ", animal_name=" + animalName +
-                ", price=" + catPrice + ", image=" + catImage);
-        Toast.makeText(this, "Category: " + animalName + " (" + categoryId + ")", Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "Received from VetAnimalsActivity → "
+                + "vet_category_id=" + vetCategoryId
+                + ", animal_category_id=" + animalCategoryId
+                + ", animal_name=" + animalName
+                + ", doctor_type=" + doctorType);
+
+        if (vetCategoryId <= 0 || animalCategoryId <= 0 || doctorType == null || doctorType.isEmpty()) {
+            Toast.makeText(this, "Invalid category selection", Toast.LENGTH_LONG).show();
+            Log.e(TAG, "Invalid IDs or missing doctorType → vetCategoryId=" + vetCategoryId
+                    + ", animalCategoryId=" + animalCategoryId
+                    + ", doctorType=" + doctorType);
+            finish();
+            return;
+        }
 
         setupSearchBar();
 
@@ -101,7 +109,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
         queue = Volley.newRequestQueue(this);
 
-        // default pincode resolve
+        // --- Resolve default pincode ---
         SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
         String savedPin = sp.getString(KEY_PINCODE, "");
         if (savedPin != null && savedPin.trim().length() == 6) {
@@ -161,7 +169,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         etSearch.setFilters(new InputFilter[]{ new InputFilter.LengthFilter(6) });
 
         etSearch.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) { // history साफ रखें
+            if (!hasFocus) {
                 etSearch.setText("");
                 btnClearSearch.setVisibility(View.GONE);
             }
@@ -176,12 +184,15 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                 if (pin.length() == 6) {
                     if (!pin.equals(activePincode)) {
                         activePincode = pin;
+                        Log.d(TAG, "Search triggered → new pincode=" + activePincode);
                         fetchVets(activePincode, true);
-                        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_PINCODE, activePincode).apply();
+                        getSharedPreferences(PREFS, MODE_PRIVATE)
+                                .edit().putString(KEY_PINCODE, activePincode).apply();
                     }
                 }
                 if (pin.length() == 0 && !defaultPincode.isEmpty()) {
                     activePincode = defaultPincode;
+                    Log.d(TAG, "Resetting to default pincode=" + defaultPincode);
                     fetchVets(defaultPincode, true);
                 }
             }
@@ -205,7 +216,8 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                         defaultPincode = pin.trim();
                         activePincode  = defaultPincode;
                         etSearch.setText(defaultPincode);
-                        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_PINCODE, defaultPincode).apply();
+                        getSharedPreferences(PREFS, MODE_PRIVATE)
+                                .edit().putString(KEY_PINCODE, defaultPincode).apply();
                         fetchVets(defaultPincode, true);
                     } else {
                         fetchVets("", true);
@@ -220,40 +232,47 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         queue.add(req);
     }
 
+    // === Fetch Doctors (with Vet & Animal & doctor_type filters) ===
     private void fetchVets(String pin, boolean allowFallback) {
-        if (categoryId <= 0) {
-            Toast.makeText(this, "Invalid category", Toast.LENGTH_SHORT).show();
-            Log.w(TAG, "fetchVets aborted: invalid categoryId=" + categoryId);
+        if (vetCategoryId <= 0 || animalCategoryId <= 0 || doctorType == null || doctorType.isEmpty()) {
+            Toast.makeText(this, "Invalid category selection", Toast.LENGTH_SHORT).show();
+            Log.w(TAG, "fetchVets aborted: vetCategoryId=" + vetCategoryId
+                    + ", animalCategoryId=" + animalCategoryId
+                    + ", doctorType=" + doctorType);
             return;
         }
 
         String url = ApiConfig.endpoint(
                 "Animal/vet_doctors_by_category.php",
-                "category_id", String.valueOf(categoryId),
+                "vet_category_id", String.valueOf(vetCategoryId),
+                "animal_category_id", String.valueOf(animalCategoryId),
+                "doctor_type", doctorType,
                 "pincode", pin == null ? "" : pin
         );
+
         Log.d(TAG, "GET " + url + " (allowFallback=" + allowFallback + ")");
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
-                    Log.d(TAG, "fetchVets resp=" + resp);
+                    Log.d(TAG, "fetchVets → Response: " + resp); // DEBUG: Log full JSON response
                     boolean ok = resp.optBoolean("success", false);
                     JSONArray arr = resp.optJSONArray("data");
 
                     if (!ok || arr == null || arr.length() == 0) {
                         Log.w(TAG, "No results for pin=" + pin);
                         if (allowFallback && defaultPincode.length() == 6 && !pin.equals(defaultPincode)) {
-                            Log.d(TAG, "fallback → default pin=" + defaultPincode);
+                            Log.d(TAG, "Fallback → default pin=" + defaultPincode);
                             fetchVets(defaultPincode, false);
                         } else {
-                            applyResult(arr); // empty UI
+                            applyResult(arr);
                         }
                     } else {
+                        Log.d(TAG, "Doctors found → count=" + arr.length());
                         applyResult(arr);
                     }
                 },
                 err -> {
-                    Log.e(TAG, "fetchVets error", err);
+                    Log.e(TAG, "fetchVets error: " + err.getMessage());
                     if (allowFallback && defaultPincode.length() == 6 && !pin.equals(defaultPincode)) {
                         fetchVets(defaultPincode, false);
                     } else {
@@ -268,38 +287,58 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
     @SuppressLint("NotifyDataSetChanged")
     private void applyResult(@Nullable JSONArray arr) {
-        doctors.clear(); filteredDoctors.clear();
+        doctors.clear();
+        filteredDoctors.clear();
+
         if (arr != null) {
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.optJSONObject(i);
-                if (o != null) doctors.add(o);
+                if (o != null) {
+                    // DEBUG: Log each doctor as parsed
+                    Log.d(TAG, "Parsed Doctor: " + o.optString("full_name", "NULL")
+                            + ", id=" + o.optInt("doctor_id", 0)
+                            + ", animal_category_id=" + o.optInt("animal_category_id", -1)
+                            + ", category_id=" + o.optInt("category_id", -1)
+                            + ", doctor_type=" + o.optString("doctor_type", "")
+                            + ", pincodes=" + o.optString("pincodes", ""));
+                    doctors.add(o);
+                }
             }
         }
-        filteredDoctors.addAll(doctors);
-        Log.d(TAG, "applyResult -> doctors=" + doctors.size());
-        if (tvDoctorsCount != null) tvDoctorsCount.setText(String.valueOf(filteredDoctors.size()));
 
-        if (adapter != null) adapter.notifyDataSetChanged();
+        filteredDoctors.addAll(doctors);
+
+        Log.d(TAG, "applyResult() → total doctors=" + filteredDoctors.size()); // DEBUG
+
+        if (tvDoctorsCount != null)
+            tvDoctorsCount.setText(String.valueOf(filteredDoctors.size()));
+
+        if (adapter != null)
+            adapter.notifyDataSetChanged();
 
         boolean empty = filteredDoctors.isEmpty();
-        if (llEmptyState != null) llEmptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
-        if (recyclerView != null) recyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
+        if (llEmptyState != null)
+            llEmptyState.setVisibility(empty ? View.VISIBLE : View.GONE);
+        if (recyclerView != null)
+            recyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
 
         if (empty) {
+            Log.d(TAG, "No doctors found in filteredDoctors!"); // DEBUG
             Toast.makeText(this,
-                    "No vets for " + (activePincode.isEmpty()? "your area" : activePincode),
+                    "No vets available for " + animalName +
+                            " in " + (activePincode.isEmpty() ? "your area" : activePincode),
                     Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override
     public void onDoctorClick(JSONObject doctor) {
-        Log.d(TAG, "onDoctorClick: " + doctor.optString("full_name",""));
+        Log.d(TAG, "onDoctorClick → " + doctor.optString("full_name",""));
     }
 
     @Override
     public void onBookNowClick(JSONObject doctor) {
-        Log.d(TAG, "onBookNowClick DoctorId=" + doctor.optInt("doctor_id")
+        Log.d(TAG, "onBookNowClick → DoctorId=" + doctor.optInt("doctor_id")
                 + ", name=" + doctor.optString("full_name","")
                 + ", fee=" + doctor.optDouble("consultation_fee",0.0));
     }

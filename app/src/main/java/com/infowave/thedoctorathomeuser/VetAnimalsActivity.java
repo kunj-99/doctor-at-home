@@ -36,11 +36,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapter.OnAnimalClickListener {
 
     private static final String TAG = "VET_FLOW";
+
+    // Intent keys
+    public static final String EXTRA_VET_CATEGORY_ID   = "vet_category_id";
+    public static final String EXTRA_VET_CATEGORY_NAME = "vet_category_name";
+    public static final String EXTRA_ANIMAL_CATEGORY_ID   = "animal_category_id";
+    public static final String EXTRA_ANIMAL_CATEGORY_NAME = "animal_category_name";
+    public static final String EXTRA_DOCTOR_TYPE = "doctor_type"; // pass through
 
     private RecyclerView recyclerView;
     private AnimalAdapter adapter;
@@ -56,31 +64,24 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
     // Volley
     private RequestQueue requestQueue;
 
-    // 🔴 Doctor/Vet category coming from DegreeSelection (e.g., 11 = Veterinary General)
+    // From DegreeSelection
     private int vetCategoryIdFromDegree = -1;
     private String vetCategoryNameFromDegree = "";
-    private double vetCategoryPriceFromDegree = 0.0;
-    private String vetCategoryImageFromDegree = null;
-    private String vetCategoryDiseaseFromDegree = "";
+    private String doctorTypeFromDegree = "";   // NEW: carry forward!
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vet_animals);
 
-        // --- read extras from DegreeSelection (DOCTOR category) ---
-        vetCategoryIdFromDegree    = getIntent().getIntExtra(DegreeSelectionActivity.EXTRA_CATEGORY_ID, -1);
-        vetCategoryNameFromDegree  = getIntent().getStringExtra(DegreeSelectionActivity.EXTRA_CATEGORY_NAME);
-        vetCategoryPriceFromDegree = getIntent().getDoubleExtra(DegreeSelectionActivity.EXTRA_CATEGORY_PRICE, 0.0);
-        vetCategoryImageFromDegree = getIntent().getStringExtra(DegreeSelectionActivity.EXTRA_CATEGORY_IMAGE);
-        vetCategoryDiseaseFromDegree = getIntent().getStringExtra(DegreeSelectionActivity.EXTRA_CATEGORY_DISEASE);
+        // === Read minimal extras from DegreeSelection ===
+        vetCategoryIdFromDegree   = getIntent().getIntExtra(DegreeSelectionActivity.EXTRA_VET_CATEGORY_ID, -1);
+        vetCategoryNameFromDegree = getIntent().getStringExtra(DegreeSelectionActivity.EXTRA_VET_CATEGORY_NAME);
+        doctorTypeFromDegree      = getIntent().getStringExtra(DegreeSelectionActivity.EXTRA_DOCTOR_TYPE);
 
-        Log.d(TAG, "VetAnimalsActivity.onCreate");
-        Log.d(TAG, "VetAnimalsActivity received from DegreeSelection -> "
-                + "DOCTOR_CAT_ID=" + vetCategoryIdFromDegree
-                + ", name=" + vetCategoryNameFromDegree
-                + ", price=" + vetCategoryPriceFromDegree
-                + ", image=" + vetCategoryImageFromDegree);
+        Log.d(TAG, "VetAnimalsActivity.onCreate | vet_category_id=" + vetCategoryIdFromDegree
+                + ", vet_category_name=" + vetCategoryNameFromDegree
+                + ", doctor_type=" + doctorTypeFromDegree);
 
         // Edge-to-edge scrims
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
@@ -119,7 +120,6 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
-            // Title can reflect doctor category if you want
             getSupportActionBar().setTitle(vetCategoryNameFromDegree == null ? "Choose Animal" : vetCategoryNameFromDegree);
         }
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
@@ -140,10 +140,10 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         adapter = new AnimalAdapter(filteredAnimals, this);
         recyclerView.setAdapter(adapter);
 
-        // Load categories (ANIMAL types)
-        fetchCategoriesFromApi();
+        // Load animal categories
+        fetchAnimalCategories();
 
-        // Search
+        // Search handlers
         setupSearch();
     }
 
@@ -196,12 +196,12 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         }
     }
 
-    // === API CALL: get_animal_category.php (ANIMAL types) ===
-    private void fetchCategoriesFromApi() {
+    // === API CALL: fetch animal categories (ANIMAL types) ===
+    private void fetchAnimalCategories() {
         llEmptyState.setVisibility(View.GONE);
         recyclerView.setVisibility(View.VISIBLE);
 
-        final String url = ApiConfig.endpoint("get_animal_category.php");
+        final String url = ApiConfig.endpoint("Animal/get_animal_category.php");
         Log.d(TAG, "GET " + url);
 
         StringRequest req = new StringRequest(
@@ -220,24 +220,22 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
                             if (data != null) {
                                 for (int i = 0; i < data.length(); i++) {
                                     JSONObject item = data.getJSONObject(i);
-                                    int id = item.optInt("category_id");              // <-- ANIMAL category id
+                                    int id = item.optInt("category_id");
                                     String name = item.optString("category_name", "");
                                     String imageUrl = item.optString("category_image", "");
-                                    double price = item.optDouble("price", 0.0);      // optional
-
                                     Animal a = new Animal(id, name, imageUrl);
-                                    a.setPrice(price);
                                     animals.add(a);
                                 }
                             }
                         }
 
+                        // Sort by category_id ascending, first card always lowest id
+                        animals.sort(Comparator.comparingInt(Animal::getId));
+
                         filteredAnimals.addAll(animals);
-                        Log.d(TAG, "categories count=" + filteredAnimals.size());
-                        for (int i = 0; i < filteredAnimals.size(); i++) {
-                            Log.d(TAG, "cat[" + i + "] id=" + filteredAnimals.get(i).getId()
-                                    + ", name=" + filteredAnimals.get(i).getName()
-                                    + ", price=" + filteredAnimals.get(i).getPrice());
+                        Log.d(TAG, "animal categories count=" + filteredAnimals.size());
+                        for (Animal a : animals) {
+                            Log.d(TAG, "Animal: id=" + a.getId() + ", name=" + a.getName());
                         }
                         adapter.notifyDataSetChanged();
                         updateEmptyState();
@@ -259,28 +257,17 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
 
     @Override
     public void onAnimalClick(Animal animal) {
-        // ✅ FIX: API को DOCTOR category चाहिए → वही “category_id” भेजें जो DegreeSelection से आया था.
-        // Animal की जानकारी अलग keys से भेजो.
+        // Pass all details, including doctor_type!
         Intent intent = new Intent(this, VetDoctorsActivity.class);
+        intent.putExtra(EXTRA_VET_CATEGORY_ID, vetCategoryIdFromDegree);          // doctor_categories.category_id
+        intent.putExtra(EXTRA_ANIMAL_CATEGORY_ID, animal.getId());                // animal_categories.category_id
+        intent.putExtra(EXTRA_VET_CATEGORY_NAME, vetCategoryNameFromDegree);
+        intent.putExtra(EXTRA_ANIMAL_CATEGORY_NAME, animal.getName());
+        intent.putExtra(EXTRA_DOCTOR_TYPE, doctorTypeFromDegree);                 // <<==== THIS IS IMPORTANT!
 
-        // DOCTOR category for API:
-        intent.putExtra("category_id", vetCategoryIdFromDegree); // <-- IMPORTANT
-
-        // Animal selection for UI/filters:
-        intent.putExtra("animal_type_id", animal.getId());       // (new key)
-        intent.putExtra("animal_name", animal.getName());        // (name)
-        intent.putExtra("animal_image", animal.getImageUrl());   // (image)
-
-        // Optional: pass doctor category meta (if needed further)
-        intent.putExtra("vet_category_name", vetCategoryNameFromDegree);
-        intent.putExtra("vet_category_price", vetCategoryPriceFromDegree);
-        intent.putExtra("vet_category_image", vetCategoryImageFromDegree);
-        intent.putExtra("vet_category_disease", vetCategoryDiseaseFromDegree);
-
-        Log.d(TAG, "CLICK VetAnimals -> going to VetDoctorsActivity with "
-                + "DOCTOR_CAT_ID=" + vetCategoryIdFromDegree
-                + ", animalTypeId=" + animal.getId()
-                + ", animalName=" + animal.getName());
+        Log.d(TAG, "VetAnimals -> VetDoctors | vet_category_id=" + vetCategoryIdFromDegree
+                + ", animal_category_id=" + animal.getId()
+                + ", doctor_type=" + doctorTypeFromDegree);
 
         startActivity(intent);
     }

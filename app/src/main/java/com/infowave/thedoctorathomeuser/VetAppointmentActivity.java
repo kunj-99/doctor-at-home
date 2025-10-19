@@ -454,7 +454,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             return;
         }
 
-        final String url = ApiConfig.endpoint("get_animal_breed.php", "category_id", String.valueOf(categoryId));
+        final String url = ApiConfig.endpoint("Animal/get_animal_breed.php", "category_id", String.valueOf(categoryId));
         StringRequest req = new StringRequest(
                 Request.Method.GET, url,
                 new Response.Listener<String>() {
