@@ -1,6 +1,7 @@
 package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -336,10 +337,19 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         Log.d(TAG, "onDoctorClick → " + doctor.optString("full_name",""));
     }
 
+    // --- CHANGED: Pass intent extras on Book Now ---
     @Override
     public void onBookNowClick(JSONObject doctor) {
         Log.d(TAG, "onBookNowClick → DoctorId=" + doctor.optInt("doctor_id")
                 + ", name=" + doctor.optString("full_name","")
                 + ", fee=" + doctor.optDouble("consultation_fee",0.0));
+
+        int doctorId = doctor.optInt("doctor_id", -1);
+        // animal_category_id is already available as a field in this activity
+
+        Intent intent = new Intent(VetDoctorsActivity.this, VetAppointmentActivity.class);
+        intent.putExtra("doctor_id", doctorId);
+        intent.putExtra("animal_category_id", animalCategoryId); // use the field from this activity
+        startActivity(intent);
     }
 }

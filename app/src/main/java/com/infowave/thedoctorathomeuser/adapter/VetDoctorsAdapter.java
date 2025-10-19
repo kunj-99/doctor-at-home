@@ -2,7 +2,6 @@ package com.infowave.thedoctorathomeuser.adapter;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
@@ -23,10 +22,6 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.bumptech.glide.Glide;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
-import com.infowave.thedoctorathomeuser.VetAppointment;
-import com.infowave.thedoctorathomeuser.VetAppointmentActivity;
-import com.infowave.thedoctorathomeuser.book_form;
-import com.infowave.thedoctorathomeuser.doctor_details;
 import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONObject;
@@ -106,20 +101,12 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         // open details (reuse same activity as human flow)
         h.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onDoctorClick(d);
-            Intent i = new Intent(ctx, doctor_details.class);
-            i.putExtra("doctor_id", id);
-            i.putExtra("doctor_image", img);
-            ctx.startActivity(i);
+            // You can still launch doctor_details here if you want, or delegate to listener
         });
 
-        // Book flow (reuse)
+        // Book flow: ONLY call listener, do NOT launch activity here!
         h.btnBookNow.setOnClickListener(v -> {
             if (listener != null) listener.onBookNowClick(d);
-            Intent i = new Intent(ctx,  VetAppointmentActivity.class);
-            i.putExtra("doctor_id", id);
-            i.putExtra("doctorName", name);
-            i.putExtra("appointment_status", h.btnBookNow.getText().toString());
-            ctx.startActivity(i);
         });
 
         // auto-refresh counters & button every 5s
