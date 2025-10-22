@@ -22,21 +22,27 @@ import android.widget.Toast;
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
-import com.google.android.material.tabs.TabLayout; // tabs
+import com.google.android.material.tabs.TabLayout;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.MainActivity;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.adapter.OngoingAdapter;
-import com.infowave.thedoctorathomeuser.adapter.VetOngoingAdapter;   // NEW
-import com.infowave.thedoctorathomeuser.VetAppointment;              // NEW (as per your import path)
+import com.infowave.thedoctorathomeuser.adapter.VetOngoingAdapter;
+import com.infowave.thedoctorathomeuser.VetAppointment;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class OngoingAppointmentFragment extends Fragment {
@@ -47,46 +53,41 @@ public class OngoingAppointmentFragment extends Fragment {
     private RecyclerView recyclerView;
     private Button bookAppointment;
     private SwipeRefreshLayout swipeRefresh;
-    private OngoingAdapter adapter; // patient adapter
-
-    // Tabs
     private TabLayout appointmentTabs;
+
+    private OngoingAdapter humanAdapter;
+    private VetOngoingAdapter vetAdapter;
 
     private String patientId;
 
-    // ----- Patient data (AS-IS) -----
-    private final List<String>  doctorNames      = new ArrayList<>();
-    private final List<String>  specialties      = new ArrayList<>();
-    private final List<String>  hospitals        = new ArrayList<>();
-    private final List<Float>   ratings          = new ArrayList<>();
-    private final List<String>  profilePictures  = new ArrayList<>();
-    private final List<Integer> appointmentIds   = new ArrayList<>();
-    private final List<String>  statuses         = new ArrayList<>();
-    private final List<String>  durations        = new ArrayList<>();
-    private final List<Integer> doctorIds        = new ArrayList<>();
+    // ---------- Human lists (what your OngoingAdapter expects) ----------
+    private final List<String>  doctorNames     = new ArrayList<>();
+    private final List<String>  specialties     = new ArrayList<>();
+    private final List<String>  hospitals       = new ArrayList<>();
+    private final List<Float>   ratings         = new ArrayList<>();
+    private final List<String>  profilePictures = new ArrayList<>();
+    private final List<Integer> appointmentIds  = new ArrayList<>();
+    private final List<String>  statuses        = new ArrayList<>();
+    private final List<String>  durations       = new ArrayList<>();
+    private final List<Integer> doctorIds       = new ArrayList<>();
 
-    // ----- Vet (demo) -----
-    private VetOngoingAdapter vetAdapter;
-    private final List<VetAppointment> vetDemo = new ArrayList<>();
+    // ---------- Vet list (your VetOngoingAdapter model) ----------
+    private final List<VetAppointment> vetItems = new ArrayList<>();
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container,
                              Bundle savedInstanceState) {
-        // IMPORTANT: make sure the XML file name matches this
         return inflater.inflate(R.layout.fragment_ongoing_appointment, container, false);
     }
 
     @SuppressLint("NotifyDataSetChanged")
     @Override
-    public void onViewCreated(@NonNull View view,
-                              @Nullable Bundle savedInstanceState) {
-        // ViewPager from parent activity (to switch tabs when booking)
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         if (getActivity() instanceof MainActivity) {
             vp = ((MainActivity) getActivity()).findViewById(R.id.vp);
         }
 
-        // UI
         appointmentTabs = view.findViewById(R.id.appointmentTabs);
         swipeRefresh    = view.findViewById(R.id.swipeRefreshOngoing);
         recyclerView    = view.findViewById(R.id.recyclerView);
@@ -94,108 +95,67 @@ public class OngoingAppointmentFragment extends Fragment {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // Patient id
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
         if (patientId == null || patientId.trim().isEmpty()) {
-            Toast.makeText(getContext(),
-                    "Could not load your information. Please log in again.",
-                    Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Could not load your information. Please log in again.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Patient adapter (AS-IS)
-        adapter = new OngoingAdapter(
+        // human adapter
+        humanAdapter = new OngoingAdapter(
                 requireContext(),
-                doctorNames,
-                specialties,
-                hospitals,
-                ratings,
-                profilePictures,
-                appointmentIds,
-                statuses,
-                durations,
-                doctorIds
+                doctorNames, specialties, hospitals, ratings, profilePictures,
+                appointmentIds, statuses, durations, doctorIds
         );
 
-        // Vet adapter (static demo)
-        seedVetDemo();
-        vetAdapter = new VetOngoingAdapter(requireContext(), vetDemo);
+        // vet adapter
+        vetAdapter = new VetOngoingAdapter(requireContext(), vetItems);
 
-        // Default: show Patient Ongoing (original behavior)
-        recyclerView.setAdapter(adapter);
+        // default tab: Human
+        recyclerView.setAdapter(humanAdapter);
 
-        // Tabs switching logic (no change to patient flow)
         if (appointmentTabs != null) {
             appointmentTabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-                @Override
-                public void onTabSelected(TabLayout.Tab tab) {
+                @Override public void onTabSelected(TabLayout.Tab tab) {
                     if (tab.getPosition() == 0) {
-                        // Patient ongoing (original)
-                        recyclerView.setAdapter(adapter);
-                        // Optionally refresh patient silently so UI stays snappy
-                        fetchOngoingAppointments(true);
+                        recyclerView.setAdapter(humanAdapter);
                     } else {
-                        // Vet ongoing (demo data)
                         recyclerView.setAdapter(vetAdapter);
-                        // Stop spinner if any
-                        stopRefreshingUI();
                     }
                 }
                 @Override public void onTabUnselected(TabLayout.Tab tab) {}
                 @Override public void onTabReselected(TabLayout.Tab tab) {}
             });
-            // Ensure Patient tab is selected by default
             TabLayout.Tab patientTab = appointmentTabs.getTabAt(0);
             if (patientTab != null) patientTab.select();
         }
 
-        // Pull-to-refresh handler
-        swipeRefresh.setOnRefreshListener(() -> {
-            int pos = (appointmentTabs != null) ? appointmentTabs.getSelectedTabPosition() : 0;
-            if (pos == 0) {
-                // Patient refresh (original)
-                fetchOngoingAppointments(false);
-            } else {
-                // Vet refresh (demo reseed)
-                seedVetDemo();
-                vetAdapter.notifyDataSetChanged();
-                stopRefreshingUI();
-            }
-        });
+        swipeRefresh.setOnRefreshListener(() -> fetchOngoing(false));
 
-        // Initial load (show the swipe spinner programmatically)
+        // initial load
         swipeRefresh.setRefreshing(true);
-        fetchOngoingAppointments(false);
+        fetchOngoing(false);
 
-        // Book button → switch to booking tab/page
-        bookAppointment.setOnClickListener(v -> {
-            if (vp != null) vp.setCurrentItem(1);
-        });
+        bookAppointment.setOnClickListener(v -> { if (vp != null) vp.setCurrentItem(1); });
     }
-
 
     private void stopRefreshingUI() {
-        if (swipeRefresh != null && swipeRefresh.isRefreshing()) {
-            swipeRefresh.setRefreshing(false);
-        }
+        if (swipeRefresh != null && swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
     }
+
     @Override
     public void onResume() {
         super.onResume();
-
         requireActivity().getOnBackPressedDispatcher().addCallback(
                 this,
                 new androidx.activity.OnBackPressedCallback(true) {
-                    @Override
-                    public void handleOnBackPressed() {
-                        // Get the ViewPager reference from MainActivity
+                    @Override public void handleOnBackPressed() {
                         ViewPager vp = requireActivity().findViewById(R.id.vp);
-
                         if (vp != null && vp.getCurrentItem() > 0) {
-                            vp.setCurrentItem(0, true); // swipe to 0th fragment
+                            vp.setCurrentItem(0, true);
                         } else {
-                            setEnabled(false); // allow default behavior next time
+                            setEnabled(false);
                             requireActivity().onBackPressed();
                         }
                     }
@@ -203,61 +163,90 @@ public class OngoingAppointmentFragment extends Fragment {
         );
     }
 
-
-    private void fetchOngoingAppointments(boolean silent) {
-        @SuppressLint("NotifyDataSetChanged")
+    // ---- fetch + split + sort ----
+    private void fetchOngoing(boolean silent) {
         StringRequest req = new StringRequest(Request.Method.POST, API_URL,
                 response -> {
                     stopRefreshingUI();
                     try {
                         JSONObject json = new JSONObject(response);
-                        if (json.optBoolean("success", false)) {
-                            JSONArray arr = json.getJSONArray("appointments");
+                        if (!json.optBoolean("success", false)) {
+                            if (!silent) Toast.makeText(requireContext(), "No ongoing appointments.", Toast.LENGTH_SHORT).show();
+                            clearAll();
+                            return;
+                        }
 
-                            doctorNames.clear();
-                            specialties.clear();
-                            hospitals.clear();
-                            ratings.clear();
-                            profilePictures.clear();
-                            appointmentIds.clear();
-                            statuses.clear();
-                            durations.clear();
-                            doctorIds.clear();
+                        JSONArray arr = json.optJSONArray("appointments");
+                        if (arr == null) { clearAll(); return; }
 
-                            for (int i = 0; i < arr.length(); i++) {
-                                JSONObject appt = arr.getJSONObject(i);
-                                doctorNames    .add(appt.optString("doctor_name", ""));
-                                specialties    .add(appt.optString("specialty", ""));
-                                hospitals      .add(appt.optString("hospital_name", ""));
-                                ratings        .add((float) appt.optDouble("experience", 0));
-                                statuses       .add(appt.optString("status", ""));
-                                appointmentIds .add(appt.optInt("appointment_id", 0));
-                                durations      .add(appt.optString("experience_duration", ""));
-                                doctorIds      .add(appt.optInt("doctor_id", 0));
-                                profilePictures.add(appt.optString("profile_picture", ""));
+                        // temp lists with sort key
+                        List<HumanRow> tmpHuman = new ArrayList<>();
+                        List<VetRow>   tmpVet   = new ArrayList<>();
+
+                        for (int i = 0; i < arr.length(); i++) {
+                            JSONObject a = arr.getJSONObject(i);
+
+                            // normalize fields coming from PHP
+                            int apptId   = a.optInt("appointment_id", 0);
+                            int docId    = a.optInt("doctor_id", 0);
+                            String date  = a.optString("appointment_date", "");  // "yyyy-MM-dd"
+                            String time  = a.optString("time_slot", "");         // "hh:mm a"
+                            String status= a.optString("status", "");
+                            String doctor= a.optString("doctor_name", "");
+                            String spec  = a.optString("specialty", "");
+                            String hosp  = a.optString("hospital_name", "");
+                            float exp    = (float) a.optDouble("experience", 0);
+                            String dur   = a.optString("experience_duration", "");
+                            String pic   = a.optString("profile_picture", "");
+
+                            // vet specifics (may be empty for human)
+                            int isVet    = a.optInt("is_vet_case", 0);
+                            String animalName   = a.optString("animal_name", "");
+                            String animalBreed  = a.optString("animal_breed", "");
+                            String animalAge    = a.optString("animal_age_text", a.optString("animal_age","")); // support either
+                            String reason       = a.optString("reason_for_visit", "");
+                            String fee          = a.optString("fee_text", a.optString("fee",""));
+                            String whenLabel    = a.optString("when_text", ""); // optional pretty date
+
+                            long sortKey = buildSortKey(date, time); // later date/time = larger key
+
+                            if (isVet == 1) {
+                                // VET row
+                                String title = (animalName == null || animalName.isEmpty()) ? "Pet" : animalName;
+                                String sub   = (reason == null ? "" : reason);
+                                String doc   = doctor;
+                                String when  = !whenLabel.isEmpty() ? whenLabel : (date + " • " + time);
+                                String price = fee != null && !fee.isEmpty() ? ("₹" + fee) : "";
+                                String statusText = status;
+
+                                tmpVet.add(new VetRow(sortKey, new VetAppointment(
+                                        title, sub, doc, when, price, statusText, pic
+                                )));
+                            } else {
+                                // HUMAN row
+                                tmpHuman.add(new HumanRow(sortKey, new HumanPayload(
+                                        doctor, spec, hosp, exp, pic, apptId, status, dur, docId
+                                )));
                             }
+                        }
 
-                            adapter.notifyDataSetChanged();
-                        } else if (!silent) {
-                            Toast.makeText(requireContext(),
-                                    "You don't have any ongoing appointments right now.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
+                        // sort desc (latest first)
+                        Comparator<HasKey> byKeyDesc = (a, b) -> Long.compare(b.key, a.key);
+                        Collections.sort(tmpHuman, byKeyDesc);
+                        Collections.sort(tmpVet,   byKeyDesc);
+
+                        // write into adapter lists (CLEAR to avoid mixing)
+                        writeHuman(tmpHuman);
+                        writeVet(tmpVet);
+
                     } catch (JSONException e) {
-                        if (!silent) {
-                            Toast.makeText(requireContext(),
-                                    "Could not load appointment data. Please try again.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
+                        clearAll();
+                        if (!silent) Toast.makeText(requireContext(), "Could not load appointment data.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
                     stopRefreshingUI();
-                    if (!silent) {
-                        Toast.makeText(requireContext(),
-                                "Unable to connect. Please check your internet and try again.",
-                                Toast.LENGTH_SHORT).show();
-                    }
+                    if (!silent) Toast.makeText(requireContext(), "Network error. Try again.", Toast.LENGTH_SHORT).show();
                 }) {
             @Override
             protected Map<String, String> getParams() {
@@ -270,20 +259,75 @@ public class OngoingAppointmentFragment extends Fragment {
         Volley.newRequestQueue(requireContext()).add(req);
     }
 
-    // Static demo data for Vet ongoing (cards)
-    private void seedVetDemo() {
-        vetDemo.clear();
-        vetDemo.add(new VetAppointment(
-                "Bruno (Dog)", "Skin allergy consultation", "Dr. K. Desai",
-                "Thu, 09 Oct • 02:15 PM", "₹650", "Ongoing", "https://i.imgur.com/7kQ7K.png"
-        ));
-        vetDemo.add(new VetAppointment(
-                "Misty (Cat)", "Deworming", "Dr. A. Shah",
-                "Thu, 09 Oct • 04:00 PM", "₹350", "Scheduled", "https://i.imgur.com/xp8Zp.png"
-        ));
-        vetDemo.add(new VetAppointment(
-                "Sheru (Dog)", "Vaccination", "Dr. P. Rana",
-                "Fri, 10 Oct • 11:20 AM", "₹500", "Ongoing", "https://i.imgur.com/3yQpL.png"
-        ));
+    private void clearAll() {
+        doctorNames.clear(); specialties.clear(); hospitals.clear(); ratings.clear();
+        profilePictures.clear(); appointmentIds.clear(); statuses.clear(); durations.clear(); doctorIds.clear();
+        vetItems.clear();
+        notifyBoth();
+    }
+
+    private void writeHuman(List<HumanRow> rows) {
+        doctorNames.clear(); specialties.clear(); hospitals.clear(); ratings.clear();
+        profilePictures.clear(); appointmentIds.clear(); statuses.clear(); durations.clear(); doctorIds.clear();
+
+        for (HumanRow r : rows) {
+            HumanPayload h = r.payload;
+            doctorNames.add(h.doctorName);
+            specialties.add(h.specialty);
+            hospitals.add(h.hospital);
+            ratings.add(h.experience);
+            profilePictures.add(h.profilePicture);
+            appointmentIds.add(h.appointmentId);
+            statuses.add(h.status);
+            durations.add(h.duration);
+            doctorIds.add(h.doctorId);
+        }
+        humanAdapter.notifyDataSetChanged();
+    }
+
+    private void writeVet(List<VetRow> rows) {
+        vetItems.clear();
+        for (VetRow r : rows) vetItems.add(r.payload);
+        vetAdapter.notifyDataSetChanged();
+    }
+
+    private void notifyBoth() {
+        if (humanAdapter != null) humanAdapter.notifyDataSetChanged();
+        if (vetAdapter != null) vetAdapter.notifyDataSetChanged();
+    }
+
+    // ---- sort helpers ----
+    private long buildSortKey(String yyyyMmDd, String hhmmAMPM) {
+        // try to parse, fallback to epoch 0
+        try {
+            // normalize times like "12:23 AM"
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault());
+            Date d = df.parse((yyyyMmDd == null ? "" : yyyyMmDd) + " " + (hhmmAMPM == null ? "" : hhmmAMPM));
+            return (d != null) ? d.getTime() : 0L;
+        } catch (ParseException e) {
+            return 0L;
+        }
+    }
+
+    // ---- tiny structs for sorting ----
+    private interface HasKey { long key = 0; }
+
+    private static class HumanPayload {
+        final String doctorName, specialty, hospital, profilePicture, status, duration;
+        final float experience;
+        final int appointmentId, doctorId;
+        HumanPayload(String dn, String sp, String ho, float ex, String pic, int apptId, String st, String dur, int docId) {
+            doctorName = dn; specialty = sp; hospital = ho; experience = ex; profilePicture = pic;
+            appointmentId = apptId; status = st; duration = dur; doctorId = docId;
+        }
+    }
+    private static class HumanRow implements HasKey {
+        final long key; final HumanPayload payload;
+        HumanRow(long k, HumanPayload p) { key = k; payload = p; }
+    }
+
+    private static class VetRow implements HasKey {
+        final long key; final VetAppointment payload;
+        VetRow(long k, VetAppointment p) { key = k; payload = p; }
     }
 }

@@ -2,8 +2,8 @@ package com.infowave.thedoctorathomeuser.adapter;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
-import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +22,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.bumptech.glide.Glide;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.VetAppointmentActivity;
 import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONObject;
@@ -31,15 +32,26 @@ import java.util.List;
 public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.ViewHolder> {
 
     public interface OnDoctorClickListener {
-        void onDoctorClick(JSONObject doctor);
-        void onBookNowClick(JSONObject doctor);
+        default void onDoctorClick(JSONObject doctor) {}
+        default void onBookNowClick(JSONObject doctor) {}
     }
 
+    private final Context context;
     private final List<JSONObject> doctors;
+    private final int animalCategoryId;                 // ✅ stored as int, passed as int
     private final OnDoctorClickListener listener;
 
-    public VetDoctorsAdapter(List<JSONObject> doctors, OnDoctorClickListener listener) {
+    /**
+     * Use this ctor from your Activity:
+     * new VetDoctorsAdapter(this, doctorsList, animalCategoryId, this)
+     */
+    public VetDoctorsAdapter(@NonNull Context context,
+                             @NonNull List<JSONObject> doctors,
+                             int animalCategoryId,
+                             @NonNull OnDoctorClickListener listener) {
+        this.context = context;
         this.doctors = doctors;
+        this.animalCategoryId = animalCategoryId;
         this.listener = listener;
     }
 
@@ -61,11 +73,11 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         double rate  = d.optDouble("rating", 0.0);
         int    expYr = d.optInt("experience_years", 0);
         String loc   = d.optString("doctor_location", "");
-        String edu   = d.optString("qualification", d.optString("experience_duration",""));
+        String edu   = d.optString("qualification", d.optString("experience_duration", ""));
         double fee   = d.optDouble("consultation_fee", 0.0);
         String img   = d.optString("profile_picture", null);
         String auto  = d.optString("auto_status", "Inactive");
-        String id    = String.valueOf(d.optInt("doctor_id"));
+        int    id    = d.optInt("doctor_id", -1);      // ✅ keep as int
 
         h.tvDoctorName.setText(name);
         h.tvSpecialization.setText(spec);
@@ -74,10 +86,13 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         h.tvExperience.setText(expYr > 0 ? (expYr + " years") : "—");
         h.tvLocation.setText(loc);
         h.tvEducation.setText(edu);
-        h.tvConsultationFee.setText(fee > 0 ? "₹" + ((fee % 1 == 0) ? ((int)fee) : String.format("%.2f", fee)) : "₹0");
+        h.tvConsultationFee.setText(
+                fee > 0 ? "₹" + ((fee % 1 == 0) ? ((int) fee) : String.format("%.2f", fee)) : "₹0"
+        );
 
         if (img != null && !img.trim().isEmpty()) {
-            Glide.with(ctx).load(img)
+            Glide.with(ctx)
+                    .load(img)
                     .placeholder(R.drawable.ic_doctor_placeholder)
                     .error(R.drawable.ic_doctor_placeholder)
                     .into(h.ivDoctorImage);
@@ -85,7 +100,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
             h.ivDoctorImage.setImageResource(R.drawable.ic_doctor_placeholder);
         }
 
-        // initial state by auto_status
+        // Initial state from auto_status
         h.autoStatus = auto;
         if ("inactive".equalsIgnoreCase(auto)) {
             h.btnBookNow.setText("Currently Not Accepting");
@@ -96,21 +111,36 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         } else {
             h.btnBookNow.setEnabled(true);
             h.btnBookNow.setText("Book Appointment");
+            h.btnBookNow.setBackgroundColor(Color.parseColor("#1976D2"));
         }
 
-        // open details (reuse same activity as human flow)
+        // Details tap (optional, delegated)
         h.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onDoctorClick(d);
-            // You can still launch doctor_details here if you want, or delegate to listener
         });
 
-        // Book flow: ONLY call listener, do NOT launch activity here!
+        // Book flow:
+        // EITHER: delegate to activity (recommended)
+        // if (listener != null) listener.onBookNowClick(d);
+        //
+        // OR: launch here from adapter (works fine; ensures correct extras):
         h.btnBookNow.setOnClickListener(v -> {
             if (listener != null) listener.onBookNowClick(d);
+
+            // Launch with the exact keys VetAppointmentActivity expects:
+            Intent intent = new Intent(context, VetAppointmentActivity.class);
+            intent.putExtra("doctor_id", id);                       // int
+            intent.putExtra("doctor_name", name);                   // String
+            intent.putExtra("animal_category_id", animalCategoryId);// int  ✅ KEY & TYPE
+
+            if (!(context instanceof android.app.Activity)) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            }
+            context.startActivity(intent);
         });
 
-        // auto-refresh counters & button every 5s
-        h.startAutoRefresh(id);
+        // Start auto-refresh of status/counters
+        h.startAutoRefresh(String.valueOf(id));
     }
 
     @Override
@@ -123,14 +153,13 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         TextView tvDoctorName, tvSpecialization, tvRatingText, tvExperience;
         TextView tvLocation, tvEducation, tvConsultationFee;
 
-        // counters/eta + rating bar
         TextView tvRequests, tvPending, tvEta;
         RatingBar ratingBar;
 
         AppCompatButton btnBookNow;
         String autoStatus;
 
-        private final Handler handler = new Handler(Looper.getMainLooper());
+        private final android.os.Handler handler = new android.os.Handler(Looper.getMainLooper());
         private Runnable refreshRunnable;
 
         ViewHolder(@NonNull View itemView) {
@@ -176,7 +205,6 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                         int etaMin  = response.optInt("total_eta", 0);
                         boolean hasActive = response.optBoolean("has_active_appointment", false);
 
-                        // counters
                         tvRequests.setVisibility(View.VISIBLE);
                         tvRequests.setText("Requests: " + reqNum);
 
@@ -187,14 +215,14 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                             tvPending.setVisibility(View.GONE);
                         }
 
-                        // ETA
                         if (etaMin > 0) {
                             tvEta.setVisibility(View.VISIBLE);
                             String friendly;
                             if (etaMin < 60) friendly = "Next slot in ~" + etaMin + " min";
                             else {
                                 int hr = etaMin / 60, m = etaMin % 60;
-                                friendly = m == 0 ? ("Next slot in ~" + hr + " hr")
+                                friendly = (m == 0)
+                                        ? ("Next slot in ~" + hr + " hr")
                                         : ("Next slot in ~" + hr + "h " + m + "m");
                             }
                             tvEta.setText(friendly);
@@ -202,7 +230,6 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                             tvEta.setVisibility(View.GONE);
                         }
 
-                        // button state
                         if ("inactive".equalsIgnoreCase(autoStatus)) {
                             btnBookNow.setText("Currently Not Accepting");
                             btnBookNow.setEnabled(false);
@@ -219,7 +246,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                             btnBookNow.setBackgroundColor(Color.parseColor("#1976D2"));
                         }
 
-                        // throttle: disable if too many requests
+                        // throttle
                         btnBookNow.setEnabled(reqNum < 2);
                     },
                     error -> {
@@ -229,6 +256,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                         if (!"inactive".equalsIgnoreCase(autoStatus)) {
                             btnBookNow.setText("Book Appointment");
                             btnBookNow.setEnabled(true);
+                            btnBookNow.setBackgroundColor(Color.parseColor("#1976D2"));
                         }
                     }
             );

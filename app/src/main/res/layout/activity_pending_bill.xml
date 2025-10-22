@@ -229,6 +229,134 @@
                                 android:layout_marginLeft="27dp"
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
+
+                        <!-- ANIMAL SECTION (hidden by default, show via Java) -->
+                        <!-- Animal Name -->
+                        <LinearLayout
+                            android:id="@+id/row_animal_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Animal Name"
+                                android:textColor="@color/black"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                android:id="@+id/tv_bill_animal_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/black"
+                                android:textSize="16dp"
+                                android:layout_marginLeft="25dp"
+                                android:layout_marginBottom="8dp" />
+                        </LinearLayout>
+
+                        <!-- Animal Age -->
+                        <LinearLayout
+                            android:id="@+id/row_animal_age"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Animal Age"
+                                android:textColor="@color/black"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                android:id="@+id/tv_bill_animal_age"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/black"
+                                android:textSize="16dp"
+                                android:layout_marginLeft="37dp"
+                                android:layout_marginBottom="8dp" />
+                        </LinearLayout>
+
+                        <!-- Animal Gender -->
+                        <LinearLayout
+                            android:id="@+id/row_animal_gender"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Animal Gender"
+                                android:textColor="@color/black"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                android:id="@+id/tv_bill_animal_gender"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/black"
+                                android:textSize="16dp"
+                                android:layout_marginLeft="19dp"
+                                android:layout_marginBottom="8dp" />
+                        </LinearLayout>
+
+                        <!-- Animal Breed -->
+                        <LinearLayout
+                            android:id="@+id/row_animal_breed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Animal Breed"
+                                android:textColor="@color/black"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                android:id="@+id/tv_bill_animal_breed"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/black"
+                                android:textSize="16dp"
+                                android:layout_marginLeft="32dp"
+                                android:layout_marginBottom="8dp" />
+                        </LinearLayout>
+
+                        <!-- Vaccination Type -->
+                        <LinearLayout
+                            android:id="@+id/row_animal_vaccination"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Vaccination"
+                                android:textColor="@color/black"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                android:id="@+id/tv_bill_animal_vaccination"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/black"
+                                android:textSize="16dp"
+                                android:layout_marginLeft="40dp"
+                                android:layout_marginBottom="8dp" />
+                        </LinearLayout>
+                        <!-- END ANIMAL SECTION -->
+
                     </LinearLayout>
 
                     <!-- Right Logo -->

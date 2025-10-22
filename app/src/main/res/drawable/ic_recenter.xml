@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Outer Circle (faint) -->
+    <path
+        android:fillColor="#2196F3"
+        android:fillAlpha="0.16"
+        android:pathData="M12,4a8,8 0 1,1 0,16a8,8 0 1,1 0,-16z" />
+
+    <!-- Crosshairs -->
+    <path
+        android:strokeColor="#2196F3"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M12,2v2 M12,20v2 M4,12H2 M22,12h-2" />
+
+    <!-- Center Dot (draw as small circle path) -->
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M12,10a2,2 0 1,0 0,4a2,2 0 1,0 0,-4z" />
+</vector>

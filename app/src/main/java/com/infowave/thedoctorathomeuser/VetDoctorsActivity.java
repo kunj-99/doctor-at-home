@@ -1,7 +1,6 @@
 package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -84,8 +83,8 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         // --- Read intent from VetAnimalsActivity ---
         vetCategoryId    = getIntent().getIntExtra("vet_category_id", -1);
         animalCategoryId = getIntent().getIntExtra("animal_category_id", -1);
-        animalName       = getIntent().getStringExtra("animal_category_name"); // CORRECT key
-        doctorType       = getIntent().getStringExtra("doctor_type"); // CORRECT key
+        animalName       = getIntent().getStringExtra("animal_category_name");
+        doctorType       = getIntent().getStringExtra("doctor_type");
 
         Log.d(TAG, "Received from VetAnimalsActivity → "
                 + "vet_category_id=" + vetCategoryId
@@ -105,7 +104,8 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         setupSearchBar();
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new VetDoctorsAdapter(filteredDoctors, this);
+        // NOTE: pass the Activity context + animalCategoryId into the adapter
+        adapter = new VetDoctorsAdapter(this, filteredDoctors, animalCategoryId, this);
         recyclerView.setAdapter(adapter);
 
         queue = Volley.newRequestQueue(this);
@@ -233,7 +233,6 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         queue.add(req);
     }
 
-    // === Fetch Doctors (with Vet & Animal & doctor_type filters) ===
     private void fetchVets(String pin, boolean allowFallback) {
         if (vetCategoryId <= 0 || animalCategoryId <= 0 || doctorType == null || doctorType.isEmpty()) {
             Toast.makeText(this, "Invalid category selection", Toast.LENGTH_SHORT).show();
@@ -255,7 +254,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
-                    Log.d(TAG, "fetchVets → Response: " + resp); // DEBUG: Log full JSON response
+                    Log.d(TAG, "fetchVets → Response: " + resp);
                     boolean ok = resp.optBoolean("success", false);
                     JSONArray arr = resp.optJSONArray("data");
 
@@ -295,7 +294,6 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.optJSONObject(i);
                 if (o != null) {
-                    // DEBUG: Log each doctor as parsed
                     Log.d(TAG, "Parsed Doctor: " + o.optString("full_name", "NULL")
                             + ", id=" + o.optInt("doctor_id", 0)
                             + ", animal_category_id=" + o.optInt("animal_category_id", -1)
@@ -309,7 +307,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
         filteredDoctors.addAll(doctors);
 
-        Log.d(TAG, "applyResult() → total doctors=" + filteredDoctors.size()); // DEBUG
+        Log.d(TAG, "applyResult() → total doctors=" + filteredDoctors.size());
 
         if (tvDoctorsCount != null)
             tvDoctorsCount.setText(String.valueOf(filteredDoctors.size()));
@@ -324,7 +322,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
             recyclerView.setVisibility(empty ? View.GONE : View.VISIBLE);
 
         if (empty) {
-            Log.d(TAG, "No doctors found in filteredDoctors!"); // DEBUG
+            Log.d(TAG, "No doctors found in filteredDoctors!");
             Toast.makeText(this,
                     "No vets available for " + animalName +
                             " in " + (activePincode.isEmpty() ? "your area" : activePincode),
@@ -332,24 +330,15 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         }
     }
 
+    /** Optional: still receive simple callbacks for analytics/logging */
     @Override
     public void onDoctorClick(JSONObject doctor) {
         Log.d(TAG, "onDoctorClick → " + doctor.optString("full_name",""));
     }
 
-    // --- CHANGED: Pass intent extras on Book Now ---
+    /** No-op now. Adapter will start the Activity itself. */
     @Override
     public void onBookNowClick(JSONObject doctor) {
-        Log.d(TAG, "onBookNowClick → DoctorId=" + doctor.optInt("doctor_id")
-                + ", name=" + doctor.optString("full_name","")
-                + ", fee=" + doctor.optDouble("consultation_fee",0.0));
-
-        int doctorId = doctor.optInt("doctor_id", -1);
-        // animal_category_id is already available as a field in this activity
-
-        Intent intent = new Intent(VetDoctorsActivity.this, VetAppointmentActivity.class);
-        intent.putExtra("doctor_id", doctorId);
-        intent.putExtra("animal_category_id", animalCategoryId); // use the field from this activity
-        startActivity(intent);
+        Log.d(TAG, "onBookNowClick (handled by adapter) → DoctorId=" + doctor.optInt("doctor_id"));
     }
 }

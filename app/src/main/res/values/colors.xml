@@ -55,6 +55,9 @@
         <color name="dark_green">#2E7D32</color>  <!-- Darker Shade -->
 
 
+    <color name="status_green">#2E7D32</color>
+    <color name="status_blue">#1976D2</color>
+    <color name="status_red">#C62828</color>
 
 
     <color name="primaryLightColor">#BBDEFB</color>

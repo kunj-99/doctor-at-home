@@ -1,7 +1,8 @@
 package com.infowave.thedoctorathomeuser.adapter;
 
-
 import android.content.Context;
+import android.graphics.drawable.GradientDrawable;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,15 +10,19 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.List;
-
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.VetAppointment;
 
+import java.util.List;
+
 public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.VetVH> {
 
+    private final Context context;
     private final List<VetAppointment> items;
     private OnItemClickListener listener;
 
@@ -26,12 +31,11 @@ public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.Ve
     }
 
     public VetOngoingAdapter(Context context, List<VetAppointment> items) {
+        this.context = context;
         this.items = items;
     }
 
-    public void setOnItemClickListener(OnItemClickListener l) {
-        this.listener = l;
-    }
+    public void setOnItemClickListener(OnItemClickListener l) { this.listener = l; }
 
     @NonNull
     @Override
@@ -44,15 +48,29 @@ public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.Ve
     @Override
     public void onBindViewHolder(@NonNull VetVH h, int position) {
         VetAppointment a = items.get(position);
-        h.tvPetTitle.setText(a.getPetTitle());
-        h.tvReason.setText(a.getReason());
-        h.tvWhen.setText(a.getWhen());
-        h.tvVet.setText(a.getVetName());
-        h.tvAmount.setText(a.getAmount());
-        h.tvStatus.setText(a.getStatus());
 
-        // Demo icon
-        h.imgPet.setImageResource(R.drawable.ic_pets_24);
+        h.tvPetTitle.setText(s(a.getPetTitle()));
+        h.tvReason.setText(s(a.getReason()));
+        h.tvWhen.setText(s(a.getWhen()));
+        h.tvVet.setText(s(a.getVetName()));
+        h.tvAmount.setText(s(a.getAmount()));
+        h.tvStatus.setText(s(a.getStatus()));
+
+        // Load image if URL present, else fallback icon
+        String img = a.getImageUrl(); // make sure your model exposes this (or rename)
+        if (!TextUtils.isEmpty(img)) {
+            Glide.with(context)
+                    .load(img)
+                    .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                    .placeholder(R.drawable.ic_pets_24)
+                    .error(R.drawable.ic_pets_24)
+                    .into(h.imgPet);
+        } else {
+            h.imgPet.setImageResource(R.drawable.ic_pets_24);
+        }
+
+        // Status chip coloring
+        tintStatus(h.tvStatus, a.getStatus());
 
         h.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onClick(a, position);
@@ -60,20 +78,66 @@ public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.Ve
     }
 
     @Override
-    public int getItemCount() { return items == null ? 0 : items.size(); }
+    public int getItemCount() {
+        return (items == null) ? 0 : items.size();
+    }
+
+    /* ---------- helpers ---------- */
+
+    private String s(String t) { return (t == null) ? "" : t; }
+
+    private void tintStatus(TextView tv, String statusRaw) {
+        String status = statusRaw == null ? "" : statusRaw.trim().toLowerCase();
+
+        int bg;
+        int fg = ContextCompat.getColor(context, R.color.white);
+
+        switch (status) {
+            case "ongoing":
+            case "confirmed":
+                bg = R.color.status_green; // add to colors.xml
+                break;
+            case "scheduled":
+            case "requested":
+            case "pending":
+                bg = R.color.status_blue;  // add to colors.xml
+                break;
+            case "cancelled":
+            case "cancelled_by_doctor":
+            case "canceled":
+                bg = R.color.status_red;   // add to colors.xml
+                break;
+            default:
+                bg = R.color.custom_gray;
+                fg = ContextCompat.getColor(context, R.color.black);
+                break;
+        }
+
+        tv.setTextColor(fg);
+
+        // if your layout already uses a shape background, this will recolor it
+        if (tv.getBackground() instanceof GradientDrawable) {
+            ((GradientDrawable) tv.getBackground()).setColor(ContextCompat.getColor(context, bg));
+        } else {
+            tv.setBackgroundColor(ContextCompat.getColor(context, bg));
+        }
+    }
+
+    /* ---------- view holder ---------- */
 
     static class VetVH extends RecyclerView.ViewHolder {
         ImageView imgPet;
         TextView tvPetTitle, tvReason, tvWhen, tvVet, tvAmount, tvStatus;
+
         VetVH(@NonNull View itemView) {
             super(itemView);
-            imgPet = itemView.findViewById(R.id.imgPet);
+            imgPet     = itemView.findViewById(R.id.imgPet);
             tvPetTitle = itemView.findViewById(R.id.tvPetTitle);
-            tvReason = itemView.findViewById(R.id.tvReason);
-            tvWhen = itemView.findViewById(R.id.tvWhen);
-            tvVet = itemView.findViewById(R.id.tvVet);
-            tvAmount = itemView.findViewById(R.id.tvAmount);
-            tvStatus = itemView.findViewById(R.id.tvStatus);
+            tvReason   = itemView.findViewById(R.id.tvReason);
+            tvWhen     = itemView.findViewById(R.id.tvWhen);
+            tvVet      = itemView.findViewById(R.id.tvVet);
+            tvAmount   = itemView.findViewById(R.id.tvAmount);
+            tvStatus   = itemView.findViewById(R.id.tvStatus);
         }
     }
 }
