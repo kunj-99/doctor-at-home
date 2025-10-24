@@ -5,7 +5,7 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.os.Build;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -43,10 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Wallet screen: creates SDK order, launches PhonePe UI, polls status (SANDBOX). */
 public class payments extends AppCompatActivity {
 
-    private static final String TAG = "PHONEPE";
+    private static final String TAG = "PHONEPE_LOG";
 
     private TextView tvWalletBalance;
     private Button btnRecharge;
@@ -55,9 +54,9 @@ public class payments extends AppCompatActivity {
     private final List<TransactionAdapter.TransactionItem> transactionList = new ArrayList<>();
     private TransactionAdapter adapter;
 
-    // API endpoints
-    private final String createOrderUrl      = ApiConfig.endpoint("create_order.php");
-    private final String statusUrl           = ApiConfig.endpoint("check_status.php");
+    // API endpoints (production server paths)
+    private final String createOrderUrl      = ApiConfig.endpoint("phonepe/public/create_order.php");
+    private final String statusUrl           = ApiConfig.endpoint("phonepe/public/check_status.php");
     private final String fetchBalanceUrl     = ApiConfig.endpoint("get_wallet_balance.php");
     private final String fetchTransactionUrl = ApiConfig.endpoint("fetch_wallet_transactions.php");
 
@@ -67,66 +66,46 @@ public class payments extends AppCompatActivity {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean awaitingSdkResult = false;
 
-    // Launcher for PhonePe checkout result
     private ActivityResultLauncher<Intent> checkoutLauncher;
 
     @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "=== onCreate: Payment Activity Started ===");
         setContentView(R.layout.activity_payments);
 
-        // ===== PERFECT BLACK TOP & BOTTOM USING VIEW SCRIMS =====
-        // Draw edge-to-edge so our scrim Views can occupy the status/nav bar zones
+        // System UI adjustments
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-
-        // Paint bars black to avoid any flash
         getWindow().setStatusBarColor(Color.BLACK);
         getWindow().setNavigationBarColor(Color.BLACK);
-
-        // White system icons on dark bars
-        WindowInsetsControllerCompat wic =
-                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        WindowInsetsControllerCompat wic = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
         wic.setAppearanceLightStatusBars(false);
         wic.setAppearanceLightNavigationBars(false);
 
-        // Reduce OEM contrast/dividers for a solid black look
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            getWindow().setNavigationBarContrastEnforced(false);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            getWindow().setNavigationBarDividerColor(Color.BLACK);
-        }
-
-        // Size the scrim Views from WindowInsets
+        // Logging system bar scrims
         final android.view.View statusScrim = findViewById(R.id.status_bar_scrim);
         final android.view.View navScrim    = findViewById(R.id.navigation_bar_scrim);
         final ConstraintLayout root         = findViewById(R.id.root_container);
+        Log.d(TAG, "Scrim views: statusScrim=" + statusScrim + ", navScrim=" + navScrim);
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-
-            // top
             if (statusScrim != null) {
-                ConstraintLayout.LayoutParams lp =
-                        (ConstraintLayout.LayoutParams) statusScrim.getLayoutParams();
+                ConstraintLayout.LayoutParams lp = (ConstraintLayout.LayoutParams) statusScrim.getLayoutParams();
                 lp.height = sys.top;
                 statusScrim.setLayoutParams(lp);
                 statusScrim.setVisibility(sys.top > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
             }
-
-            // bottom
             if (navScrim != null) {
-                ConstraintLayout.LayoutParams lp =
-                        (ConstraintLayout.LayoutParams) navScrim.getLayoutParams();
+                ConstraintLayout.LayoutParams lp = (ConstraintLayout.LayoutParams) navScrim.getLayoutParams();
                 lp.height = sys.bottom;
                 navScrim.setLayoutParams(lp);
                 navScrim.setVisibility(sys.bottom > 0 ? android.view.View.VISIBLE : android.view.View.GONE);
             }
-
+            Log.d(TAG, "Applied system insets: top=" + sys.top + ", bottom=" + sys.bottom);
             return insets;
         });
-        // ========================================================
 
         tvWalletBalance = findViewById(R.id.tvTotalBalance);
         btnRecharge = findViewById(R.id.btnRecharge);
@@ -136,9 +115,10 @@ public class payments extends AppCompatActivity {
 
         SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
-        Log.d(TAG, "Loaded patient_id: " + patientId);
+        Log.d(TAG, "[INIT] patientId loaded from prefs: " + patientId);
 
         if (patientId == null || patientId.isEmpty()) {
+            Log.e(TAG, "[INIT] Patient ID is null or empty! Finishing Activity.");
             Toast.makeText(this, "Patient ID not available", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -147,6 +127,11 @@ public class payments extends AppCompatActivity {
         adapter = new TransactionAdapter(transactionList, this);
         rvTransactions.setLayoutManager(new LinearLayoutManager(this));
         rvTransactions.setAdapter(adapter);
+
+        Log.d(TAG, "[INIT] Endpoints - createOrderUrl: " + createOrderUrl
+                + ", statusUrl: " + statusUrl
+                + ", fetchBalanceUrl: " + fetchBalanceUrl
+                + ", fetchTransactionUrl: " + fetchTransactionUrl);
 
         fetchWalletBalance();
         fetchTransactionHistory();
@@ -160,8 +145,8 @@ public class payments extends AppCompatActivity {
     }
 
     private void onCheckoutResult(ActivityResult result) {
-        // Don’t trust result codes; always check server
-        Log.d(TAG, "Returned from PhonePe (resultCode=" + result.getResultCode() + ")");
+        Log.d(TAG, "[CHECKOUT RESULT] Returned from PhonePe: resultCode=" + result.getResultCode()
+                + ", merchantOrderId=" + merchantOrderId + ", awaitingSdkResult=" + awaitingSdkResult);
         if (merchantOrderId != null) {
             if (!awaitingSdkResult) {
                 awaitingSdkResult = true;
@@ -170,7 +155,7 @@ public class payments extends AppCompatActivity {
                 checkPaymentStatus(merchantOrderId);
             }
         } else {
-            Log.w(TAG, "Returned from PhonePe but merchantOrderId is null");
+            Log.e(TAG, "[CHECKOUT RESULT] merchantOrderId is null after SDK return");
         }
         btnRecharge.setEnabled(true);
     }
@@ -180,38 +165,62 @@ public class payments extends AppCompatActivity {
         builder.setTitle("Recharge Wallet");
 
         final EditText input = new EditText(this);
-        input.setHint("Enter amount");
+        input.setHint("Enter amount in ₹ (e.g. 150.50)");
         input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         builder.setView(input);
 
         builder.setPositiveButton("Recharge", (dialog, which) -> {
             String amountStr = input.getText().toString().trim();
+            Log.d(TAG, "[DIALOG] User entered amount: " + amountStr);
             if (!amountStr.isEmpty()) {
-                startRecharge(amountStr);
+                try {
+                    double rupees = Double.parseDouble(amountStr);
+                    int paise = (int) Math.round(rupees * 100); // convert to paise
+                    Log.d(TAG, "[DIALOG] Parsed rupees=" + rupees + ", paise=" + paise);
+                    if (paise <= 0) {
+                        Toast.makeText(this, "Amount must be greater than zero!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    startRecharge(String.valueOf(paise)); // send paise
+                } catch (Exception e) {
+                    Log.e(TAG, "[DIALOG] Exception while parsing amount: " + e.getMessage(), e);
+                    Toast.makeText(this, "Invalid amount!", Toast.LENGTH_SHORT).show();
+                }
             } else {
+                Log.w(TAG, "[DIALOG] User did not enter amount");
                 Toast.makeText(this, "Amount required!", Toast.LENGTH_SHORT).show();
             }
         });
 
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            Log.d(TAG, "[DIALOG] Recharge dialog cancelled by user");
+            dialog.cancel();
+        });
         builder.show();
     }
 
-    private void startRecharge(String amount) {
+    private void startRecharge(String paiseAmount) {
         btnRecharge.setEnabled(false);
         awaitingSdkResult = false;
+
+        // NEW: generate correlation id for this attempt
+        final String attemptId = "APP-" + System.currentTimeMillis();
+        Log.d(TAG, "[ORDER] startRecharge() | attemptId=" + attemptId
+                + " | patientId=" + patientId + " | paiseAmount=" + paiseAmount
+                + " | endpoint=" + createOrderUrl);
 
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 createOrderUrl,
                 response -> {
+                    Log.d(TAG, "[ORDER] createOrder response (attemptId=" + attemptId + "): " + response);
                     try {
-                        Log.d(TAG, "create_order response: " + response);
                         JSONObject obj = new JSONObject(response);
+                        Log.d(TAG, "[ORDER] createOrder JSON: " + obj);
 
                         if (!"success".equalsIgnoreCase(obj.optString("status"))) {
-                            Log.e(TAG, "create_order failed: " + obj);
-                            Toast.makeText(this, "Create order failed", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "[ORDER] createOrder failed (attemptId=" + attemptId + "): " + obj);
+                            Toast.makeText(this, "Create order failed: " + obj.optString("message", ""), Toast.LENGTH_SHORT).show();
                             btnRecharge.setEnabled(true);
                             return;
                         }
@@ -221,31 +230,35 @@ public class payments extends AppCompatActivity {
                         String orderId  = obj.optString("orderId", "");
                         String env      = obj.optString("env", "SANDBOX");
 
+                        Log.d(TAG, "[ORDER] Parsed (attemptId=" + attemptId + "): merchantOrderId=" + merchantOrderId
+                                + ", token=" + token + ", orderId=" + orderId + ", env=" + env);
+
                         if (token.isEmpty() || orderId.isEmpty()) {
-                            Log.e(TAG, "Missing token/orderId in response: " + obj);
+                            Log.e(TAG, "[ORDER] Missing token/orderId (attemptId=" + attemptId + "): " + obj);
                             Toast.makeText(this, "Invalid order response", Toast.LENGTH_SHORT).show();
                             btnRecharge.setEnabled(true);
                             return;
                         }
 
                         try {
+                            Log.d(TAG, "[ORDER] Launching PhonePe (attemptId=" + attemptId + "): token=" + token + ", orderId=" + orderId + ", env=" + env);
                             PhonePeKt.startCheckoutPage(this, token, orderId, checkoutLauncher);
-                            Log.d(TAG, "Launched Standard Checkout: orderId=" + orderId + ", env=" + env);
+                            Log.d(TAG, "[ORDER] PhonePe Standard Checkout launched (attemptId=" + attemptId + ")");
                         } catch (Throwable t) {
-                            Log.e(TAG, "startCheckoutPage failed", t);
+                            Log.e(TAG, "[ORDER] startCheckoutPage failed (attemptId=" + attemptId + ")", t);
                             Toast.makeText(this, "Unable to open PhonePe UI", Toast.LENGTH_SHORT).show();
                             btnRecharge.setEnabled(true);
                         }
 
                     } catch (Exception e) {
-                        Log.e(TAG, "create_order parse error", e);
+                        Log.e(TAG, "[ORDER] createOrder parse error (attemptId=" + attemptId + ")", e);
                         Toast.makeText(this, "Create order parse error", Toast.LENGTH_SHORT).show();
                         btnRecharge.setEnabled(true);
                     }
                 },
                 error -> {
                     String msg = (error == null || error.getMessage() == null) ? "unknown" : error.getMessage();
-                    Log.e(TAG, "create_order network error: " + msg, error);
+                    Log.e(TAG, "[ORDER] createOrder network error (attemptId=" + attemptId + "): " + msg, error);
                     Toast.makeText(this, "Network error creating order", Toast.LENGTH_SHORT).show();
                     btnRecharge.setEnabled(true);
                 }
@@ -254,25 +267,31 @@ public class payments extends AppCompatActivity {
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
                 map.put("patient_id", patientId);
-                map.put("amount", amount);
+                map.put("amount", paiseAmount);      // integer paise
                 map.put("purpose", "WALLET_TOPUP");
+                map.put("attemptId", attemptId);     // correlation id sent to server
+                Log.d(TAG, "[ORDER] Request parameters (attemptId=" + attemptId + "): " + map);
                 return map;
             }
         };
 
+        Log.d(TAG, "[ORDER] Adding createOrder request to queue (attemptId=" + attemptId + ")");
         Volley.newRequestQueue(this).add(request);
     }
 
     private void checkPaymentStatusWithBackoff(String moid) {
+        Log.d(TAG, "[STATUS] checkPaymentStatusWithBackoff() for merchantOrderId=" + moid);
         final int[] attempts = {0};
         final Runnable poll = new Runnable() {
             @Override public void run() {
                 attempts[0]++;
+                Log.d(TAG, "[STATUS] Poll attempt #" + attempts[0] + " | merchantOrderId=" + moid);
                 checkPaymentStatus(moid);
                 if (attempts[0] < 5) {
                     int next = attempts[0] * 2000; // 2s, 4s, 6s, 8s, 10s
                     mainHandler.postDelayed(this, next);
                 } else {
+                    Log.d(TAG, "[STATUS] Max poll attempts reached");
                     awaitingSdkResult = false;
                 }
             }
@@ -281,23 +300,30 @@ public class payments extends AppCompatActivity {
     }
 
     private void checkPaymentStatus(String moid) {
-        String url = statusUrl + "?merchantOrderId=" + moid;
+        String url = statusUrl + "?merchantOrderId=" + Uri.encode(moid);
+        Log.d(TAG, "[STATUS] checkPaymentStatus() URL: " + url);
         StringRequest request = new StringRequest(
                 Request.Method.GET,
                 url,
                 response -> {
-                    Log.d(TAG, "check_status response: " + response);
+                    Log.d(TAG, "[STATUS] checkStatus response: " + response);
                     try {
                         JSONObject obj = new JSONObject(response);
-                        if (!"success".equals(obj.optString("status"))) {
-                            Log.e(TAG, "Status check failed: " + obj);
-                            Toast.makeText(this, "Status check failed", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "[STATUS] checkStatus JSON: " + obj);
+
+                        // ---- ONLY CHANGE WE'RE MAKING: accept both "ok" and "success"
+                        String apiStatus = obj.optString("status");
+                        if (!"success".equalsIgnoreCase(apiStatus) && !"ok".equalsIgnoreCase(apiStatus)) {
+                            Log.e(TAG, "[STATUS] Status check failed: " + obj);
+                            Toast.makeText(this, "Status check failed: " + obj.optString("message", ""), Toast.LENGTH_SHORT).show();
                             return;
                         }
 
                         String state   = obj.optString("state", "PENDING");
                         String balance = obj.optString("wallet_balance", "0.00");
                         tvWalletBalance.setText("₹" + balance);
+
+                        Log.d(TAG, "[STATUS] Payment state=" + state + ", Wallet balance=" + balance);
 
                         switch (state) {
                             case "COMPLETED":
@@ -315,63 +341,70 @@ public class payments extends AppCompatActivity {
                                 awaitingSdkResult = false;
                                 break;
                             default:
-                                Log.d(TAG, "Payment pending…");
+                                Log.d(TAG, "[STATUS] Payment pending…");
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "status parse error", e);
+                        Log.e(TAG, "[STATUS] status parse error", e);
                         Toast.makeText(this, "Status parse error", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
-                    Log.e(TAG, "Network error in check_status: " + error);
+                    Log.e(TAG, "[STATUS] Network error in checkStatus: " + error);
                     Toast.makeText(this, "Network error in status check", Toast.LENGTH_SHORT).show();
                 }
         );
 
+        Log.d(TAG, "[STATUS] Adding checkStatus request to queue | merchantOrderId=" + moid);
         Volley.newRequestQueue(this).add(request);
     }
 
     private void fetchWalletBalance() {
+        Log.d(TAG, "[BALANCE] fetchWalletBalance() | patientId=" + patientId);
         @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(
                 Request.Method.POST,
                 fetchBalanceUrl,
                 response -> {
-                    Log.d(TAG, "fetch_balance response: " + response);
+                    Log.d(TAG, "[BALANCE] response: " + response);
                     try {
                         JSONObject obj = new JSONObject(response);
-                        if ("success".equals(obj.optString("status"))) {
+                        Log.d(TAG, "[BALANCE] JSON: " + obj);
+                        if ("success".equalsIgnoreCase(obj.optString("status"))) {
                             String balance = obj.optString("wallet_balance", "0.00");
                             tvWalletBalance.setText("₹" + balance);
                         } else {
                             tvWalletBalance.setText("₹0.00");
-                            Log.e(TAG, "Fetch balance failed: " + obj);
+                            Log.e(TAG, "[BALANCE] Fetch balance failed: " + obj);
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "balance parse error", e);
+                        Log.e(TAG, "[BALANCE] parse error", e);
                     }
                 },
-                error -> Log.e(TAG, "Network error in fetch_balance: " + error)
+                error -> Log.e(TAG, "[BALANCE] Network error: " + error)
         ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
                 map.put("patient_id", patientId);
+                Log.d(TAG, "[BALANCE] params: " + map);
                 return map;
             }
         };
 
+        Log.d(TAG, "[BALANCE] Enqueue request");
         Volley.newRequestQueue(this).add(request);
     }
 
     private void fetchTransactionHistory() {
+        Log.d(TAG, "[TXN] fetchTransactionHistory() | patientId=" + patientId);
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 fetchTransactionUrl,
                 response -> {
-                    Log.d(TAG, "txn_history response: " + response);
+                    Log.d(TAG, "[TXN] response: " + response);
                     try {
                         JSONObject obj = new JSONObject(response);
-                        if ("success".equals(obj.optString("status"))) {
+                        Log.d(TAG, "[TXN] JSON: " + obj);
+                        if ("success".equalsIgnoreCase(obj.optString("status"))) {
                             List<TransactionAdapter.TransactionItem> tempList = new ArrayList<>();
                             JSONArray arr = obj.getJSONArray("data");
                             for (int i = 0; i < arr.length(); i++) {
@@ -383,24 +416,27 @@ public class payments extends AppCompatActivity {
                                         item.getString("timestamp")
                                 ));
                             }
+                            Log.d(TAG, "[TXN] Transaction count=" + tempList.size());
                             adapter.updateTransactions(tempList);
                         } else {
-                            Log.e(TAG, "Transaction history failed: " + obj);
+                            Log.e(TAG, "[TXN] Failed: " + obj);
                         }
                     } catch (Exception e) {
-                        Log.e(TAG, "txn history parse error", e);
+                        Log.e(TAG, "[TXN] parse error", e);
                     }
                 },
-                error -> Log.e(TAG, "Network error in txn_history: " + error)
+                error -> Log.e(TAG, "[TXN] Network error: " + error)
         ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
                 map.put("patient_id", patientId);
+                Log.d(TAG, "[TXN] params: " + map);
                 return map;
             }
         };
 
+        Log.d(TAG, "[TXN] Enqueue request");
         Volley.newRequestQueue(this).add(request);
     }
 }

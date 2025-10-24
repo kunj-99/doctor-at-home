@@ -18,14 +18,16 @@ public class MyApp extends Application {
 
         try {
             // ✅ DEMO / SANDBOX init
+            // ✅ PRODUCTION init (for real payments)
             boolean ok = PhonePeKt.init(
                     this,                                   // Context
-                    "TEST-M234ZHDNNC58R_25091",             // Client ID (TEST)
+                    "SU2509171931032509641494",                       // Client ID (PRODUCTION - replace with your real LIVE-XXXXXX)
                     "DAH-" + System.currentTimeMillis(),    // Flow ID (unique per session)
-                    PhonePeEnvironment.SANDBOX,             // ✅ SANDBOX (use RELEASE for prod)
-                    true,                                   // logging ON (set false in prod)
+                    PhonePeEnvironment.RELEASE,             // ✅ PRODUCTION environment
+                    false,                                  // logging OFF in production
                     null                                    // appId (optional)
             );
+
 
             Log.d("PHONEPE", "PhonePe SDK init result: " + ok);
 

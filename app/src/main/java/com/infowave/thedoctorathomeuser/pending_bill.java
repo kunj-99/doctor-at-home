@@ -582,6 +582,7 @@ public class pending_bill extends AppCompatActivity {
         Volley.newRequestQueue(this).add(req);
     }
 
+    @SuppressLint("SetTextI18n")
     private void parseRoutesResponse(JSONObject response) {
         try {
             JSONArray routes = response.getJSONArray("routes");
@@ -716,7 +717,7 @@ public class pending_bill extends AppCompatActivity {
     private void fetchWalletBalance() {
         String url = ApiConfig.endpoint("get_wallet_balance.php");
 
-        StringRequest req = new StringRequest(Request.Method.POST, url,
+        @SuppressLint("SetTextI18n") StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> {
                     try {
                         JSONObject obj = new JSONObject(resp);
