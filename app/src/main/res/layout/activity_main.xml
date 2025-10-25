@@ -75,10 +75,12 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@color/black"
+        android:fitsSystemWindows="true"
         app:headerLayout="@layout/appbar_heder"
         app:itemIconTint="@color/white"
         app:itemTextAppearance="@style/CustomNavigationDrawerItemText"
         app:itemTextColor="@color/white"
         app:menu="@menu/app_bar" />
+
 
 </androidx.drawerlayout.widget.DrawerLayout>

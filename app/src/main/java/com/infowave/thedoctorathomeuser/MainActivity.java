@@ -119,6 +119,22 @@ public class MainActivity extends AppCompatActivity {
         drawerLayout = findViewById(R.id.drawer_layout);
         toolbar = findViewById(R.id.tb);
         navigationView = findViewById(R.id.nev_view);
+        // Ensure drawer content respects system bars (status/nav)
+        ViewCompat.setOnApplyWindowInsetsListener(navigationView, (view, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            // Only pad the NavigationView container so items start below status bar.
+            // DO NOT alter header padding here (let the header XML handle its own top padding).
+            navigationView.setPadding(
+                    navigationView.getPaddingLeft(),
+                    sys.top,
+                    navigationView.getPaddingRight(),
+                    sys.bottom
+            );
+
+            return insets;
+        });
+
         toolbarTitle = findViewById(R.id.toolbar_title);
 
         // Reference the profile section from the navigation header

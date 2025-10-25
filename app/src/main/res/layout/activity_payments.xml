@@ -23,7 +23,7 @@
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/balanceCard"
         android:layout_width="0dp"
-        android:layout_height="180dp"
+        android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="24dp"
         android:translationZ="12dp"
@@ -37,7 +37,7 @@
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:padding="24dp">
 
             <TextView
@@ -62,6 +62,7 @@
                 app:layout_constraintTop_toBottomOf="@id/tvBalanceLabel"
                 app:layout_constraintStart_toStartOf="parent"/>
 
+            <!-- OLD recharge button retained (ID unchanged) but hidden -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRecharge"
                 android:layout_width="0dp"
@@ -73,95 +74,146 @@
                 app:iconTint="#BBDEFB"
                 app:cornerRadius="16dp"
                 android:layout_marginTop="16dp"
+                android:visibility="gone"
                 app:layout_constraintTop_toBottomOf="@id/tvTotalBalance"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"/>
+                app:layout_constraintEnd_toEndOf="parent"/>
+
+            <!-- NEW: fixed amount quick actions -->
+            <LinearLayout
+                android:id="@+id/llQuickRecharge"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal"
+                android:gravity="center"
+                app:layout_constraintTop_toBottomOf="@id/tvTotalBalance"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRecharge50"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="₹50 Recharge"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#1E88E5"
+                    app:cornerRadius="16dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:layout_marginEnd="8dp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRecharge100"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:text="₹100 Recharge"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#1565C0"
+                    app:cornerRadius="16dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:layout_marginStart="8dp"/>
+            </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Earned & Spent Cards -->
+    <!-- CREDIT / DEBIT Partition (SEGMENTED, not cards) -->
     <LinearLayout
         android:id="@+id/linearLayout2"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="16dp"
         android:orientation="horizontal"
         android:weightSum="2"
+        android:background="#1FFFFFFF"
+        android:padding="4dp"
         app:layout_constraintTop_toBottomOf="@id/balanceCard"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- CREDIT segment (uses existing ID cardCredit) -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardCredit"
             android:layout_width="0dp"
-            android:layout_height="100dp"
+            android:layout_height="match_parent"
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            android:translationZ="6dp"
-            app:cardBackgroundColor="#bbdefb"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="4dp">
+            android:clickable="true"
+            android:focusable="true"
+            app:cardElevation="0dp"
+            app:cardUseCompatPadding="false"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="12dp"
+            app:strokeColor="#2196F3"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical"
                 android:gravity="center"
-                android:padding="16dp">
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Total Deposit"
+                    android:text="Credit"
+                    android:textStyle="bold"
                     android:textColor="#1565C0"
                     android:textSize="14sp"/>
 
+                <!-- keep ID but hidden -->
                 <TextView
                     android:id="@+id/tvEarned"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="₹7,692.10"
-                    android:textColor="#1B5E20"
-                    android:textSize="18sp"
-                    android:textStyle="bold"/>
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- DEBIT segment (uses existing ID cardDebit) -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDebit"
             android:layout_width="0dp"
-            android:layout_height="100dp"
+            android:layout_height="match_parent"
             android:layout_marginStart="4dp"
             android:layout_weight="1"
-            android:translationZ="6dp"
-            app:cardBackgroundColor="#ffcdd2"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="4dp">
+            android:clickable="true"
+            android:focusable="true"
+            app:cardElevation="0dp"
+            app:cardUseCompatPadding="false"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="12dp"
+            app:strokeColor="#EF5350"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical"
                 android:gravity="center"
-                android:padding="16dp">
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Spent"
-                    android:textColor="#C62828"
+                    android:text="Debit"
+                    android:textStyle="bold"
+                    android:textColor="#B71C1C"
                     android:textSize="14sp"/>
 
+                <!-- keep ID but hidden -->
                 <TextView
                     android:id="@+id/tvSpent"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="₹5,841.26"
-                    android:textColor="#B71C1C"
-                    android:textSize="18sp"
-                    android:textStyle="bold"/>
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
