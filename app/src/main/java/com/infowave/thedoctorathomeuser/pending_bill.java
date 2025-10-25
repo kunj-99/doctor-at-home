@@ -72,6 +72,9 @@ public class pending_bill extends AppCompatActivity {
     private String animalCategoryId = "";  // keep as string; server parses int-or-null
     private String vaccinationId   = "";   // keep as string; server parses int-or-null
 
+    // NEW: vaccine price from previous activity
+    private double vaccinationPrice = 0.0;
+
     // UI
     private Button payButton, btnOnlinePayment, btnOfflinePayment, btnRechargeWallet;
     private TextView tvBillDate, tvBillTime, tvBillPatientName, tvBillDoctorName;
@@ -80,6 +83,10 @@ public class pending_bill extends AppCompatActivity {
     private TextView tvAnimalName, tvAnimalAge, tvAnimalGender, tvAnimalBreed, tvAnimalVaccination;
     private View depositRow;
     private View depositLabelView;
+
+    // NEW: vaccination price row + value
+    private View rowVaccinationPrice;
+    private TextView tvVaccinationPriceValue;
 
     // PhonePe
     private final String ppCreateOrderUrl = ApiConfig.endpoint("create_order.php");
@@ -159,10 +166,12 @@ public class pending_bill extends AppCompatActivity {
         vaccinationName= intent.getStringExtra("vaccination_name");
         animalCategoryId = intent.getStringExtra("animal_category_id");
         vaccinationId    = intent.getStringExtra("vaccination_id");
-// ✅ ADD THIS LINE (the actual fix)
         isVetCase = intent.getIntExtra("is_vet_case", 0);
 
-// normalize nulls
+        // NEW: get vaccination price; default 0.0 if absent
+        vaccinationPrice = intent.getDoubleExtra("vaccination_price", 0.0);
+
+        // normalize nulls
         if (animalCategoryId == null) animalCategoryId = "";
         if (vaccinationId == null)    vaccinationId = "";
 
@@ -213,6 +222,10 @@ public class pending_bill extends AppCompatActivity {
         tvAnimalBreed       = findViewById(R.id.tv_bill_animal_breed);
         tvAnimalVaccination = findViewById(R.id.tv_bill_animal_vaccination);
 
+        // NEW: vaccination price row + value
+        rowVaccinationPrice    = findViewById(R.id.row_vaccination_price);
+        tvVaccinationPriceValue= findViewById(R.id.tv_vaccination_price_value);
+
         depositRow = tvDeposit != null ? (View) tvDeposit.getParent() : null;
         int labelId = getResources().getIdentifier("tv_deposit_label", "id", getPackageName());
         depositLabelView = (labelId != 0) ? findViewById(labelId) : null;
@@ -239,6 +252,14 @@ public class pending_bill extends AppCompatActivity {
             setRowVisibility(rowAnimalGender,      false);
             setRowVisibility(rowAnimalBreed,       false);
             setRowVisibility(rowAnimalVaccination, false);
+        }
+
+        // NEW: show/hide vaccination price line now; will also be maintained in recomputeTotalsAndUI()
+        if (isVetCase == 1 && vaccinationPrice > 0.0) {
+            setRowVisibility(rowVaccinationPrice, true);
+            tvVaccinationPriceValue.setText("₹ " + (int) Math.round(vaccinationPrice));
+        } else {
+            setRowVisibility(rowVaccinationPrice, false);
         }
 
         // Buttons default
@@ -614,7 +635,19 @@ public class pending_bill extends AppCompatActivity {
         double distanceChargeRaw = (distanceKm <= FREE_DISTANCE_KM) ? 0.0 : (distanceKm * PER_KM_CHARGE);
         distanceCharge = distanceChargeRaw;
 
+        // BASE total per your existing logic (consulting + GST + distance)
         double baseTotal = consultingFee + gstAmount + distanceChargeRaw;
+
+        // NEW: add vaccination price if present
+        if (isVetCase == 1 && vaccinationPrice > 0.0) {
+            baseTotal += vaccinationPrice;
+            setRowVisibility(rowVaccinationPrice, true);
+            if (tvVaccinationPriceValue != null) {
+                tvVaccinationPriceValue.setText("₹ " + (int) Math.round(vaccinationPrice));
+            }
+        } else {
+            setRowVisibility(rowVaccinationPrice, false);
+        }
 
         boolean depositCoveredByWallet = walletBalance >= DEPOSIT;
         boolean addDepositToBill = false;
@@ -851,6 +884,9 @@ public class pending_bill extends AppCompatActivity {
 
                     if (vaccinationName != null && !vaccinationName.trim().isEmpty())
                         p.put("vaccination_name", vaccinationName);
+
+                    // NOTE: not sending vaccination_price to server to avoid API breakage.
+                    // If backend supports it, you can add: p.put("vaccination_price", String.valueOf(vaccinationPrice));
                 }
 
                 return p;
@@ -898,9 +934,14 @@ public class pending_bill extends AppCompatActivity {
                 p.put("total_payment", String.format(Locale.getDefault(), "%.2f", APPOINTMENT_CHARGE));
                 p.put("admin_commission", "0.00");
                 p.put("doctor_earning", "0.00");
-                p.put("payment_status", statusEnum);
+                p.put("payment_status", "Pending");
                 p.put("refund_status", "None");
-                p.put("notes", "None");
+                // Optionally include vaccine info in notes (doesn't break API)
+                if (isVetCase == 1 && vaccinationPrice > 0.0) {
+                    p.put("notes", "Vaccine: " + vaccinationName + " | Price: ₹" + (int) Math.round(vaccinationPrice));
+                } else {
+                    p.put("notes", "None");
+                }
                 return p;
             }
         };

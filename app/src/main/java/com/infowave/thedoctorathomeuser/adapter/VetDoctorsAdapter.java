@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatButton;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
@@ -38,7 +39,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
 
     private final Context context;
     private final List<JSONObject> doctors;
-    private final int animalCategoryId;                 // ✅ stored as int, passed as int
+    private final int animalCategoryId;
     private final OnDoctorClickListener listener;
 
     /**
@@ -53,6 +54,15 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         this.doctors = doctors;
         this.animalCategoryId = animalCategoryId;
         this.listener = listener;
+        setHasStableIds(true); // Enable stable IDs to improve recycling during frequent refreshes
+    }
+
+    // Provide stable IDs based on doctor_id
+    @Override
+    public long getItemId(int position) {
+        if (position < 0 || position >= doctors.size()) return RecyclerView.NO_ID;
+        JSONObject d = doctors.get(position);
+        return d != null ? d.optInt("doctor_id", -position - 1) : RecyclerView.NO_ID;
     }
 
     @NonNull
@@ -77,7 +87,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         double fee   = d.optDouble("consultation_fee", 0.0);
         String img   = d.optString("profile_picture", null);
         String auto  = d.optString("auto_status", "Inactive");
-        int    id    = d.optInt("doctor_id", -1);      // ✅ keep as int
+        int    id    = d.optInt("doctor_id", -1);
 
         h.tvDoctorName.setText(name);
         h.tvSpecialization.setText(spec);
@@ -106,7 +116,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
             h.btnBookNow.setText("Currently Not Accepting");
             h.btnBookNow.setEnabled(false);
             h.btnBookNow.setBackgroundColor(
-                    ctx.getResources().getColor(android.R.color.darker_gray)
+                    ContextCompat.getColor(ctx, android.R.color.darker_gray)
             );
         } else {
             h.btnBookNow.setEnabled(true);
@@ -119,19 +129,14 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
             if (listener != null) listener.onDoctorClick(d);
         });
 
-        // Book flow:
-        // EITHER: delegate to activity (recommended)
-        // if (listener != null) listener.onBookNowClick(d);
-        //
-        // OR: launch here from adapter (works fine; ensures correct extras):
+        // Book flow
         h.btnBookNow.setOnClickListener(v -> {
             if (listener != null) listener.onBookNowClick(d);
 
-            // Launch with the exact keys VetAppointmentActivity expects:
             Intent intent = new Intent(context, VetAppointmentActivity.class);
-            intent.putExtra("doctor_id", id);                       // int
-            intent.putExtra("doctor_name", name);                   // String
-            intent.putExtra("animal_category_id", animalCategoryId);// int  ✅ KEY & TYPE
+            intent.putExtra("doctor_id", id);
+            intent.putExtra("doctor_name", name);
+            intent.putExtra("animal_category_id", animalCategoryId);
 
             if (!(context instanceof android.app.Activity)) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -146,6 +151,19 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
     @Override
     public int getItemCount() {
         return doctors.size();
+    }
+
+    // Ensure we stop per-row polling when ViewHolders leave the screen/recycle
+    @Override
+    public void onViewDetachedFromWindow(@NonNull ViewHolder holder) {
+        super.onViewDetachedFromWindow(holder);
+        holder.stopAutoRefresh();
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull ViewHolder holder) {
+        super.onViewRecycled(holder);
+        holder.stopAutoRefresh();
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
@@ -233,8 +251,9 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                         if ("inactive".equalsIgnoreCase(autoStatus)) {
                             btnBookNow.setText("Currently Not Accepting");
                             btnBookNow.setEnabled(false);
-                            btnBookNow.setBackgroundColor(itemView.getResources()
-                                    .getColor(android.R.color.darker_gray));
+                            btnBookNow.setBackgroundColor(
+                                    ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray)
+                            );
                             return;
                         }
 

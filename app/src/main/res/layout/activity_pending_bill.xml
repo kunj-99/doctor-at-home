@@ -152,6 +152,7 @@
                             android:textSize="15sp" />
 
                         <TextView
+                            android:id="@+id/tv_appointment_id"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="#765445367"
@@ -331,7 +332,7 @@
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
 
-                        <!-- Vaccination Type -->
+                        <!-- Vaccination Type (info) -->
                         <LinearLayout
                             android:id="@+id/row_animal_vaccination"
                             android:layout_width="match_parent"
@@ -429,6 +430,33 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="₹ 450"
+                            android:textSize="18sp"
+                            android:textColor="@color/black"/>
+                    </LinearLayout>
+
+                    <!-- Vaccination Price (NEW dynamic line) -->
+                    <LinearLayout
+                        android:id="@+id/row_vaccination_price"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="8dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Vaccination Price"
+                            android:textSize="15sp"
+                            android:textColor="@color/black"/>
+
+                        <TextView
+                            android:id="@+id/tv_vaccination_price_value"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₹ 0"
                             android:textSize="18sp"
                             android:textColor="@color/black"/>
                     </LinearLayout>

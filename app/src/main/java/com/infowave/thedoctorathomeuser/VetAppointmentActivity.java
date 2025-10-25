@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsetsController;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
@@ -68,10 +69,18 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     // UI
     private Spinner spPincode, spBreed, spVaccination;
     private ArrayAdapter<String> pincodeAdapter, breedAdapter, vaccinationAdapter;
+
     private final List<String> pincodeItems = new ArrayList<>();
     private final List<String> breedItems = new ArrayList<>();
-    private final List<String> vaccinationItems = new ArrayList<>();
-    private final List<Integer> vaccinationIdList = new ArrayList<>(); // aligns with vaccinationItems
+
+    // Vaccination backing lists (aligned by index)
+    private final List<String>  vaccinationItems = new ArrayList<>();        // names only
+    private final List<Integer> vaccinationIdList = new ArrayList<>();       // ids
+    private final List<Double>  vaccinationPriceList = new ArrayList<>();    // prices
+    private final List<String>  vaccinationDisplayItems = new ArrayList<>(); // what spinner shows (name — ₹price)
+
+    private double selectedVaccinationPrice = 0.0;
+    private TextView tvVaccinationPrice; // optional, if present in layout
 
     private TextInputEditText etOwnerName, etOwnerPhone, etOwnerAddress;
     private TextInputEditText etAnimalName, etAnimalAge;
@@ -192,6 +201,9 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
         btnConfirm     = findViewById(R.id.btnConfirm);
         progressSubmit = findViewById(R.id.progressSubmit);
+
+        // Optional TextView to show selected vaccination price (if present in layout)
+    //    tvVaccinationPrice = findViewById(R.id.tvVaccinationPrice);
     }
 
     private void setupToolbar() {
@@ -205,19 +217,49 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     }
 
     private void setupDropdowns() {
+        // Pincodes
         pincodeItems.clear();       pincodeItems.add("Select Pincode");
-        breedItems.clear();         breedItems.add("Select Breed");
-        vaccinationItems.clear();   vaccinationItems.add("Select Vaccination");
-        vaccinationIdList.clear();  vaccinationIdList.add(0); // 0 → treated as NULL by server
-
-        pincodeAdapter     = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, pincodeItems);
+        pincodeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, pincodeItems);
         spPincode.setAdapter(pincodeAdapter);
 
-        breedAdapter       = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, breedItems);
+        // Breeds
+        breedItems.clear();         breedItems.add("Select Breed");
+        breedAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, breedItems);
         spBreed.setAdapter(breedAdapter);
 
-        vaccinationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, vaccinationItems);
+        // Vaccinations
+        vaccinationItems.clear();
+        vaccinationIdList.clear();
+        vaccinationPriceList.clear();
+        vaccinationDisplayItems.clear();
+
+        // Placeholders at index 0 (kept aligned)
+        vaccinationItems.add("Select Vaccination");
+        vaccinationIdList.add(0);
+        vaccinationPriceList.add(0.0);
+        vaccinationDisplayItems.add("Select Vaccination");
+
+        vaccinationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, vaccinationDisplayItems);
         spVaccination.setAdapter(vaccinationAdapter);
+
+        spVaccination.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                double price = 0.0;
+                if (position >= 0 && position < vaccinationPriceList.size()) {
+                    Double p = vaccinationPriceList.get(position);
+                    price = (p == null ? 0.0 : p);
+                }
+                selectedVaccinationPrice = (position == 0) ? 0.0 : price;
+
+                if (tvVaccinationPrice != null) {
+                    tvVaccinationPrice.setText(position == 0 ? "" : formatPrice(selectedVaccinationPrice));
+                }
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {
+                selectedVaccinationPrice = 0.0;
+                if (tvVaccinationPrice != null) tvVaccinationPrice.setText("");
+            }
+        });
     }
 
     private void setupModeToggle() {
@@ -264,7 +306,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                             JSONArray arrBreed        = obj.optJSONArray("breeds");
                             JSONArray arrVaccinations = obj.optJSONArray("vaccinations");
 
-                            // Pincodes (strings)
+                            // Pincodes
                             pincodeItems.clear();
                             pincodeItems.add("Select Pincode");
                             if (arrPincode != null) {
@@ -273,7 +315,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                                 }
                             }
 
-                            // Breeds (strings)
+                            // Breeds
                             breedItems.clear();
                             breedItems.add("Select Breed");
                             if (arrBreed != null) {
@@ -282,30 +324,44 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                                 }
                             }
 
-                            // Vaccinations (strings OR objects with {id, name})
+                            // Vaccinations: support plain strings or objects with {id, name, price}
                             vaccinationItems.clear();
                             vaccinationIdList.clear();
+                            vaccinationPriceList.clear();
+                            vaccinationDisplayItems.clear();
+
+                            // placeholders index 0
                             vaccinationItems.add("Select Vaccination");
-                            vaccinationIdList.add(0); // placeholder id
+                            vaccinationIdList.add(0);
+                            vaccinationPriceList.add(0.0);
+                            vaccinationDisplayItems.add("Select Vaccination");
 
                             if (arrVaccinations != null) {
                                 for (int i = 0; i < arrVaccinations.length(); i++) {
                                     Object itm = arrVaccinations.get(i);
                                     if (itm instanceof JSONObject) {
                                         JSONObject v = (JSONObject) itm;
-                                        // Support possible keys: name/title + id
                                         String name = v.optString("name",
                                                 v.optString("title",
                                                         v.optString("vaccine_name", "Unknown")));
-                                        int id = v.optInt("id",
-                                                v.optInt("vaccine_id", 0));
+                                        int id = v.optInt("id", v.optInt("vaccine_id", 0));
+
+                                        double price = 0.0;
+                                        if (v.has("price"))            price = v.optDouble("price", 0.0);
+                                        else if (v.has("vaccine_price")) price = v.optDouble("vaccine_price", 0.0);
+                                        else if (v.has("amount"))      price = v.optDouble("amount", 0.0);
+                                        else if (v.has("cost"))        price = v.optDouble("cost", 0.0);
+
                                         vaccinationItems.add(name);
                                         vaccinationIdList.add(id);
+                                        vaccinationPriceList.add(price);
+                                        vaccinationDisplayItems.add(name + " — " + formatPrice(price));
                                     } else {
-                                        // plain string array
                                         String name = arrVaccinations.getString(i);
                                         vaccinationItems.add(name);
-                                        vaccinationIdList.add(0); // no real id available; 0 -> NULL server-side
+                                        vaccinationIdList.add(0);
+                                        vaccinationPriceList.add(0.0);
+                                        vaccinationDisplayItems.add(name + " — " + formatPrice(0.0));
                                     }
                                 }
                             }
@@ -510,13 +566,17 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         return et.getText() == null ? "" : et.getText().toString().trim();
     }
 
+    private String formatPrice(double price) {
+        return String.format(Locale.getDefault(), "₹%.2f", price);
+    }
+
     private void submitAppointment() {
         progressSubmit.setVisibility(View.VISIBLE);
         btnConfirm.setEnabled(false);
 
         // Owner
         String ownerName      = valueOf(etOwnerName);
-        String ownerPhone     = valueOf(etOwnerPhone);   // not sent here, but captured for future use if needed
+        String ownerPhone     = valueOf(etOwnerPhone);   // captured for future use if needed
         String ownerAddress   = valueOf(etOwnerAddress);
 
         // Animal
@@ -540,16 +600,18 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             }
         }
 
-        // Vaccination
-        String vaccinationName = (spVaccination.getSelectedItemPosition() > 0 && spVaccination.getSelectedItemPosition() < vaccinationItems.size())
-                ? vaccinationItems.get(spVaccination.getSelectedItemPosition())
-                : "";
-        int vaccinationId = 0;
+        // Vaccination (name, id, price aligned by spinner index)
         int vPos = spVaccination.getSelectedItemPosition();
+        String vaccinationName = (vPos > 0 && vPos < vaccinationItems.size())
+                ? vaccinationItems.get(vPos) : "";
+        int vaccinationId = 0;
         if (vPos > 0 && vPos < vaccinationIdList.size()) {
             Integer vid = vaccinationIdList.get(vPos);
             vaccinationId = (vid == null) ? 0 : vid;
         }
+        double vaccinationPrice = (vPos > 0 && vPos < vaccinationPriceList.size())
+                ? (vaccinationPriceList.get(vPos) == null ? 0.0 : vaccinationPriceList.get(vPos))
+                : 0.0;
 
         // Reason/mode
         String reasonForVisit = (currentMode == Mode.VISIT)
@@ -565,56 +627,46 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         double latitude  = (currentLatLng != null) ? currentLatLng.latitude  : 0.0;
         double longitude = (currentLatLng != null) ? currentLatLng.longitude : 0.0;
 
-        Log.d(TAG, "submitAppointment → ownerName=" + ownerName +
-                ", ownerPhone=" + ownerPhone +
-                ", ownerAddress=" + ownerAddress +
-                ", animalName=" + animalName +
-                ", animalAgeInt=" + animalAgeInt +
-                ", animalBreed=" + animalBreed +
-                ", animalGender=" + animalGender +
-                ", vaccinationId=" + vaccinationId +
-                ", vaccinationName=" + vaccinationName +
-                ", reasonForVisit=" + reasonForVisit +
-                ", pincode=" + pincode +
-                ", latitude=" + latitude +
-                ", longitude=" + longitude);
-
-        // Launch pending_bill with consistent INT ids
+        // Launch pending_bill with consistent data
         Intent intent = new Intent(this, pending_bill.class);
         intent.putExtra("patient_name", ownerName);
-        intent.putExtra("age", animalAgeInt);                 // using animal's age
+        intent.putExtra("age", animalAgeInt);
         intent.putExtra("gender", animalGender);
         intent.putExtra("problem", reasonForVisit);
         intent.putExtra("address", ownerAddress);
 
-// IDs as STRINGS (normalize 0 → "")
+        // IDs as STRINGS (normalize 0 → "")
         String doctorIdStr         = String.valueOf(doctorId);
         String animalCategoryIdStr = String.valueOf(animalCategoryId);
         String vaccinationIdStr    = (vaccinationId == 0) ? "" : String.valueOf(vaccinationId);
 
-// Core
-        intent.putExtra("doctor_id", doctorIdStr);                 // String
-        intent.putExtra("doctorName", doctorName);                 // already String
-        intent.putExtra("appointment_status", "Requested");        // String
-        intent.putExtra("pincode", pincode);                       // String
-        intent.putExtra("latitude", latitude);                     // double (ok)
-        intent.putExtra("longitude", longitude);                   // double (ok)
+        // Core
+        intent.putExtra("doctor_id", doctorIdStr);
+        intent.putExtra("doctorName", doctorName);
+        intent.putExtra("appointment_status", "Requested");
+        intent.putExtra("pincode", pincode);
+        intent.putExtra("latitude", latitude);
+        intent.putExtra("longitude", longitude);
 
-// Vet-specific
-        intent.putExtra("is_vet_case", 1);                         // int (ok)
-        intent.putExtra("animal_category_id", animalCategoryIdStr);// String
-        intent.putExtra("animal_name", animalName);                // String
-        intent.putExtra("animal_gender", animalGender);            // String
-        intent.putExtra("animal_age", animalAgeInt);               // int (ok)
-        intent.putExtra("animal_breed", animalBreed);              // String
-        intent.putExtra("vaccination_id", vaccinationIdStr);       // String
-        intent.putExtra("vaccination_name", vaccinationName);      // String
+        // Vet-specific
+        intent.putExtra("is_vet_case", 1);
+        intent.putExtra("animal_category_id", animalCategoryIdStr);
+        intent.putExtra("animal_name", animalName);
+        intent.putExtra("animal_gender", animalGender);
+        intent.putExtra("animal_age", animalAgeInt);
+        intent.putExtra("animal_breed", animalBreed);
+        intent.putExtra("vaccination_id", vaccinationIdStr);
+        intent.putExtra("vaccination_name", vaccinationName);
 
+        // NEW: pass vaccination price
+        intent.putExtra("vaccination_price", vaccinationPrice);                 // double
+        intent.putExtra("vaccination_price_str", formatPrice(vaccinationPrice));// formatted
 
         Log.d(TAG, "Launching pending_bill with extras → doctorId=" + doctorId
                 + ", animalCategoryId=" + animalCategoryId
                 + ", vaccinationId=" + vaccinationId
-                + ", vaccinationName=" + vaccinationName);
+                + ", vaccinationName=" + vaccinationName
+                + ", vaccinationPrice=" + vaccinationPrice);
 
         startActivity(intent);
         finish();
