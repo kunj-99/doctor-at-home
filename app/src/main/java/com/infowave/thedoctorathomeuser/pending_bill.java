@@ -89,8 +89,8 @@ public class pending_bill extends AppCompatActivity {
     private TextView tvVaccinationPriceValue;
 
     // PhonePe
-    private final String ppCreateOrderUrl = ApiConfig.endpoint("create_order.php");
-    private final String ppStatusUrl      = ApiConfig.endpoint("check_status.php");
+    private final String ppCreateOrderUrl = ApiConfig.endpoint("phonepe/public/create_order.php");
+    private final String ppStatusUrl      = ApiConfig.endpoint("phonepe/public/check_status.php");
     private String ppMerchantOrderId;
     private ActivityResultLauncher<Intent> ppCheckoutLauncher;
 
