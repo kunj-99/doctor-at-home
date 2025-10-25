@@ -302,7 +302,7 @@ public class payments extends AppCompatActivity {
     private void checkPaymentStatus(String moid) {
         String url = statusUrl + "?merchantOrderId=" + Uri.encode(moid);
         Log.d(TAG, "[STATUS] checkPaymentStatus() URL: " + url);
-        StringRequest request = new StringRequest(
+        @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(
                 Request.Method.GET,
                 url,
                 response -> {
