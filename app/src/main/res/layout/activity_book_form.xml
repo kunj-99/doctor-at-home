@@ -1,260 +1,352 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Vertical layout so we can place black scrims above and below.
-  Heights of scrims are set from WindowInsets in the Activity.
--->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    android:orientation="vertical">
+    android:background="@color/white">
 
-    <!-- TOP: black status bar scrim (height set in code) -->
-    <View
-        android:id="@+id/status_bar_scrim"
+    <!-- MAIN CONTENT -->
+    <LinearLayout
+        android:id="@+id/main_content"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:background="@android:color/black" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <!-- Header (Fixed) -->
-    <TextView
-        android:id="@+id/header_book"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bottom_curve"
-        android:gravity="center"
-        android:padding="16dp"
-        android:layout_marginBottom="16dp"
-        android:text="Loading...."
-        android:textColor="#FFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+        <!-- TOP: black status bar scrim (height set in code) -->
+        <View
+            android:id="@+id/status_bar_scrim"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@android:color/black" />
 
-    <!-- Scrollable Content -->
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="16dp">
-
-        <LinearLayout
+        <!-- Header -->
+        <TextView
+            android:id="@+id/header_book"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/rounded_card"
-            android:orientation="vertical"
+            android:background="@drawable/bottom_curve"
+            android:gravity="center"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp"
+            android:text="Loading...."
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <!-- Scrollable Content -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:padding="16dp">
-
-            <!-- Patient’s Name -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:text="Patient’s Name"
-                android:textColor="#000"
-                android:textSize="16sp" />
-
-            <EditText
-                android:id="@+id/patient_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_edittext"
-                android:hint="Enter Name"
-                android:padding="12dp"
-                android:textColor="#000"
-                android:textColorHint="#9E9E9E"
-                android:textSize="14sp" />
-
-            <!-- Age -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="4dp"
-                android:text="Age"
-                android:textColor="#000"
-                android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:weightSum="3">
+                android:background="@drawable/rounded_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Patient’s Name -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="4dp"
+                    android:text="Patient’s Name"
+                    android:textColor="#000"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/patient_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_edittext"
+                    android:hint="Enter Name"
+                    android:padding="12dp"
+                    android:textColor="#000"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="14sp" />
+
+                <!-- Date of Birth (Calendar) -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Date of Birth"
+                    android:textColor="#000"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/dob_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:clickable="true"
+                    android:background="@drawable/rounded_edittext"
+                    android:hint="Select Date of Birth (DD/MM/YYYY)"
+                    android:padding="12dp"
+                    android:textColor="#000"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="14sp" />
+
+                <!-- Keep legacy spinners (hidden) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    android:weightSum="3">
+
+                    <Spinner
+                        android:id="@+id/day_spinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <Spinner
+                        android:id="@+id/month_spinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+
+                    <Spinner
+                        android:id="@+id/year_spinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <!-- Gender -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Gender"
+                    android:textColor="#000"
+                    android:textSize="16sp" />
+
+                <RadioGroup
+                    android:id="@+id/gender_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/gender_male"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="#0E76D6"
+                        android:text="Male"
+                        android:textColor="#000" />
+
+                    <RadioButton
+                        android:id="@+id/gender_female"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:buttonTint="#0E76D6"
+                        android:text="Female"
+                        android:textColor="#000" />
+
+                    <RadioButton
+                        android:id="@+id/gender_other"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:buttonTint="#0E76D6"
+                        android:text="Others"
+                        android:textColor="#000" />
+                </RadioGroup>
+
+                <!-- Problem -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Problem"
+                    android:textColor="#000"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/problem"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_edittext"
+                    android:hint="Describe Problem"
+                    android:padding="12dp"
+                    android:textColor="#000"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="14sp" />
+
+                <!-- Address -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Address"
+                    android:textColor="#000"
+                    android:textSize="16sp" />
+
+                <EditText
+                    android:id="@+id/address"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_edittext"
+                    android:hint="Enter Address"
+                    android:padding="12dp"
+                    android:textColor="#000"
+                    android:textColorHint="#9E9E9E"
+                    android:textSize="14sp" />
+
+                <!-- Pincode -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="Pincode"
+                    android:textColor="#000"
+                    android:textSize="16sp" />
 
                 <Spinner
-                    android:id="@+id/day_spinner"
-                    android:layout_width="0dp"
+                    android:id="@+id/spinner_pincode"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:background="@drawable/rounded_spinner"
-                    android:entries="@array/day_array"
                     android:padding="12dp" />
 
-                <Spinner
-                    android:id="@+id/month_spinner"
-                    android:layout_width="0dp"
+                <!-- Instruction -->
+                <TextView
+                    android:id="@+id/tv_pinpoint_instruction"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/rounded_spinner"
-                    android:entries="@array/month_array"
-                    android:padding="12dp" />
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="8dp"
+                    android:padding="8dp"
+                    android:gravity="center"
+                    android:text="Tap map to choose manually, or use your current location."
+                    android:textColor="#555555"
+                    android:textSize="14sp" />
 
-                <Spinner
-                    android:id="@+id/year_spinner"
-                    android:layout_width="0dp"
+                <!-- Current Location Button -->
+                <Button
+                    android:id="@+id/btn_use_current_location"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:background="@drawable/rounded_spinner"
-                    android:entries="@array/year_array"
-                    android:padding="12dp" />
+                    android:text="Use Current Location"
+                    android:textStyle="bold"
+                    android:textColor="#FFF"
+                    android:backgroundTint="@color/navy_blue"
+                    android:layout_marginTop="8dp" />
+
+                <!-- Embedded Map with click-catcher to open fullscreen -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="4dp">
+
+                    <fragment
+                        android:id="@+id/map_fragment"
+                        android:name="com.google.android.gms.maps.SupportMapFragment"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <!-- Transparent view to catch taps -->
+                    <View
+                        android:id="@+id/map_click_catcher"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent" />
+                </FrameLayout>
+
             </LinearLayout>
+        </ScrollView>
 
-            <!-- Gender -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="4dp"
-                android:text="Gender"
-                android:textColor="#000"
-                android:textSize="16sp" />
+        <!-- Fixed Book Button -->
+        <Button
+            android:id="@+id/book_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="8dp"
+            android:text="Book Appointment"
+            android:textColor="#FFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="@color/navy_blue" />
 
-            <RadioGroup
-                android:id="@+id/gender_group"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+        <!-- BOTTOM: black navigation bar scrim -->
+        <View
+            android:id="@+id/navigation_bar_scrim"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@android:color/black" />
+    </LinearLayout>
 
-                <RadioButton
-                    android:id="@+id/gender_male"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:buttonTint="#0E76D6"
-                    android:text="Male"
-                    android:textColor="#000" />
+    <!-- FULLSCREEN MAP POPUP -->
+    <LinearLayout
+        android:id="@+id/fullscreen_map_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#CC000000"
+        android:visibility="gone">
 
-                <RadioButton
-                    android:id="@+id/gender_female"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:buttonTint="#0E76D6"
-                    android:text="Female"
-                    android:textColor="#000" />
+        <!-- Title bar -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center"
+            android:text="Select Location (Inside Selected Pincode)"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:background="@android:color/black" />
 
-                <RadioButton
-                    android:id="@+id/gender_other"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:buttonTint="#0E76D6"
-                    android:text="Others"
-                    android:textColor="#000" />
-            </RadioGroup>
+        <!-- Map container -->
+        <FrameLayout
+            android:id="@+id/map_fullscreen_container"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-            <!-- Problem -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="4dp"
-                android:text="Problem"
-                android:textColor="#000"
-                android:textSize="16sp" />
+        <!-- Bottom action bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:background="@android:color/black"
+            android:gravity="center">
 
-            <EditText
-                android:id="@+id/problem"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_edittext"
-                android:completionThreshold="1"
-                android:hint="Select Problem"
-                android:padding="12dp"
-                android:textColor="#000"
-                android:textColorHint="#9E9E9E"
-                android:textSize="14sp" />
+            <Button
+                android:id="@+id/btn_cancel_map"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Cancel"
+                android:textAllCaps="false"
+                android:backgroundTint="@android:color/darker_gray"
+                android:textColor="@android:color/white" />
 
-            <!-- Address -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="4dp"
-                android:text="Address"
-                android:textColor="#000"
-                android:textSize="16sp" />
+            <View
+                android:layout_width="12dp"
+                android:layout_height="match_parent" />
 
-            <EditText
-                android:id="@+id/address"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_edittext"
-                android:hint="Enter Address"
-                android:padding="12dp"
-                android:textColor="#000"
-                android:textColorHint="#9E9E9E"
-                android:textSize="14sp" />
-
-            <!-- Pincode -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="4dp"
-                android:text="Pincode"
-                android:textColor="#000"
-                android:textSize="16sp" />
-
-            <Spinner
-                android:id="@+id/spinner_pincode"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/rounded_spinner"
-                android:padding="12dp" />
-
-            <!-- Instructional message for map interaction -->
-            <TextView
-                android:id="@+id/tv_pinpoint_instruction"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:layout_marginHorizontal="16dp"
-                android:padding="8dp"
-                android:gravity="center"
-                android:text="Tap on the map to pinpoint your location"
-                android:textColor="#555555"
-                android:textSize="14sp" />
-
-            <!-- Map Fragment for Location Selection -->
-            <fragment
-                android:id="@+id/map_fragment"
-                android:name="com.google.android.gms.maps.SupportMapFragment"
-                android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:layout_margin="16dp" />
+            <Button
+                android:id="@+id/btn_select_map"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Select"
+                android:textAllCaps="false"
+                android:backgroundTint="@color/navy_blue"
+                android:textColor="@android:color/white" />
         </LinearLayout>
-    </ScrollView>
+    </LinearLayout>
 
-    <!-- Fixed Book Button -->
-    <Button
-        android:id="@+id/book_button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="8dp"
-        android:backgroundTint="@color/navy_blue"
-        android:text="Book"
-        android:textColor="#FFF"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <!-- BOTTOM: black navigation bar scrim (height set in code; 0 on gesture nav) -->
-    <View
-        android:id="@+id/navigation_bar_scrim"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:background="@android:color/black" />
-
-</LinearLayout>
+</FrameLayout>
