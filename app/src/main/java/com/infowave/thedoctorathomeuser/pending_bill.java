@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
@@ -55,8 +56,8 @@ public class pending_bill extends AppCompatActivity {
     private double distanceKm = 0.0;
     private double distanceCharge = 0.0;
     private double gstAmount = 0.0;
-    private double finalCost = 0.0;
-    private long   finalPayRupees = 0L;
+    private double finalCost = 0.0;          // rupees (double for math)
+    private long   finalPayRupees = 0L;      // rupees (rounded up for display)
 
     // Locations
     private double docLat = 0.0, docLng = 0.0, userLat = 0.0, userLng = 0.0;
@@ -69,8 +70,8 @@ public class pending_bill extends AppCompatActivity {
     // Vet case
     private int isVetCase = 0;
     private String animalName, animalGender, animalBreed, animalAge, vaccinationName;
-    private String animalCategoryId = "";  // keep as string; server parses int-or-null
-    private String vaccinationId   = "";   // keep as string; server parses int-or-null
+    private String animalCategoryId = "";
+    private String vaccinationId   = "";
 
     // NEW: vaccine price from previous activity
     private double vaccinationPrice = 0.0;
@@ -102,7 +103,7 @@ public class pending_bill extends AppCompatActivity {
     private enum DepositMode { NONE, WALLET, BILL }
     private DepositMode lastConfirmedDepositMode = DepositMode.NONE;
 
-    // Lifecycle guard to prevent dialog/window leaks and stop background callbacks
+    // Lifecycle guard
     private boolean isDestroyedOrFinishing = false;
 
     @Override
@@ -111,7 +112,6 @@ public class pending_bill extends AppCompatActivity {
         isDestroyedOrFinishing = false;
         fetchWalletBalance();
         recomputeTotalsAndUI();
-        // Resume polling when visible
         if (walletRunnable != null) {
             walletHandler.postDelayed(walletRunnable, 30000);
         }
@@ -128,22 +128,22 @@ public class pending_bill extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (ppMerchantOrderId != null) {
+                        // Robust polling: 5 attempts, spaced 2s
                         checkPhonePeStatus(ppMerchantOrderId);
                     }
                 }
         );
 
-        // Logged-in user (validate BEFORE showing any loader)
+        // Logged-in user
         SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
         if (patientId == null || patientId.isEmpty()) {
             Toast.makeText(this, "Sorry, we could not identify your profile. Please log in again.", Toast.LENGTH_SHORT).show();
-            // No loader shown yet; safe to finish
             finish();
             return;
         }
 
-        // Now safe to show loader for initial async work
+        // Show loader for initial async work
         if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
 
         // Intent extras
@@ -159,19 +159,18 @@ public class pending_bill extends AppCompatActivity {
         pincode       = intent.getStringExtra("pincode");
 
         // Vet extras
-        animalName     = intent.getStringExtra("animal_name");
-        animalGender   = intent.getStringExtra("animal_gender");
-        animalBreed    = intent.getStringExtra("animal_breed");
-        animalAge      = String.valueOf(intent.getIntExtra("animal_age", 0));
-        vaccinationName= intent.getStringExtra("vaccination_name");
+        animalName       = intent.getStringExtra("animal_name");
+        animalGender     = intent.getStringExtra("animal_gender");
+        animalBreed      = intent.getStringExtra("animal_breed");
+        animalAge        = String.valueOf(intent.getIntExtra("animal_age", 0));
+        vaccinationName  = intent.getStringExtra("vaccination_name");
         animalCategoryId = intent.getStringExtra("animal_category_id");
         vaccinationId    = intent.getStringExtra("vaccination_id");
-        isVetCase = intent.getIntExtra("is_vet_case", 0);
+        isVetCase        = intent.getIntExtra("is_vet_case", 0);
 
-        // NEW: get vaccination price; default 0.0 if absent
+        // NEW: vaccination price
         vaccinationPrice = intent.getDoubleExtra("vaccination_price", 0.0);
 
-        // normalize nulls
         if (animalCategoryId == null) animalCategoryId = "";
         if (vaccinationId == null)    vaccinationId = "";
 
@@ -182,7 +181,6 @@ public class pending_bill extends AppCompatActivity {
             return;
         }
 
-        // Normalize status text
         if ("Request for visit".equals(status))      status = "Requested";
         else if ("Book Appointment".equals(status))  status = "Confirmed";
 
@@ -254,7 +252,7 @@ public class pending_bill extends AppCompatActivity {
             setRowVisibility(rowAnimalVaccination, false);
         }
 
-        // NEW: show/hide vaccination price line now; will also be maintained in recomputeTotalsAndUI()
+        // NEW: vaccination price line
         if (isVetCase == 1 && vaccinationPrice > 0.0) {
             setRowVisibility(rowVaccinationPrice, true);
             tvVaccinationPriceValue.setText("₹ " + (int) Math.round(vaccinationPrice));
@@ -346,7 +344,6 @@ public class pending_bill extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        // Prevent UI work in background; also dismiss dialogs to avoid leaks
         if (walletHandler != null && walletRunnable != null) {
             walletHandler.removeCallbacks(walletRunnable);
         }
@@ -426,71 +423,108 @@ public class pending_bill extends AppCompatActivity {
             protected Map<String, String> getParams() {
                 Map<String, String> p = new HashMap<>();
                 p.put("patient_id", patientId);
-                p.put("amount", String.format(Locale.getDefault(), "%.2f", finalCost));
+                // IMPORTANT: amount in paise
+                long paise = Math.round(finalCost * 100.0); // or finalPayRupees * 100L
+                p.put("amount", String.valueOf(paise));
                 p.put("purpose", "APPOINTMENT");
+                p.put("_ts", String.valueOf(System.currentTimeMillis())); // cache buster
                 return p;
             }
         };
-
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
         Volley.newRequestQueue(this).add(req);
     }
 
-    // Robust checker with quick retries for transient failures
+    // Poll 5 times (every 2s) then stop
     private void checkPhonePeStatus(String merchantOrderId) {
+        final Handler h = new Handler(getMainLooper());
         final int[] attempts = {0};
-        final int maxAttempts = 3;
-        final Handler h = new Handler();
+        final int maxAttempts = 5;
 
         Runnable check = new Runnable() {
             @Override public void run() {
-                String url = ppStatusUrl + "?merchantOrderId=" + merchantOrderId + "&skipWallet=1";
+                if (isFinishing() || isDestroyedOrFinishing || isDestroyed()) {
+                    loaderutil.hideLoader();
+                    return;
+                }
+
+                String url = ppStatusUrl + "?merchantOrderId=" + Uri.encode(merchantOrderId) + "&skipWallet=1&ts=" + System.currentTimeMillis();
                 StringRequest req = new StringRequest(Request.Method.GET, url,
                         resp -> {
                             try {
                                 JSONObject obj = new JSONObject(resp);
-                                if (!"success".equalsIgnoreCase(obj.optString("status"))) {
-                                    if (++attempts[0] < maxAttempts) { h.postDelayed(this, 1500); return; }
+                                if (!"success".equalsIgnoreCase(obj.optString("status")) && !"ok".equalsIgnoreCase(obj.optString("status"))) {
+                                    if (++attempts[0] < maxAttempts) {
+                                        h.postDelayed(this, 2000);
+                                        return;
+                                    }
                                     loaderutil.hideLoader();
                                     Toast.makeText(pending_bill.this, "Could not verify payment right now. Please try again.", Toast.LENGTH_LONG).show();
                                     return;
                                 }
+
                                 String state = obj.optString("state", "PENDING");
+
                                 if ("COMPLETED".equalsIgnoreCase(state)) {
+                                    // If your deposit rule debits wallet for Online+WALLET mode, keep it else remove.
                                     if ("Online".equals(selectedPaymentMethod) && lastConfirmedDepositMode == DepositMode.WALLET) {
                                         deductWalletCharge(DEPOSIT, "Platform charge for online appointment (wallet debit)");
                                         setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
                                         recomputeTotalsAndUI();
                                     }
+
+                                    // Trust backend for balance:
+                                    fetchWalletBalance();
+
                                     Toast.makeText(pending_bill.this, "Payment successful.", Toast.LENGTH_SHORT).show();
+                                    loaderutil.hideLoader();
                                     saveBookingData(googleMapsLink);
+
                                 } else if ("FAILED".equalsIgnoreCase(state)) {
                                     loaderutil.hideLoader();
                                     Toast.makeText(pending_bill.this, "Payment failed.", Toast.LENGTH_SHORT).show();
+
                                 } else {
-                                    loaderutil.hideLoader();
-                                    Toast.makeText(pending_bill.this, "Payment pending. Please check later.", Toast.LENGTH_SHORT).show();
+                                    // PENDING
+                                    if (++attempts[0] < maxAttempts) {
+                                        h.postDelayed(this, 2000);
+                                    } else {
+                                        loaderutil.hideLoader();
+                                        Toast.makeText(pending_bill.this, "Payment pending. You can check again from history.", Toast.LENGTH_SHORT).show();
+                                    }
                                 }
                             } catch (Exception e) {
-                                if (++attempts[0] < maxAttempts) { h.postDelayed(this, 1500); return; }
-                                loaderutil.hideLoader();
-                                Toast.makeText(pending_bill.this, "Status parse error.", Toast.LENGTH_SHORT).show();
+                                if (++attempts[0] < maxAttempts) {
+                                    h.postDelayed(this, 2000);
+                                } else {
+                                    loaderutil.hideLoader();
+                                    Toast.makeText(pending_bill.this, "Status parse error.", Toast.LENGTH_SHORT).show();
+                                }
                             }
                         },
                         err -> {
-                            if (++attempts[0] < maxAttempts) { h.postDelayed(this, 1500); return; }
-                            loaderutil.hideLoader();
-                            Toast.makeText(pending_bill.this, "Server error while checking status.", Toast.LENGTH_SHORT).show();
+                            if (++attempts[0] < maxAttempts) {
+                                h.postDelayed(this, 2000);
+                            } else {
+                                loaderutil.hideLoader();
+                                Toast.makeText(pending_bill.this, "Server error while checking status.", Toast.LENGTH_SHORT).show();
+                            }
                         });
+                req.setShouldCache(false);
+                req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
                 Volley.newRequestQueue(pending_bill.this).add(req);
             }
         };
+        // Show loader during the first check
+        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
         check.run();
     }
 
     /* ---------------- Config & distance ---------------- */
 
     private void fetchAppConfig() {
-        String url = ApiConfig.endpoint("get_app_config.php");
+        String url = ApiConfig.endpoint("get_app_config.php") + "?ts=" + System.currentTimeMillis();
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
                     if (!resp.optBoolean("success")) {
@@ -514,12 +548,12 @@ public class pending_bill extends AppCompatActivity {
                     finish();
                 }
         );
-
+        req.setShouldCache(false);
         Volley.newRequestQueue(this).add(req);
     }
 
     private void fetchAppointmentCharge(String doctorId) {
-        String url = ApiConfig.endpoint("get_appointment_charge.php", "doctor_id", doctorId);
+        String url = ApiConfig.endpoint("get_appointment_charge.php", "doctor_id", doctorId) + "&ts=" + System.currentTimeMillis();
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
@@ -542,12 +576,12 @@ public class pending_bill extends AppCompatActivity {
                     recomputeTotalsAndUI();
                 }
         );
-
+        req.setShouldCache(false);
         Volley.newRequestQueue(this).add(req);
     }
 
     private void fetchDoctorLocation(String docId) {
-        String url = ApiConfig.endpoint("get_doctor_location.php", "doctor_id", docId);
+        String url = ApiConfig.endpoint("get_doctor_location.php", "doctor_id", docId) + "&ts=" + System.currentTimeMillis();
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
@@ -568,6 +602,7 @@ public class pending_bill extends AppCompatActivity {
                     recomputeTotalsAndUI();
                 }
         );
+        req.setShouldCache(false);
         Volley.newRequestQueue(this).add(req);
     }
 
@@ -591,7 +626,10 @@ public class pending_bill extends AppCompatActivity {
     }
 
     private void fetchDrivingDistance(double lat1, double lng1, double lat2, double lng2) {
-        String url = "https://maps.googleapis.com/maps/api/directions/json?origin=" + lat1 + "," + lng1 + "&destination=" + lat2 + "," + lng2 + "&key=" + getString(R.string.google_maps_key);
+        String url = "https://maps.googleapis.com/maps/api/directions/json?origin="
+                + lat1 + "," + lng1 + "&destination=" + lat2 + "," + lng2
+                + "&key=" + getString(R.string.google_maps_key)
+                + "&ts=" + System.currentTimeMillis();
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 this::parseRoutesResponse,
@@ -600,6 +638,7 @@ public class pending_bill extends AppCompatActivity {
                     recomputeTotalsAndUI();
                 }
         );
+        req.setShouldCache(false);
         Volley.newRequestQueue(this).add(req);
     }
 
@@ -635,10 +674,10 @@ public class pending_bill extends AppCompatActivity {
         double distanceChargeRaw = (distanceKm <= FREE_DISTANCE_KM) ? 0.0 : (distanceKm * PER_KM_CHARGE);
         distanceCharge = distanceChargeRaw;
 
-        // BASE total per your existing logic (consulting + GST + distance)
+        // Base total (consulting + GST + distance)
         double baseTotal = consultingFee + gstAmount + distanceChargeRaw;
 
-        // NEW: add vaccination price if present
+        // Add vaccination price if any
         if (isVetCase == 1 && vaccinationPrice > 0.0) {
             baseTotal += vaccinationPrice;
             setRowVisibility(rowVaccinationPrice, true);
@@ -650,20 +689,15 @@ public class pending_bill extends AppCompatActivity {
         }
 
         boolean depositCoveredByWallet = walletBalance >= DEPOSIT;
-        boolean addDepositToBill = false;
-        String depositLine = "";
+        boolean addDepositToBill = !depositCoveredByWallet;
+        String depositLine;
 
-        if ("Online".equals(selectedPaymentMethod) || "Offline".equals(selectedPaymentMethod)) {
-            addDepositToBill = !depositCoveredByWallet;
-            if (depositCoveredByWallet) {
-                depositLine = "Wallet will be debited: ₹" + (int) DEPOSIT;
-            } else {
-                if ("Offline".equals(selectedPaymentMethod)) {
-                    depositLine = "Offline booking के लिए wallet में ₹" + (int) DEPOSIT + " होना ज़रूरी है.";
-                } else {
-                    depositLine = "Platform Charge added to bill: ₹" + (int) DEPOSIT;
-                }
-            }
+        if ("Offline".equals(selectedPaymentMethod) && walletBalance < DEPOSIT) {
+            depositLine = "Offline booking के लिए wallet में ₹" + (int) DEPOSIT + " होना ज़रूरी है.";
+        } else if (depositCoveredByWallet) {
+            depositLine = "Wallet will be debited: ₹" + (int) DEPOSIT;
+        } else {
+            depositLine = "Platform Charge added to bill: ₹" + (int) DEPOSIT;
         }
 
         double finalCostRaw = baseTotal + (addDepositToBill ? DEPOSIT : 0.0);
@@ -749,8 +783,7 @@ public class pending_bill extends AppCompatActivity {
 
     private void fetchWalletBalance() {
         String url = ApiConfig.endpoint("get_wallet_balance.php");
-
-        @SuppressLint("SetTextI18n") StringRequest req = new StringRequest(Request.Method.POST, url,
+        StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> {
                     try {
                         JSONObject obj = new JSONObject(resp);
@@ -767,9 +800,12 @@ public class pending_bill extends AppCompatActivity {
             protected Map<String, String> getParams() {
                 Map<String, String> p = new HashMap<>();
                 p.put("patient_id", patientId);
+                p.put("_ts", String.valueOf(System.currentTimeMillis()));
                 return p;
             }
         };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(10000, 1, 1.5f));
         Volley.newRequestQueue(this).add(req);
     }
 
@@ -796,6 +832,8 @@ public class pending_bill extends AppCompatActivity {
                 return p;
             }
         };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(10000, 1, 1.5f));
         Volley.newRequestQueue(this).add(req);
     }
 
@@ -815,6 +853,8 @@ public class pending_bill extends AppCompatActivity {
                 return p;
             }
         };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(10000, 1, 1.5f));
         Volley.newRequestQueue(this).add(req);
     }
 
@@ -844,7 +884,7 @@ public class pending_bill extends AppCompatActivity {
                 Map<String, String> p = new HashMap<>();
                 p.put("patient_id", patientId);
                 p.put("patient_name", patientName);
-                p.put("age", patientAge); // server parses int-or-null
+                p.put("age", patientAge);
                 p.put("gender", patientGender);
                 p.put("address", patientAddress);
                 p.put("doctor_id", doctorId);
@@ -861,42 +901,34 @@ public class pending_bill extends AppCompatActivity {
                 p.put("status", status);
                 p.put("location", googleMapsLink);
 
-                // Vet fields: send ONLY when present & is_vet_case == 1
                 p.put("is_vet_case", String.valueOf(isVetCase));
                 if (isVetCase == 1) {
                     if (animalCategoryId != null && !animalCategoryId.trim().isEmpty())
                         p.put("animal_category_id", animalCategoryId);
-
                     if (animalName != null && !animalName.trim().isEmpty())
                         p.put("animal_name", animalName);
-
                     if (animalGender != null && !animalGender.trim().isEmpty())
                         p.put("animal_gender", animalGender);
-
                     if (animalAge != null && !animalAge.trim().isEmpty())
                         p.put("animal_age", animalAge);
-
                     if (animalBreed != null && !animalBreed.trim().isEmpty())
                         p.put("animal_breed", animalBreed);
-
                     if (vaccinationId != null && !vaccinationId.trim().isEmpty())
                         p.put("vaccination_id", vaccinationId);
-
                     if (vaccinationName != null && !vaccinationName.trim().isEmpty())
                         p.put("vaccination_name", vaccinationName);
-
-                    // NOTE: not sending vaccination_price to server to avoid API breakage.
-                    // If backend supports it, you can add: p.put("vaccination_price", String.valueOf(vaccinationPrice));
+                    // If backend supports: p.put("vaccination_price", String.valueOf(vaccinationPrice));
                 }
 
                 return p;
             }
         };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
         Volley.newRequestQueue(this).add(req);
     }
 
     private void insertPaymentHistory(String appointmentId) {
-        String statusEnum = "Pending";
         String url = ApiConfig.endpoint("payment_history.php");
         StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> {
@@ -936,7 +968,6 @@ public class pending_bill extends AppCompatActivity {
                 p.put("doctor_earning", "0.00");
                 p.put("payment_status", "Pending");
                 p.put("refund_status", "None");
-                // Optionally include vaccine info in notes (doesn't break API)
                 if (isVetCase == 1 && vaccinationPrice > 0.0) {
                     p.put("notes", "Vaccine: " + vaccinationName + " | Price: ₹" + (int) Math.round(vaccinationPrice));
                 } else {
@@ -945,6 +976,8 @@ public class pending_bill extends AppCompatActivity {
                 return p;
             }
         };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
         Volley.newRequestQueue(this).add(req);
     }
 

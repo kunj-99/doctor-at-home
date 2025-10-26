@@ -27,6 +27,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -53,7 +54,7 @@ public class payments extends AppCompatActivity {
     // Quick recharge
     private Button btnRecharge50, btnRecharge100;
 
-    // Segments (same IDs as before; just visually segmented)
+    // Segments
     private MaterialCardView cardCredit, cardDebit;
 
     // IDs kept but hidden
@@ -77,6 +78,11 @@ public class payments extends AppCompatActivity {
     private ActivityResultLauncher<Intent> checkoutLauncher;
 
     private String activeFilter = "CREDIT";
+
+    // ===== Recharge disable rule =====
+    private static final double RECHARGE_DISABLE_THRESHOLD_RS = 400.0;
+    private double currentWalletBalanceRs = 0.0;
+    private boolean thresholdToastShown = false; // throttle the ≥₹400 toast once per session
 
     @SuppressLint({"MissingInflatedId", "SetTextI18n"})
     @Override
@@ -145,9 +151,10 @@ public class payments extends AppCompatActivity {
         rvTransactions.setLayoutManager(new LinearLayoutManager(this));
         rvTransactions.setAdapter(adapter);
 
-        // Load initial data
-        fetchWalletBalance();
-        fetchTransactionHistory();
+        // Load initial data (show loader during parallel fetches)
+        loaderutil.showLoader(this);
+        fetchWalletBalance();       // each call will hide loader on completion
+        fetchTransactionHistory();  // each call will hide loader on completion
 
         // PhonePe launcher
         checkoutLauncher = registerForActivityResult(
@@ -155,16 +162,17 @@ public class payments extends AppCompatActivity {
                 this::onCheckoutResult
         );
 
-        // Quick recharge
+        // Quick recharge values (currently ₹1 and ₹2 for testing)
+        // To switch to ₹50/₹100, change to 50*100 and 100*100.
         btnRecharge50.setOnClickListener(v -> {
             btnRecharge50.setEnabled(false);
             btnRecharge100.setEnabled(false);
-            startRecharge(String.valueOf(50 * 100));
+            startRecharge(String.valueOf(1 * 100));   // <- change to 50*100 for ₹50
         });
         btnRecharge100.setOnClickListener(v -> {
             btnRecharge50.setEnabled(false);
             btnRecharge100.setEnabled(false);
-            startRecharge(String.valueOf(100 * 100));
+            startRecharge(String.valueOf(2 * 100));   // <- change to 100*100 for ₹100
         });
 
         // Segmented partition behavior
@@ -180,14 +188,17 @@ public class payments extends AppCompatActivity {
         });
 
         styleActivePartition();
+
+        // Restore instance state (if activity recreated)
+        if (savedInstanceState != null) {
+            merchantOrderId = savedInstanceState.getString("merchantOrderId", merchantOrderId);
+        }
     }
 
     /** Make the segments look like a professional toggle (no “card” feel). */
     private void styleActivePartition() {
-        // Credit active?
         boolean creditActive = "CREDIT".equals(activeFilter);
 
-        // Visuals: light fill for active, transparent for inactive; clear strokes
         cardCredit.setCardElevation(0f);
         cardDebit.setCardElevation(0f);
 
@@ -213,24 +224,24 @@ public class payments extends AppCompatActivity {
     }
 
     private void onCheckoutResult(ActivityResult result) {
+        // user returned from PhonePe
         if (merchantOrderId != null) {
+            loaderutil.showLoader(this);
             if (!awaitingSdkResult) {
                 awaitingSdkResult = true;
+                updateButtonsForPending(true); // keep disabled during polling
                 checkPaymentStatusWithBackoff(merchantOrderId);
             } else {
                 checkPaymentStatus(merchantOrderId);
             }
         }
-        btnRecharge50.setEnabled(true);
-        btnRecharge100.setEnabled(true);
+        // DO NOT re-enable buttons here. They are re-enabled only after a terminal status.
     }
 
     private void startRecharge(String paiseAmount) {
-        btnRecharge50.setEnabled(false);
-        btnRecharge100.setEnabled(false);
         awaitingSdkResult = false;
 
-        final String attemptId = "APP-" + System.currentTimeMillis();
+        loaderutil.showLoader(this);
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 createOrderUrl,
@@ -241,11 +252,14 @@ public class payments extends AppCompatActivity {
                             Toast.makeText(this, "Create order failed: " + obj.optString("message", ""), Toast.LENGTH_SHORT).show();
                             btnRecharge50.setEnabled(true);
                             btnRecharge100.setEnabled(true);
+                            loaderutil.hideLoader();
                             return;
                         }
                         merchantOrderId = obj.optString("merchantOrderId", null);
                         String token    = obj.optString("token", "");
                         String orderId  = obj.optString("orderId", "");
+                        loaderutil.hideLoader();
+
                         if (token.isEmpty() || orderId.isEmpty()) {
                             Toast.makeText(this, "Invalid order response", Toast.LENGTH_SHORT).show();
                             btnRecharge50.setEnabled(true);
@@ -255,17 +269,20 @@ public class payments extends AppCompatActivity {
                         try {
                             PhonePeKt.startCheckoutPage(this, token, orderId, checkoutLauncher);
                         } catch (Throwable t) {
+                            Log.e(TAG, "PhonePe launch error", t);
                             Toast.makeText(this, "Unable to open PhonePe UI", Toast.LENGTH_SHORT).show();
                             btnRecharge50.setEnabled(true);
                             btnRecharge100.setEnabled(true);
                         }
                     } catch (Exception e) {
+                        loaderutil.hideLoader();
                         Toast.makeText(this, "Create order parse error", Toast.LENGTH_SHORT).show();
                         btnRecharge50.setEnabled(true);
                         btnRecharge100.setEnabled(true);
                     }
                 },
                 error -> {
+                    loaderutil.hideLoader();
                     Toast.makeText(this, "Network error creating order", Toast.LENGTH_SHORT).show();
                     btnRecharge50.setEnabled(true);
                     btnRecharge100.setEnabled(true);
@@ -277,10 +294,13 @@ public class payments extends AppCompatActivity {
                 map.put("patient_id", patientId);
                 map.put("amount", paiseAmount);
                 map.put("purpose", "WALLET_TOPUP");
-                map.put("attemptId", attemptId);
+                map.put("attemptId", "APP-" + System.currentTimeMillis());
+                map.put("_ts", String.valueOf(System.currentTimeMillis())); // cache buster
                 return map;
             }
         };
+        request.setShouldCache(false);               // prevent Volley caching
+        request.setRetryPolicy(ppRetry());           // robust retry
         Volley.newRequestQueue(this).add(request);
     }
 
@@ -298,11 +318,14 @@ public class payments extends AppCompatActivity {
                 }
             }
         };
-        mainHandler.post(poll);
+        // Small initial delay so PG can settle
+        mainHandler.postDelayed(poll, 1200);
     }
 
     private void checkPaymentStatus(String moid) {
-        String url = statusUrl + "?merchantOrderId=" + Uri.encode(moid);
+        // cache-buster to avoid any intermediary caching
+        String url = statusUrl + "?merchantOrderId=" + Uri.encode(moid) + "&ts=" + System.currentTimeMillis();
+
         StringRequest request = new StringRequest(
                 Request.Method.GET,
                 url,
@@ -312,36 +335,59 @@ public class payments extends AppCompatActivity {
                         String apiStatus = obj.optString("status");
                         if (!"success".equalsIgnoreCase(apiStatus) && !"ok".equalsIgnoreCase(apiStatus)) {
                             Toast.makeText(this, "Status check failed: " + obj.optString("message", ""), Toast.LENGTH_SHORT).show();
+                            loaderutil.hideLoader();
                             return;
                         }
-                        String state   = obj.optString("state", "PENDING");
-                        String balance = obj.optString("wallet_balance", "0.00");
-                        tvWalletBalance.setText("₹" + balance);
+
+                        String state = obj.optString("state", "PENDING");
+                        // Do NOT trust wallet_balance from status; fetch separately.
 
                         switch (state) {
                             case "COMPLETED":
                                 Toast.makeText(this, "Recharge successful!", Toast.LENGTH_SHORT).show();
+                                fetchWalletBalance();       // authoritative: patients.wallet_balance
                                 fetchTransactionHistory();
                                 awaitingSdkResult = false;
+                                merchantOrderId = null;     // stop further polls
+                                updateButtonsForPending(false); // re-enable (threshold rule will apply on balance load)
                                 break;
+
                             case "FAILED":
                                 Toast.makeText(this, "Recharge failed", Toast.LENGTH_SHORT).show();
+                                fetchWalletBalance();
+                                loaderutil.hideLoader();
                                 awaitingSdkResult = false;
+                                merchantOrderId = null;
+                                updateButtonsForPending(false);
                                 break;
+
                             case "CANCELLED":
                             case "TIMED_OUT":
                                 Toast.makeText(this, "Payment " + state.toLowerCase(), Toast.LENGTH_SHORT).show();
+                                fetchWalletBalance();
+                                loaderutil.hideLoader();
                                 awaitingSdkResult = false;
+                                merchantOrderId = null;
+                                updateButtonsForPending(false);
                                 break;
+
                             default:
-                                // pending
+                                // PENDING: keep UI responsive but keep buttons disabled to avoid duplicate topups
+                                loaderutil.hideLoader();
+                                updateButtonsForPending(true);
                         }
                     } catch (Exception e) {
+                        loaderutil.hideLoader();
                         Toast.makeText(this, "Status parse error", Toast.LENGTH_SHORT).show();
                     }
                 },
-                error -> Toast.makeText(this, "Network error in status check", Toast.LENGTH_SHORT).show()
+                error -> {
+                    loaderutil.hideLoader();
+                    Toast.makeText(this, "Network error in status check", Toast.LENGTH_SHORT).show();
+                }
         );
+        request.setShouldCache(false);
+        request.setRetryPolicy(ppRetry());
         Volley.newRequestQueue(this).add(request);
     }
 
@@ -353,22 +399,34 @@ public class payments extends AppCompatActivity {
                     try {
                         JSONObject obj = new JSONObject(response);
                         if ("success".equalsIgnoreCase(obj.optString("status"))) {
-                            String balance = obj.optString("wallet_balance", "0.00");
-                            tvWalletBalance.setText("₹" + balance);
+                            String balanceStr = obj.optString("wallet_balance", "0.00");
+                            tvWalletBalance.setText("₹" + balanceStr);
+                            updateRechargeControlsForBalance(parseAmountOrZero(balanceStr));
                         } else {
                             tvWalletBalance.setText("₹0.00");
+                            updateRechargeControlsForBalance(0.0);
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                        // keep previous button state
+                    } finally {
+                        loaderutil.hideLoader();
+                    }
                 },
-                error -> {}
+                error -> {
+                    // keep previous button state
+                    loaderutil.hideLoader();
+                }
         ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
                 map.put("patient_id", patientId);
+                map.put("_ts", String.valueOf(System.currentTimeMillis())); // cache buster
                 return map;
             }
         };
+        request.setShouldCache(false);
+        request.setRetryPolicy(ppRetry());
         Volley.newRequestQueue(this).add(request);
     }
 
@@ -399,17 +457,82 @@ public class payments extends AppCompatActivity {
                             transactionList.clear();
                             adapter.updateTransactions(transactionList);
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    } finally {
+                        loaderutil.hideLoader();
+                    }
                 },
-                error -> {}
+                error -> loaderutil.hideLoader()
         ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> map = new HashMap<>();
                 map.put("patient_id", patientId);
+                map.put("_ts", String.valueOf(System.currentTimeMillis())); // cache buster
                 return map;
             }
         };
+        request.setShouldCache(false);
+        request.setRetryPolicy(ppRetry());
         Volley.newRequestQueue(this).add(request);
+    }
+
+    /* ===== Helpers for the recharge disable rule ===== */
+
+    private static double parseAmountOrZero(String s) {
+        if (s == null) return 0.0;
+        try { return Double.parseDouble(s.trim()); } catch (Exception ignored) { return 0.0; }
+    }
+
+    private void updateRechargeControlsForBalance(double balanceRs) {
+        currentWalletBalanceRs = balanceRs;
+
+        boolean shouldDisable = balanceRs >= RECHARGE_DISABLE_THRESHOLD_RS;
+
+        btnRecharge50.setEnabled(!shouldDisable);
+        btnRecharge100.setEnabled(!shouldDisable);
+
+        float alpha = shouldDisable ? 0.5f : 1.0f;
+        btnRecharge50.setAlpha(alpha);
+        btnRecharge100.setAlpha(alpha);
+
+        if (shouldDisable && !thresholdToastShown) {
+            thresholdToastShown = true;
+            Toast.makeText(this, "Wallet ≥ ₹400 — recharge disabled.", Toast.LENGTH_SHORT).show();
+        }
+        if (!shouldDisable) {
+            // allow toast again next time threshold is crossed
+            thresholdToastShown = false;
+        }
+    }
+
+    /** Centralized control when a payment is pending vs. finalized */
+    private void updateButtonsForPending(boolean isPending) {
+        btnRecharge50.setEnabled(!isPending);
+        btnRecharge100.setEnabled(!isPending);
+        btnRecharge50.setAlpha(isPending ? 0.5f : 1.0f);
+        btnRecharge100.setAlpha(isPending ? 0.5f : 1.0f);
+    }
+
+    // ===== Persist important state across rotation/process death =====
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        out.putString("merchantOrderId", merchantOrderId);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        merchantOrderId = savedInstanceState.getString("merchantOrderId", merchantOrderId);
+    }
+
+    // ===== Volley retry policy for PG calls =====
+    private static DefaultRetryPolicy ppRetry() {
+        return new DefaultRetryPolicy(
+                15000, // 15s timeout
+                1,     // 1 retry
+                1.5f   // backoff multiplier
+        );
     }
 }
