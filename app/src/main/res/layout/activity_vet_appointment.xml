@@ -36,7 +36,6 @@
             app:title="Book Vet Appointment"
             app:titleTextColor="@android:color/white"
             app:navigationIcon="@drawable/ic_arrow_back" />
-
     </com.google.android.material.appbar.AppBarLayout>
 
     <ScrollView
@@ -753,12 +752,24 @@
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                         android:layout_marginBottom="10dp"/>
 
-                    <com.google.android.gms.maps.MapView
-                        android:id="@+id/mapView"
+                    <!-- Map container: MapView + click catcher to open fullscreen -->
+                    <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="220dp"
-                        android:layout_marginTop="0dp"
-                        android:background="@drawable/mapview_shadow_bg"/>
+                        android:background="@drawable/mapview_shadow_bg">
+
+                        <com.google.android.gms.maps.MapView
+                            android:id="@+id/mapView"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"/>
+
+                        <!-- Transparent view to catch taps and open fullscreen -->
+                        <View
+                            android:id="@+id/mapClickCatcherVet"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@android:color/transparent"/>
+                    </FrameLayout>
 
                     <TextView
                         android:id="@+id/tvLatLng"
@@ -809,6 +820,59 @@
                 android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
+
+    <!-- FULLSCREEN MAP OVERLAY (like human screen) -->
+    <FrameLayout
+        android:id="@+id/fullscreen_map_overlay_vet"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#B3000000"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Container for SupportMapFragment -->
+        <FrameLayout
+            android:id="@+id/map_fullscreen_container_vet"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Bottom action bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center"
+            android:layout_gravity="bottom">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_cancel_map_vet"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Cancel"
+                android:textAllCaps="false" />
+
+            <Space
+                android:layout_width="12dp"
+                android:layout_height="1dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_select_map_vet"
+                style="@style/Widget.MaterialComponents.Button"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Select"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/acqua_green"
+                android:textColor="@android:color/white"/>
+        </LinearLayout>
+    </FrameLayout>
 
     <!-- BOTTOM scrim (nav bar / gesture area). Height set at runtime via WindowInsets -->
     <View
