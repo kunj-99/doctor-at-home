@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.*;
 import androidx.annotation.NonNull;
@@ -36,12 +37,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/**
- * Simplified booking form:
- * - NO pincode boundary / geo restriction
- * - Always RED pin for any selection (current or manual)
- * - Loader shown while map/location is loading using loaderutil
- */
 public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
@@ -49,13 +44,11 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
     // UI
     private TextView headerBook;
-    private Spinner daySpinner, monthSpinner, yearSpinner, pincodeSpinner; // legacy kept (hidden in XML)
+    private Spinner daySpinner, monthSpinner, yearSpinner, pincodeSpinner;
     private RadioGroup genderGroup;
     private Button bookButton, btnUseCurrent;
     private EditText dobInput, etName, etAddress, etProblem;
     private View mapClickCatcher;
-
-    // Popup (fullscreen map overlay)
     private View overlayContainer;
     private View btnCancelMap, btnSelectMap;
 
@@ -69,14 +62,14 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     private FusedLocationProviderClient fusedLocationClient;
 
     // Points
-    private LatLng selectedLocation = null;     // final
-    private LatLng tempOverlayLocation = null;  // while popup open
+    private LatLng selectedLocation = null;
+    private LatLng tempOverlayLocation = null;
 
     // DOB
     private Calendar selectedDob = null;
 
     // state
-    private boolean isLocating = false;   // to guard multiple calls
+    private boolean isLocating = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,28 +141,19 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         // embedded map via callback
         embeddedMapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map_fragment);
         if (embeddedMapFragment != null) {
-            // Map loading – show loader till onMapReady + (optional) current location resolve
             loaderutil.showLoader(this);
             embeddedMapFragment.getMapAsync(this);
         }
 
-        // Calendar
         dobInput.setOnClickListener(v -> openDatePicker());
-
-        // Current location button
         btnUseCurrent.setOnClickListener(v -> {
             startLocating();
             setCurrentLocation();
         });
-
-        // Tap preview map -> open overlay
         mapClickCatcher.setOnClickListener(v -> openMapOverlay());
-
-        // Overlay buttons
         btnCancelMap.setOnClickListener(v -> closeMapOverlay(false));
         btnSelectMap.setOnClickListener(v -> closeMapOverlay(true));
 
-        // Book
         bookButton.setOnClickListener(v -> onClickBook());
     }
 
@@ -177,8 +161,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     public void onMapReady(@NonNull GoogleMap googleMap) {
         embeddedMap = googleMap;
         setupMapCommon(embeddedMap, false);
-
-        // Map loaded → try to center on last known/current location with loader
         startLocating();
         setCurrentLocation();
     }
@@ -223,9 +205,25 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         if (selectedLocation == null) { Toast.makeText(this, "Please select your location on the map.", Toast.LENGTH_SHORT).show(); valid = false; }
         if (!valid) return;
 
-        int age = calculateAge(selectedDob.get(Calendar.YEAR),
+        int age = calculateAge(
+                selectedDob.get(Calendar.YEAR),
                 selectedDob.get(Calendar.MONTH) + 1,
-                selectedDob.get(Calendar.DAY_OF_MONTH));
+                selectedDob.get(Calendar.DAY_OF_MONTH)
+        );
+
+        // Logging all extras being sent
+        Log.d("BOOK_FORM_INTENT", "Passing intent to pending_bill with:");
+        Log.d("BOOK_FORM_INTENT", "patient_name=" + name);
+        Log.d("BOOK_FORM_INTENT", "age=" + age);
+        Log.d("BOOK_FORM_INTENT", "gender=" + gender);
+        Log.d("BOOK_FORM_INTENT", "problem=" + problem);
+        Log.d("BOOK_FORM_INTENT", "address=" + address);
+        Log.d("BOOK_FORM_INTENT", "pincode=" + pin);
+        Log.d("BOOK_FORM_INTENT", "doctor_id=" + doctorId);
+        Log.d("BOOK_FORM_INTENT", "doctorName=" + doctorName);
+        Log.d("BOOK_FORM_INTENT", "appointment_status=" + appointmentStatus);
+        Log.d("BOOK_FORM_INTENT", "latitude=" + (selectedLocation != null ? selectedLocation.latitude : "null"));
+        Log.d("BOOK_FORM_INTENT", "longitude=" + (selectedLocation != null ? selectedLocation.longitude : "null"));
 
         Intent next = new Intent(book_form.this, pending_bill.class);
         next.putExtra("patient_name", name);
@@ -289,7 +287,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
             fm.beginTransaction()
                     .replace(R.id.map_fullscreen_container, fullscreenMapFragment)
                     .commitNowAllowingStateLoss();
-            // show a loader while overlay map initializes
             loaderutil.showLoader(this);
             fullscreenMapFragment.getMapAsync(m -> {
                 fullscreenMap = m;
@@ -313,7 +310,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         overlayContainer.setVisibility(View.GONE);
         if (useSelected && tempOverlayLocation != null) {
             selectedLocation = tempOverlayLocation;
-            placeEmbeddedMarker(selectedLocation, true); // red pin
+            placeEmbeddedMarker(selectedLocation, true);
         }
     }
 
@@ -322,10 +319,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             showLocationPermissionDialog();
-        } else {
-            // ok
         }
-
         map.getUiSettings().setZoomControlsEnabled(true);
         map.getUiSettings().setCompassEnabled(true);
         map.getUiSettings().setMyLocationButtonEnabled(true);
@@ -333,9 +327,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             map.setMyLocationEnabled(true);
         }
-
         if (selectedLocation != null) map.moveCamera(CameraUpdateFactory.newLatLngZoom(selectedLocation, 15f));
-
         map.setOnMapClickListener(latLng -> {
             if (isOverlay) {
                 tempOverlayLocation = latLng;
@@ -347,7 +339,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f));
             } else {
                 selectedLocation = latLng;
-                placeEmbeddedMarker(selectedLocation, true); // red pin
+                placeEmbeddedMarker(selectedLocation, true);
             }
         });
     }
@@ -486,7 +478,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         return age;
     }
 
-    // simple listener
     private abstract static class SimpleItemSelectedListener implements AdapterView.OnItemSelectedListener {
         @Override public void onNothingSelected(AdapterView<?> parent) {}
         @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) { onItemSelected(position); }
