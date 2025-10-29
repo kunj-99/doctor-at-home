@@ -6,9 +6,14 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.method.DigitsKeyListener;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText; // NEW
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -92,6 +97,10 @@ public class pending_bill extends AppCompatActivity {
     // PhonePe
     private final String ppCreateOrderUrl = ApiConfig.endpoint("phonepe/public/create_order.php");
     private final String ppStatusUrl      = ApiConfig.endpoint("phonepe/public/check_status.php");
+
+    // NEW: UPI verify URL (per two-block rule above)
+    private final String upiVerifyUrl     = ApiConfig.endpoint("verify_upi.php");
+
     private String ppMerchantOrderId;
     private ActivityResultLauncher<Intent> ppCheckoutLauncher;
 
@@ -102,6 +111,9 @@ public class pending_bill extends AppCompatActivity {
 
     private enum DepositMode { NONE, WALLET, BILL }
     private DepositMode lastConfirmedDepositMode = DepositMode.NONE;
+
+    // NEW: hold the verified UPI so we can store it in payment_history later
+    private String enteredUpiId = "";
 
     // Lifecycle guard
     private boolean isDestroyedOrFinishing = false;
@@ -296,49 +308,8 @@ public class pending_bill extends AppCompatActivity {
 
         btnRechargeWallet.setOnClickListener(v -> startActivity(new Intent(pending_bill.this, payments.class)));
 
-        payButton.setOnClickListener(v -> new AlertDialog.Builder(pending_bill.this)
-                .setTitle("Confirm Appointment")
-                .setMessage("Are you sure?\n\nBooking appointment charge will be ₹" + String.format(Locale.getDefault(), "%.0f", DEPOSIT) + " if you cancel.")
-                .setCancelable(false)
-                .setPositiveButton("Proceed", (dialog, which) -> {
-                    if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(pending_bill.this);
-
-                    if (selectedPaymentMethod.isEmpty()) {
-                        loaderutil.hideLoader();
-                        Toast.makeText(this, "Please choose a payment option to continue.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    if ("Offline".equals(selectedPaymentMethod) && walletBalance < DEPOSIT) {
-                        loaderutil.hideLoader();
-                        Toast.makeText(this, "Wallet में ₹" + (int) DEPOSIT + " होने पर ही Offline booking होगी.", Toast.LENGTH_LONG).show();
-                        return;
-                    }
-
-                    lastConfirmedDepositMode = (walletBalance >= DEPOSIT) ? DepositMode.WALLET : DepositMode.BILL;
-
-                    if ("Offline".equals(selectedPaymentMethod)) {
-                        if (lastConfirmedDepositMode == DepositMode.WALLET) {
-                            deductWalletCharge(DEPOSIT, "Platform charge for offline appointment booking");
-                            setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
-                        } else {
-                            setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
-                        }
-                        saveBookingData(googleMapsLink);
-                    } else {
-                        if (lastConfirmedDepositMode == DepositMode.WALLET) {
-                            setDepositLine("Wallet will be debited: ₹" + (int) DEPOSIT, true);
-                        } else {
-                            setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
-                        }
-                        startPhonePeCheckout();
-                    }
-
-                    dialog.dismiss();
-                })
-                .setNegativeButton("Cancel", (d, w) -> d.dismiss())
-                .show()
-        );
+        // CHANGED: payButton click → show dialog with UPI input + verify before proceeding
+        payButton.setOnClickListener(v -> showConfirmWithUpiDialog());
     }
 
     @Override
@@ -376,6 +347,127 @@ public class pending_bill extends AppCompatActivity {
 
     private void setRowVisibility(View v, boolean visible) {
         if (v != null) v.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    /* ---------------- NEW: Confirm dialog with UPI ---------------- */
+
+    private void showConfirmWithUpiDialog() {
+        // Inflate a simple input view for UPI
+        View content = LayoutInflater.from(this).inflate(R.layout.dialog_upi_capture, null, false);
+        @SuppressLint({"MissingInflatedId", "LocalSuppress"}) EditText etUpi = content.findViewById(R.id.et_upi);
+
+        // Optional: restrict characters typically allowed in UPI handles
+     //   etUpi.setKeyListener(DigitsKeyListener.getInstance("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@"));
+
+        String msg = "Are you sure?\n\nBooking appointment charge will be ₹" +
+                String.format(Locale.getDefault(), "%.0f", DEPOSIT) + " if you cancel.\n\n" +
+                "Please enter your refund UPI ID (e.g., name@bank).";
+
+        new AlertDialog.Builder(pending_bill.this)
+                .setTitle("Confirm Appointment")
+                .setMessage(msg)
+                .setView(content)
+                .setCancelable(false)
+                .setPositiveButton("Proceed", (dialog, which) -> {
+                    Editable ed = etUpi.getText();
+                    String vpa = (ed == null) ? "" : ed.toString().trim();
+
+                    // Local quick checks before server verify
+                    if (!isLikelyValidUpi(vpa)) {
+                        Toast.makeText(this, "Please enter a valid UPI like name@bank", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    // Verify with backend; on success continue original flow
+                    verifyUpi(vpa, () -> continueAfterUpiVerified(vpa));
+                })
+                .setNegativeButton("Cancel", (d, w) -> d.dismiss())
+                .show();
+    }
+
+    private boolean isLikelyValidUpi(String vpa) {
+        if (TextUtils.isEmpty(vpa)) return false;
+        if (vpa.length() < 6 || vpa.length() > 300) return false;
+        if (vpa.contains(" ") || vpa.contains("\\") || vpa.contains("/")) return false;
+        // Same regex as backend
+        return vpa.matches("^[a-zA-Z0-9._\\-]{2,256}@[a-zA-Z]{3,64}$");
+    }
+
+    private void verifyUpi(String vpa, Runnable onSuccess) {
+        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
+
+        StringRequest req = new StringRequest(
+                Request.Method.POST,
+                upiVerifyUrl,
+                resp -> {
+                    try {
+                        JSONObject o = new JSONObject(resp);
+                        boolean ok = o.optBoolean("valid", false);
+                        String msg = o.optString("message", "");
+                        if (!ok) {
+                            loaderutil.hideLoader();
+                            Toast.makeText(this, (msg.isEmpty() ? "UPI not supported" : msg), Toast.LENGTH_LONG).show();
+                        } else {
+                            // Verified
+                            if (onSuccess != null) onSuccess.run();
+                        }
+                    } catch (Exception e) {
+                        loaderutil.hideLoader();
+                        Toast.makeText(this, "UPI verification parse error.", Toast.LENGTH_LONG).show();
+                    }
+                },
+                err -> {
+                    loaderutil.hideLoader();
+                    Toast.makeText(this, "Network error during UPI verification.", Toast.LENGTH_LONG).show();
+                }
+        ) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> p = new HashMap<>();
+                p.put("vpa", vpa);
+                p.put("_ts", String.valueOf(System.currentTimeMillis()));
+                return p;
+            }
+        };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(10000, 1, 1.5f));
+        Volley.newRequestQueue(this).add(req);
+    }
+
+    private void continueAfterUpiVerified(String vpa) {
+        enteredUpiId = vpa; // store for payment_history insert
+        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
+
+        if (selectedPaymentMethod.isEmpty()) {
+            loaderutil.hideLoader();
+            Toast.makeText(this, "Please choose a payment option to continue.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if ("Offline".equals(selectedPaymentMethod) && walletBalance < DEPOSIT) {
+            loaderutil.hideLoader();
+            Toast.makeText(this, "Wallet में ₹" + (int) DEPOSIT + " होने पर ही Offline booking होगी.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        lastConfirmedDepositMode = (walletBalance >= DEPOSIT) ? DepositMode.WALLET : DepositMode.BILL;
+
+        if ("Offline".equals(selectedPaymentMethod)) {
+            if (lastConfirmedDepositMode == DepositMode.WALLET) {
+                deductWalletCharge(DEPOSIT, "Platform charge for offline appointment booking");
+                setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
+            } else {
+                setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
+            }
+            saveBookingData(googleMapsLink);
+        } else {
+            if (lastConfirmedDepositMode == DepositMode.WALLET) {
+                setDepositLine("Wallet will be debited: ₹" + (int) DEPOSIT, true);
+            } else {
+                setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
+            }
+            startPhonePeCheckout();
+        }
     }
 
     /* ---------------- PhonePe ---------------- */
@@ -467,14 +559,12 @@ public class pending_bill extends AppCompatActivity {
                                 String state = obj.optString("state", "PENDING");
 
                                 if ("COMPLETED".equalsIgnoreCase(state)) {
-                                    // If your deposit rule debits wallet for Online+WALLET mode, keep it else remove.
                                     if ("Online".equals(selectedPaymentMethod) && lastConfirmedDepositMode == DepositMode.WALLET) {
                                         deductWalletCharge(DEPOSIT, "Platform charge for online appointment (wallet debit)");
                                         setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
                                         recomputeTotalsAndUI();
                                     }
 
-                                    // Trust backend for balance:
                                     fetchWalletBalance();
 
                                     Toast.makeText(pending_bill.this, "Payment successful.", Toast.LENGTH_SHORT).show();
@@ -486,7 +576,6 @@ public class pending_bill extends AppCompatActivity {
                                     Toast.makeText(pending_bill.this, "Payment failed.", Toast.LENGTH_SHORT).show();
 
                                 } else {
-                                    // PENDING
                                     if (++attempts[0] < maxAttempts) {
                                         h.postDelayed(this, 2000);
                                     } else {
@@ -516,7 +605,6 @@ public class pending_bill extends AppCompatActivity {
                 Volley.newRequestQueue(pending_bill.this).add(req);
             }
         };
-        // Show loader during the first check
         if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
         check.run();
     }
@@ -917,7 +1005,6 @@ public class pending_bill extends AppCompatActivity {
                         p.put("vaccination_id", vaccinationId);
                     if (vaccinationName != null && !vaccinationName.trim().isEmpty())
                         p.put("vaccination_name", vaccinationName);
-                    // If backend supports: p.put("vaccination_price", String.valueOf(vaccinationPrice));
                 }
 
                 return p;
@@ -973,6 +1060,8 @@ public class pending_bill extends AppCompatActivity {
                 } else {
                     p.put("notes", "None");
                 }
+                // NEW: store verified UPI
+                p.put("upi_id", (enteredUpiId == null ? "" : enteredUpiId));
                 return p;
             }
         };
