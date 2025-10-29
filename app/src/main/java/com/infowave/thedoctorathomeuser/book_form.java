@@ -192,7 +192,12 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
             int ageCheck = calculateAge(selectedDob.get(Calendar.YEAR),
                     selectedDob.get(Calendar.MONTH) + 1,
                     selectedDob.get(Calendar.DAY_OF_MONTH));
-            if (ageCheck < 0 || ageCheck > 150) {
+
+            // --- AGE VALIDATION (Minimum 1 year) ---
+            if (ageCheck < 4) {
+                Toast.makeText(this, "Minimum age is 1 year.", Toast.LENGTH_SHORT).show();
+                valid = false;
+            } else if (ageCheck > 150) {
                 Toast.makeText(this, "Please select a valid date of birth.", Toast.LENGTH_SHORT).show();
                 valid = false;
             }
