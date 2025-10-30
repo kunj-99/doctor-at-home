@@ -34,17 +34,17 @@
         tools:ignore="WrongManifestParent"
         tools:targetApi="n">
         <activity
+            android:name=".AnimalReportViewerActivity"
+            android:exported="false" />
+        <activity
             android:name=".VetDoctorsActivity"
             android:exported="false" />
         <activity
             android:name=".DegreeSelectionActivity"
-            android:exported="false"
-           />
-
+            android:exported="false" />
         <activity
             android:name=".news"
-            android:exported="false" />
-        <!-- Added this line to enable OnBackInvokedCallback -->
+            android:exported="false" /> <!-- Added this line to enable OnBackInvokedCallback -->
         <!-- Activities -->
         <activity
             android:name=".VetAnimalsActivity"
