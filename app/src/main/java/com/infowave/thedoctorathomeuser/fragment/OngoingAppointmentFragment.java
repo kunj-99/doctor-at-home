@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,7 +18,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
@@ -40,9 +40,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.HashMap;
 import java.util.Map;
 
 public class OngoingAppointmentFragment extends Fragment {
@@ -74,6 +74,16 @@ public class OngoingAppointmentFragment extends Fragment {
     // ---------- Vet list (your VetOngoingAdapter model) ----------
     private final List<VetAppointment> vetItems = new ArrayList<>();
 
+    // ---------- Live refresh (polling) ----------
+    private final Handler liveHandler = new Handler();
+    private Runnable liveRunnable;
+    private static final long POLL_INTERVAL_MS = 3000L; // 3 seconds
+    private boolean isPolling = false;
+
+    // For diffing to avoid unnecessary adapter updates/flicker
+    private String lastHumanSig = "";
+    private String lastVetSig   = "";
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container,
@@ -97,8 +107,9 @@ public class OngoingAppointmentFragment extends Fragment {
 
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
-        if (patientId == null || patientId.trim().isEmpty()) {
-            Toast.makeText(getContext(), "Could not load your information. Please log in again.", Toast.LENGTH_SHORT).show();
+        if (patientId == null) patientId = "";
+        if (patientId.trim().isEmpty()) {
+            // Silent fail — as requested, no toast/log. UI stays empty.
             return;
         }
 
@@ -131,13 +142,23 @@ public class OngoingAppointmentFragment extends Fragment {
             if (patientTab != null) patientTab.select();
         }
 
-        swipeRefresh.setOnRefreshListener(() -> fetchOngoing(false));
+        swipeRefresh.setOnRefreshListener(() -> fetchOngoing(true)); // manual pull-to-refresh (silent)
 
-        // initial load
+        // initial load (silent visual; spinner set but quickly hidden)
         swipeRefresh.setRefreshing(true);
-        fetchOngoing(false);
+        fetchOngoing(true);
 
         bookAppointment.setOnClickListener(v -> { if (vp != null) vp.setCurrentItem(1); });
+
+        // Prepare live runnable
+        liveRunnable = new Runnable() {
+            @Override public void run() {
+                if (!isAdded()) return;
+                fetchOngoing(true); // always silent
+                // Re-schedule
+                liveHandler.postDelayed(this, POLL_INTERVAL_MS);
+            }
+        };
     }
 
     private void stopRefreshingUI() {
@@ -161,18 +182,38 @@ public class OngoingAppointmentFragment extends Fragment {
                     }
                 }
         );
+        startLivePolling();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        stopLivePolling();
+    }
+
+    private void startLivePolling() {
+        if (isPolling || liveRunnable == null) return;
+        isPolling = true;
+        liveHandler.postDelayed(liveRunnable, POLL_INTERVAL_MS);
+    }
+
+    private void stopLivePolling() {
+        if (!isPolling) return;
+        isPolling = false;
+        liveHandler.removeCallbacks(liveRunnable);
     }
 
     // ---- fetch + split + sort ----
     private void fetchOngoing(boolean silent) {
+        if (!isAdded()) { stopRefreshingUI(); return; }
+
         StringRequest req = new StringRequest(Request.Method.POST, API_URL,
                 response -> {
                     stopRefreshingUI();
                     try {
                         JSONObject json = new JSONObject(response);
                         if (!json.optBoolean("success", false)) {
-                            if (!silent) Toast.makeText(requireContext(), "No ongoing appointments.", Toast.LENGTH_SHORT).show();
-                            clearAll();
+                            clearAll(); // no items
                             return;
                         }
 
@@ -211,19 +252,17 @@ public class OngoingAppointmentFragment extends Fragment {
                             long sortKey = buildSortKey(date, time); // later date/time = larger key
 
                             if (isVet == 1) {
-                                // VET row
                                 String title = (animalName == null || animalName.isEmpty()) ? "Pet" : animalName;
                                 String sub   = (reason == null ? "" : reason);
                                 String doc   = doctor;
-                                String when  = !whenLabel.isEmpty() ? whenLabel : (date + " • " + time);
-                                String price = fee != null && !fee.isEmpty() ? ("₹" + fee) : "";
+                                String when  = !isEmpty(whenLabel) ? whenLabel : (date + " • " + time);
+                                String price = !isEmpty(fee) ? ("₹" + fee) : "";
                                 String statusText = status;
 
                                 tmpVet.add(new VetRow(sortKey, new VetAppointment(
                                         title, sub, doc, when, price, statusText, pic
                                 )));
                             } else {
-                                // HUMAN row
                                 tmpHuman.add(new HumanRow(sortKey, new HumanPayload(
                                         doctor, spec, hosp, exp, pic, apptId, status, dur, docId
                                 )));
@@ -231,22 +270,34 @@ public class OngoingAppointmentFragment extends Fragment {
                         }
 
                         // sort desc (latest first)
-                        Comparator<HasKey> byKeyDesc = (a, b) -> Long.compare(b.key, a.key);
-                        Collections.sort(tmpHuman, byKeyDesc);
-                        Collections.sort(tmpVet,   byKeyDesc);
+                        Comparator<HasKey> byKeyDesc = (a, b) -> Long.compare(b.key(), a.key());
+                        Collections.sort(tmpHuman, (o1, o2) -> byKeyDesc.compare(o1::key, o2::key));
+                        Collections.sort(tmpVet,   (o1, o2) -> byKeyDesc.compare(o1::key, o2::key));
 
-                        // write into adapter lists (CLEAR to avoid mixing)
-                        writeHuman(tmpHuman);
-                        writeVet(tmpVet);
+                        // Compute signatures to detect actual change
+                        String newHumanSig = buildHumanSignature(tmpHuman);
+                        String newVetSig   = buildVetSignature(tmpVet);
+
+                        boolean humanChanged = !newHumanSig.equals(lastHumanSig);
+                        boolean vetChanged   = !newVetSig.equals(lastVetSig);
+
+                        if (humanChanged) {
+                            writeHuman(tmpHuman);
+                            lastHumanSig = newHumanSig;
+                        }
+                        if (vetChanged) {
+                            writeVet(tmpVet);
+                            lastVetSig = newVetSig;
+                        }
 
                     } catch (JSONException e) {
-                        clearAll();
-                        if (!silent) Toast.makeText(requireContext(), "Could not load appointment data.", Toast.LENGTH_SHORT).show();
+                        // silent; keep previous UI
+                        stopRefreshingUI();
                     }
                 },
                 error -> {
+                    // silent; keep previous UI
                     stopRefreshingUI();
-                    if (!silent) Toast.makeText(requireContext(), "Network error. Try again.", Toast.LENGTH_SHORT).show();
                 }) {
             @Override
             protected Map<String, String> getParams() {
@@ -264,6 +315,8 @@ public class OngoingAppointmentFragment extends Fragment {
         profilePictures.clear(); appointmentIds.clear(); statuses.clear(); durations.clear(); doctorIds.clear();
         vetItems.clear();
         notifyBoth();
+        lastHumanSig = "";
+        lastVetSig   = "";
     }
 
     private void writeHuman(List<HumanRow> rows) {
@@ -282,13 +335,13 @@ public class OngoingAppointmentFragment extends Fragment {
             durations.add(h.duration);
             doctorIds.add(h.doctorId);
         }
-        humanAdapter.notifyDataSetChanged();
+        if (humanAdapter != null) humanAdapter.notifyDataSetChanged();
     }
 
     private void writeVet(List<VetRow> rows) {
         vetItems.clear();
         for (VetRow r : rows) vetItems.add(r.payload);
-        vetAdapter.notifyDataSetChanged();
+        if (vetAdapter != null) vetAdapter.notifyDataSetChanged();
     }
 
     private void notifyBoth() {
@@ -296,11 +349,11 @@ public class OngoingAppointmentFragment extends Fragment {
         if (vetAdapter != null) vetAdapter.notifyDataSetChanged();
     }
 
-    // ---- sort helpers ----
+    // ---- helpers ----
+    private static boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
+
     private long buildSortKey(String yyyyMmDd, String hhmmAMPM) {
-        // try to parse, fallback to epoch 0
         try {
-            // normalize times like "12:23 AM"
             SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.getDefault());
             Date d = df.parse((yyyyMmDd == null ? "" : yyyyMmDd) + " " + (hhmmAMPM == null ? "" : hhmmAMPM));
             return (d != null) ? d.getTime() : 0L;
@@ -309,8 +362,44 @@ public class OngoingAppointmentFragment extends Fragment {
         }
     }
 
+    // Signatures to detect meaningful changes without heavy DiffUtil or flicker
+    private String buildHumanSignature(List<HumanRow> rows) {
+        StringBuilder sb = new StringBuilder(rows.size() * 32);
+        for (HumanRow r : rows) {
+            HumanPayload h = r.payload;
+            // Include fields that affect presentation/order
+            sb.append(r.key).append('|')
+                    .append(h.appointmentId).append('|')
+                    .append(safe(h.status)).append('|')
+                    .append(safe(h.doctorName)).append('|')
+                    .append(safe(h.specialty)).append('|')
+                    .append(safe(h.hospital)).append('|')
+                    .append(safe(h.duration)).append('|')
+                    .append(h.experience).append('|')
+                    .append(h.doctorId).append(';');
+        }
+        return sb.toString();
+    }
+
+    private String buildVetSignature(List<VetRow> rows) {
+        StringBuilder sb = new StringBuilder(rows.size() * 32);
+        for (VetRow r : rows) {
+            VetAppointment v = r.payload;
+            sb.append(r.key).append('|')
+                    .append(safe(v.getTitle())).append('|')
+                    .append(safe(v.getSubtitle())).append('|')
+                    .append(safe(v.getDoctorName())).append('|')
+                    .append(safe(v.getWhen())).append('|')
+                    .append(safe(v.getPrice())).append('|')
+                    .append(safe(v.getStatus())).append(';');
+        }
+        return sb.toString();
+    }
+
+    private static String safe(String s) { return s == null ? "" : s; }
+
     // ---- tiny structs for sorting ----
-    private interface HasKey { long key = 0; }
+    private interface HasKey { long key(); }
 
     private static class HumanPayload {
         final String doctorName, specialty, hospital, profilePicture, status, duration;
@@ -321,13 +410,16 @@ public class OngoingAppointmentFragment extends Fragment {
             appointmentId = apptId; status = st; duration = dur; doctorId = docId;
         }
     }
+
     private static class HumanRow implements HasKey {
         final long key; final HumanPayload payload;
         HumanRow(long k, HumanPayload p) { key = k; payload = p; }
+        @Override public long key() { return key; }
     }
 
     private static class VetRow implements HasKey {
         final long key; final VetAppointment payload;
         VetRow(long k, VetAppointment p) { key = k; payload = p; }
+        @Override public long key() { return key; }
     }
 }
