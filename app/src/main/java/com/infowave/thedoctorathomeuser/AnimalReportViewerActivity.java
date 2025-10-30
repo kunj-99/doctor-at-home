@@ -64,15 +64,13 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         appointmentId = getIntent().getStringExtra("appointment_id");
         if (TextUtils.isEmpty(appointmentId)) {
             Toast.makeText(this, "Invalid appointment.", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
         }
 
         // API endpoint (patient side)
         // Expecting JSON like:
         // { success:true, report:{ clinic_name, clinic_address, attachment_url, doctor_name, report_type, ...
         //   owner_name, date, address, animal_age, animal_sex, animal_weight, temperature, pulse, spo2, bp, respiratory, symptoms, investigations, medications:[{name,dosage},...] } }
-        String url = ApiConfig.endpoint("Users/get_vet_report.php", "appointment_id", appointmentId);
+        String url = ApiConfig.endpoint("get_vet_report.php", "appointment_id", appointmentId);
 
         fetchReport(url);
     }
@@ -137,13 +135,13 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                         bindReport(r);
                     } catch (JSONException e) {
                         Toast.makeText(this, "Failed to parse report.", Toast.LENGTH_SHORT).show();
-                        finish();
+                     //   finish();
                     }
                 },
                 err -> {
                     setLoading(false);
                     Toast.makeText(this, "Unable to load report. Please check your internet.", Toast.LENGTH_SHORT).show();
-                    finish();
+                 //   finish();
                 }
         );
         q.add(req);

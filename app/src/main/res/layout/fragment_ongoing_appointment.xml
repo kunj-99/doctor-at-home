@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="#F0F4FF">
 
-    <!-- Partition Tabs (Patient Ongoing | Vet Ongoing) -->
+    <!-- Tabs: Patient Ongoing | Vet Ongoing -->
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/appointmentTabs"
         android:layout_width="match_parent"
@@ -24,18 +24,7 @@
         app:tabIndicatorColor="@color/acqua_green"
         app:tabTextColor="#7A7F8C"
         app:tabSelectedTextColor="@android:color/black"
-        app:tabRippleColor="@android:color/transparent">
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Patient Ongoing" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Vet Ongoing" />
-    </com.google.android.material.tabs.TabLayout>
+        app:tabRippleColor="@android:color/transparent" />
 
     <!-- Thin divider under tabs -->
     <View
@@ -45,21 +34,13 @@
         android:layout_below="@id/appointmentTabs"
         android:background="#E4E8F5" />
 
-    <!-- Pull-to-refresh container ABOVE the bottom button -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipeRefreshOngoing"
+    <!-- New: ViewPager2 that hosts HumanOngoingFragment & VetOngoingFragment -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPagerOngoing"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_below="@id/tabsDivider"
-        android:layout_above="@id/bookButton">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="16dp"
-            android:clipToPadding="false" />
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+        android:layout_above="@id/bookButton" />
 
     <!-- Bottom Book Button -->
     <Button
@@ -67,8 +48,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:layout_margin="16dp"
         android:text="Book Appointment"
         android:backgroundTint="@color/acqua_green"
-        android:textColor="@android:color/white"
-        android:layout_margin="16dp" />
+        android:textColor="@android:color/white" />
 </RelativeLayout>

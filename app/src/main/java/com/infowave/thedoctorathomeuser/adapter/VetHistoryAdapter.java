@@ -17,6 +17,7 @@ import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
+import com.infowave.thedoctorathomeuser.AnimalReportViewerActivity;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.RefundStatus;
@@ -173,7 +174,7 @@ public class VetHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             });
 
             h.btnViewReport.setOnClickListener(v -> {
-                Intent in = new Intent(context, medical_riport.class);
+                Intent in = new Intent(context, AnimalReportViewerActivity.class);
                 in.putExtra("appointment_id", String.valueOf(appointmentIds.get(position)));
                 context.startActivity(in);
             });
