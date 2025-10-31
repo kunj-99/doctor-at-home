@@ -37,20 +37,15 @@ public class doctor_details extends AppCompatActivity {
         setContentView(R.layout.activity_doctor_details);
 
         // ===== PERFECT BLACK TOP & BOTTOM USING VIEW SCRIMS =====
-        // Draw edge-to-edge so our scrim Views can occupy status/nav bar areas
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-
-        // Paint system bars black to avoid any flash
         getWindow().setStatusBarColor(Color.BLACK);
         getWindow().setNavigationBarColor(Color.BLACK);
 
-        // White system icons on dark bars
         WindowInsetsControllerCompat wic =
                 new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
         wic.setAppearanceLightStatusBars(false);
         wic.setAppearanceLightNavigationBars(false);
 
-        // Optional: reduce OEM contrast/divider effects
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             getWindow().setNavigationBarContrastEnforced(false);
         }
@@ -58,7 +53,6 @@ public class doctor_details extends AppCompatActivity {
             getWindow().setNavigationBarDividerColor(Color.BLACK);
         }
 
-        // Size scrim views from WindowInsets
         final android.view.View statusScrim = findViewById(R.id.status_bar_scrim);
         final android.view.View navScrim    = findViewById(R.id.navigation_bar_scrim);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (v, insets) -> {
@@ -97,7 +91,6 @@ public class doctor_details extends AppCompatActivity {
             fetchDoctorDetails(doctorId);
         }
 
-        // Back button
         if (backButton != null) {
             backButton.setOnClickListener(v -> finish());
         }
@@ -122,8 +115,9 @@ public class doctor_details extends AppCompatActivity {
                             doctorQualification.setText(doctorData.optString("qualification", "Not Provided"));
                             doctorRating.setRating((float) doctorData.optDouble("rating", 0.0));
 
-                            String imageUrl = doctorData.optString("profile_picture", "");
-                            if (imageUrl.isEmpty() || imageUrl.equals("null")) {
+                            // Clean any malformed/double-prefixed URL; do NOT add any domain prefix here
+                            String imageUrl = cleanUrl(doctorData.optString("profile_picture", ""));
+                            if (imageUrl.isEmpty()) {
                                 doctorImage.setImageResource(R.drawable.main5);
                             } else {
                                 Glide.with(this)
@@ -148,5 +142,32 @@ public class doctor_details extends AppCompatActivity {
 
         RequestQueue queue = Volley.newRequestQueue(this);
         queue.add(request);
+    }
+
+    /**
+     * Returns a clean URL without any accidental double prefix.
+     * Rules:
+     *  - If empty/null/"null" → return empty string (caller will use drawable fallback)
+     *  - If starts with http/https → return as-is, but strip any preceding ".../doctor_images/" duplication
+     *  - Otherwise (relative/filename) → return as-is (backend now supplies full URLs)
+     */
+    private String cleanUrl(String raw) {
+        if (raw == null) return "";
+        String u = raw.trim();
+        if ((u.startsWith("\"") && u.endsWith("\"")) || (u.startsWith("'") && u.endsWith("'"))) {
+            u = u.substring(1, u.length() - 1).trim();
+        }
+        if (u.isEmpty() || "null".equalsIgnoreCase(u)) return "";
+
+        if (u.startsWith("http://") || u.startsWith("https://")) {
+            int secondHttps = u.indexOf("https://", 8);
+            int secondHttp  = u.indexOf("http://", 7);
+            int idx = -1;
+            if (secondHttps >= 0) idx = secondHttps;
+            else if (secondHttp >= 0) idx = secondHttp;
+            if (idx > 0) return u.substring(idx);
+            return u;
+        }
+        return u; // relative → leave untouched (no prefixing here)
     }
 }

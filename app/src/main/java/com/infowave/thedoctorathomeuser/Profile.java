@@ -10,16 +10,23 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.view.View;
+import android.view.ViewParent;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
@@ -44,12 +51,9 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import de.hdodenhof.circleimageview.CircleImageView;
-
 public class Profile extends AppCompatActivity {
 
     private static final int PICK_IMAGE = 1;
-    // private static final String TAG = "Profile"; // Commented for production
 
     private ImageView civProfile;
     private EditText etFullName, etDOB, etAddress, etMobile, etEmail, etMedicalHistory,
@@ -61,22 +65,64 @@ public class Profile extends AppCompatActivity {
     private RequestQueue requestQueue;
     private int patientId;
 
-
     private static final String UPDATE_PROFILE_URL = ApiConfig.endpoint("update_profile.php");
-
 
     private Bitmap selectedBitmap = null;
     private String oldImageUrl = "";
+
+    // --- Keyboard handling helpers ---
+    private View rootContent;           // android.R.id.content
+    private ScrollView findNearestScroll(View v) {
+        ViewParent p = v.getParent();
+        while (p instanceof View) {
+            if (p instanceof ScrollView) return (ScrollView) p;
+            p = p.getParent();
+        }
+        return null;
+    }
+    private void scrollIntoView(EditText field) {
+        ScrollView sv = findNearestScroll(field);
+        if (sv != null) {
+            sv.post(() -> {
+                int y = field.getBottom() + sv.getPaddingBottom();
+                sv.smoothScrollTo(0, Math.max(0, y - sv.getHeight()));
+            });
+        } else {
+            // Fallback: scroll the whole content if no ScrollView present
+            rootContent.post(() -> field.getParent().requestChildFocus(field, field));
+        }
+    }
+    private void attachFocusAutoScroll(EditText... fields) {
+        for (EditText f : fields) {
+            f.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) scrollIntoView((EditText) v);
+            });
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
+        // 1) Force adjustResize at runtime (no manifest/XML change required)
+        getWindow().setSoftInputMode(
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
+                        | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        );
+
+        // 2) Add bottom padding when IME (keyboard) is shown so last field stays visible
+        rootContent = findViewById(android.R.id.content);
+        ViewCompat.setOnApplyWindowInsetsListener(rootContent, (v, insets) -> {
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(0, sys.top, 0, Math.max(ime.bottom, sys.bottom));
+            return insets;
+        });
+
         SharedPreferences sp = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String patientIdStr = sp.getString("patient_id", "");
         if (patientIdStr.isEmpty()) {
-            // Log.e(TAG, "Patient ID not found");
             finish();
             return;
         }
@@ -127,10 +173,16 @@ public class Profile extends AppCompatActivity {
         btnUpdate.setOnClickListener(v -> {
             try {
                 updateProfile();
-            } catch (AuthFailureError e) {
-                // Log.e(TAG, "AuthFailureError in updateProfile", e);
-            }
+            } catch (AuthFailureError ignored) {}
         });
+
+        // 3) Auto-scroll any focused EditText into view (covers every field)
+        attachFocusAutoScroll(
+                etFullName, etDOB, etAddress, etMobile, etEmail,
+                etEmergencyName, etEmergencyNumber, etMedicalHistory,
+                etAllergies, etCurrentMedications
+        );
+
         fetchProfile();
     }
 
@@ -150,7 +202,6 @@ public class Profile extends AppCompatActivity {
                 selectedBitmap = bitmap;
             } catch (IOException e) {
                 Toast.makeText(this, "Could not load image. Please try a different photo.", Toast.LENGTH_SHORT).show();
-                // Log.e(TAG, "Error loading image", e);
             }
         }
     }
@@ -163,10 +214,8 @@ public class Profile extends AppCompatActivity {
         if (!dobText.isEmpty()) {
             try {
                 Date date = sdf.parse(dobText);
-                calendar.setTime(date);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
+                if (date != null) calendar.setTime(date);
+            } catch (ParseException ignored) {}
         }
 
         int year = calendar.get(Calendar.YEAR);
@@ -194,60 +243,59 @@ public class Profile extends AppCompatActivity {
     private void fetchProfile() {
         progressDialog.show();
 
-        final String GET_PROFILE_URL = ApiConfig.endpoint("get_profile.php");
         String url = ApiConfig.endpoint("get_profile.php", "patient_id", String.valueOf(patientId));
 
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     progressDialog.dismiss();
                     try {
-                        if ("success".equals(response.getString("status"))) {
-                            JSONObject data = response.getJSONObject("data");
-                            etFullName.setText(data.optString("full_name", ""));
-                            etDOB.setText(data.optString("date_of_birth", ""));
-                            setSpinnerSelection(spinnerGender, data.optString("gender", ""));
-                            setSpinnerSelection(spinnerBloodGroup, data.optString("blood_group", ""));
-                            etAddress.setText(data.optString("address", ""));
-                            etMobile.setText(data.optString("mobile", ""));
-                            etEmail.setText(data.optString("email", ""));
-                            etEmergencyName.setText(data.optString("emergency_contact_name", ""));
-                            etEmergencyNumber.setText(data.optString("emergency_contact_number", ""));
-                            etMedicalHistory.setText(data.optString("medical_history", ""));
-                            etAllergies.setText(data.optString("allergies", ""));
-                            etCurrentMedications.setText(data.optString("current_medications", ""));
+                        if ("success".equals(response.optString("status"))) {
+                            JSONObject data = response.optJSONObject("data");
+                            if (data == null) {
+                                Toast.makeText(Profile.this, "Profile not found.", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
 
-                            String profilePictureUrl = data.optString("profile_picture", "");
+                            // Use clean() to avoid showing "null"/"undefined"
+                            setTextNoNull(etFullName,           clean(data.optString("full_name", "")));
+                            setTextNoNull(etDOB,                clean(data.optString("date_of_birth", "")));
+                            setSpinnerSelection(spinnerGender,  clean(data.optString("gender", "")));
+                            setSpinnerSelection(spinnerBloodGroup, clean(data.optString("blood_group", "")));
+                            setTextNoNull(etAddress,            clean(data.optString("address", "")));
+                            setTextNoNull(etMobile,             clean(data.optString("mobile", "")));
+                            setTextNoNull(etEmail,              clean(data.optString("email", "")));
+                            setTextNoNull(etEmergencyName,      clean(data.optString("emergency_contact_name", "")));
+                            setTextNoNull(etEmergencyNumber,    clean(data.optString("emergency_contact_number", "")));
+                            setTextNoNull(etMedicalHistory,     clean(data.optString("medical_history", "")));
+                            setTextNoNull(etAllergies,          clean(data.optString("allergies", "")));
+                            setTextNoNull(etCurrentMedications, clean(data.optString("current_medications", "")));
+
+                            String profilePictureUrl = clean(data.optString("profile_picture", ""));
                             if (!TextUtils.isEmpty(profilePictureUrl)) {
-                                Glide.with(this)
-                                        .load(profilePictureUrl)
-                                        .into(civProfile);
+                                Glide.with(this).load(profilePictureUrl).into(civProfile);
                                 int lastSlash = profilePictureUrl.lastIndexOf('/');
-                                if (lastSlash != -1) {
-                                    oldImageUrl = profilePictureUrl.substring(lastSlash + 1);
-                                } else {
-                                    oldImageUrl = profilePictureUrl;
-                                }
-                                // Log.d(TAG, "Fetched old image name: " + oldImageUrl);
+                                oldImageUrl = (lastSlash != -1)
+                                        ? profilePictureUrl.substring(lastSlash + 1)
+                                        : profilePictureUrl;
                             } else {
-                                // Log.d(TAG, "No profile image found in DB.");
+                                oldImageUrl = "";
                             }
                         } else {
                             Toast.makeText(Profile.this, "Profile not found.", Toast.LENGTH_SHORT).show();
                         }
-                    } catch (JSONException e) {
+                    } catch (Exception e) {
                         Toast.makeText(Profile.this, "Could not load your profile. Please try again.", Toast.LENGTH_SHORT).show();
-                        // Log.e(TAG, "JSON parsing error", e);
                     }
                 },
                 error -> {
                     progressDialog.dismiss();
                     Toast.makeText(Profile.this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
-                    // Log.e(TAG, "Fetch profile error: " + error.getMessage());
                 });
         requestQueue.add(jsonObjectRequest);
     }
 
     private void setSpinnerSelection(Spinner spinner, String value) {
+        if (TextUtils.isEmpty(value)) return; // leave default
         ArrayAdapter adapter = (ArrayAdapter) spinner.getAdapter();
         if (adapter != null) {
             for (int i = 0, count = adapter.getCount(); i < count; i++) {
@@ -262,6 +310,7 @@ public class Profile extends AppCompatActivity {
     private void updateProfile() throws AuthFailureError {
         if (TextUtils.isEmpty(etFullName.getText().toString())) {
             etFullName.setError("Please enter your full name.");
+            etFullName.requestFocus();
             return;
         }
         progressDialog.show();
@@ -272,10 +321,9 @@ public class Profile extends AppCompatActivity {
                         progressDialog.dismiss();
                         try {
                             JSONObject jsonResponse = new JSONObject(new String(response.data));
-                            if ("success".equals(jsonResponse.getString("status"))) {
+                            if ("success".equals(jsonResponse.optString("status"))) {
                                 Toast.makeText(Profile.this, "Your profile was updated successfully!", Toast.LENGTH_SHORT).show();
-                                Intent intent = new Intent(Profile.this, MainActivity.class);
-                                startActivity(intent);
+                                startActivity(new Intent(Profile.this, MainActivity.class));
                                 finish();
                             } else {
                                 Toast.makeText(Profile.this, "Could not update your profile. Please try again.", Toast.LENGTH_SHORT).show();
@@ -287,57 +335,30 @@ public class Profile extends AppCompatActivity {
                     error -> {
                         progressDialog.dismiss();
                         Toast.makeText(Profile.this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
-                        // Log.e(TAG, "Multipart update error: " + error.getMessage());
                     }) {
                 @Override
                 protected Map<String, String> getParams() {
-                    Map<String, String> params = new HashMap<>();
-                    params.put("patient_id", String.valueOf(patientId));
-                    params.put("full_name", etFullName.getText().toString());
-                    String dobInput = etDOB.getText().toString().trim();
-                    if (!dobInput.isEmpty() && dobInput.contains("/")) {
-                        try {
-                            SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                            SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                            Date dobDate = inputFormat.parse(dobInput);
-                            dobInput = outputFormat.format(dobDate);
-                        } catch (ParseException e) {
-                            // Log.e(TAG, "DOB conversion error (multipart)", e);
-                        }
-                    }
-                    params.put("date_of_birth", dobInput);
-                    params.put("gender", spinnerGender.getSelectedItem().toString());
-                    params.put("blood_group", spinnerBloodGroup.getSelectedItem().toString());
-                    params.put("address", etAddress.getText().toString());
-                    params.put("mobile", etMobile.getText().toString());
-                    params.put("email", etEmail.getText().toString());
-                    params.put("emergency_contact_name", etEmergencyName.getText().toString());
-                    params.put("emergency_contact_number", etEmergencyNumber.getText().toString());
-                    params.put("medical_history", etMedicalHistory.getText().toString());
-                    params.put("allergies", etAllergies.getText().toString());
-                    params.put("current_medications", etCurrentMedications.getText().toString());
-                    return params;
+                    return buildCommonParams();
                 }
 
                 @Override
                 protected Map<String, DataPart> getByteData() {
                     Map<String, DataPart> params = new HashMap<>();
-                    params.put("profile_image", new DataPart("profile.jpg", getFileDataFromDrawable(selectedBitmap), "image/jpeg"));
+                    params.put("profile_image", new DataPart("profile.jpg",
+                            getFileDataFromDrawable(selectedBitmap), "image/jpeg"));
                     return params;
                 }
             };
             requestQueue.add(multipartRequest);
         } else {
-            // Log.d(TAG, "Updating profile with old image name: " + oldImageUrl);
             StringRequest stringRequest = new StringRequest(Request.Method.POST, UPDATE_PROFILE_URL,
                     response -> {
                         progressDialog.dismiss();
                         try {
                             JSONObject jsonResponse = new JSONObject(response);
-                            if ("success".equals(jsonResponse.getString("status"))) {
+                            if ("success".equals(jsonResponse.optString("status"))) {
                                 Toast.makeText(Profile.this, "Your profile was updated successfully!", Toast.LENGTH_SHORT).show();
-                                Intent intent = new Intent(Profile.this, MainActivity.class);
-                                startActivity(intent);
+                                startActivity(new Intent(Profile.this, MainActivity.class));
                                 finish();
                             } else {
                                 Toast.makeText(Profile.this, "Could not update your profile. Please try again.", Toast.LENGTH_SHORT).show();
@@ -349,42 +370,59 @@ public class Profile extends AppCompatActivity {
                     error -> {
                         progressDialog.dismiss();
                         Toast.makeText(Profile.this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
-                        // Log.e(TAG, "StringRequest update error: " + error.getMessage());
                     }) {
                 @Override
                 protected Map<String, String> getParams() {
-                    Map<String, String> params = new HashMap<>();
-                    params.put("patient_id", String.valueOf(patientId));
-                    params.put("full_name", etFullName.getText().toString());
-                    String dobInput = etDOB.getText().toString().trim();
-                    if (!dobInput.isEmpty() && dobInput.contains("/")) {
-                        try {
-                            SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                            SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                            Date dobDate = inputFormat.parse(dobInput);
-                            dobInput = outputFormat.format(dobDate);
-                        } catch (ParseException e) {
-                            // Log.e(TAG, "DOB conversion error (StringRequest)", e);
-                        }
-                    }
-                    params.put("date_of_birth", dobInput);
-                    params.put("gender", spinnerGender.getSelectedItem().toString());
-                    params.put("blood_group", spinnerBloodGroup.getSelectedItem().toString());
-                    params.put("address", etAddress.getText().toString());
-                    params.put("mobile", etMobile.getText().toString());
-                    params.put("email", etEmail.getText().toString());
-                    params.put("emergency_contact_name", etEmergencyName.getText().toString());
-                    params.put("emergency_contact_number", etEmergencyNumber.getText().toString());
-                    params.put("medical_history", etMedicalHistory.getText().toString());
-                    params.put("allergies", etAllergies.getText().toString());
-                    params.put("current_medications", etCurrentMedications.getText().toString());
-
-                    params.put("profile_image", oldImageUrl);
-                    return params;
+                    Map<String, String> p = buildCommonParams();
+                    p.put("profile_image", oldImageUrl); // keep old if no new bitmap
+                    return p;
                 }
             };
             requestQueue.add(stringRequest);
         }
+    }
+
+    private Map<String, String> buildCommonParams() {
+        Map<String, String> params = new HashMap<>();
+        params.put("patient_id", String.valueOf(patientId));
+        params.put("full_name", etFullName.getText().toString().trim());
+
+        String dobInput = etDOB.getText().toString().trim();
+        if (!dobInput.isEmpty() && dobInput.contains("/")) {
+            try {
+                SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                Date dobDate = inputFormat.parse(dobInput);
+                if (dobDate != null) dobInput = outputFormat.format(dobDate);
+            } catch (ParseException ignored) {}
+        }
+        params.put("date_of_birth", dobInput);
+
+        params.put("gender", String.valueOf(spinnerGender.getSelectedItem()));
+        params.put("blood_group", String.valueOf(spinnerBloodGroup.getSelectedItem()));
+        params.put("address", etAddress.getText().toString().trim());
+        params.put("mobile", etMobile.getText().toString().trim());
+        params.put("email", etEmail.getText().toString().trim());
+        params.put("emergency_contact_name", etEmergencyName.getText().toString().trim());
+        params.put("emergency_contact_number", etEmergencyNumber.getText().toString().trim());
+        params.put("medical_history", etMedicalHistory.getText().toString().trim());
+        params.put("allergies", etAllergies.getText().toString().trim());
+        params.put("current_medications", etCurrentMedications.getText().toString().trim());
+        return params;
+    }
+
+    private void setTextNoNull(EditText et, String value) {
+        et.setText(value == null ? "" : value);
+    }
+
+    /** Convert null/"null"/"undefined"/whitespace → "" else trimmed value */
+    private String clean(String s) {
+        if (s == null) return "";
+        String t = s.trim();
+        if (t.isEmpty()) return "";
+        String low = t.toLowerCase(Locale.ROOT);
+        if (low.equals("null") || low.equals("undefined")) return "";
+        return t;
     }
 
     public byte[] getFileDataFromDrawable(Bitmap bitmap) {
@@ -393,6 +431,7 @@ public class Profile extends AppCompatActivity {
         return byteArrayOutputStream.toByteArray();
     }
 
+    // --- Multipart helper classes (unchanged) ---
     public abstract class VolleyMultipartRequest extends com.android.volley.Request<NetworkResponse> {
 
         private final Response.Listener<NetworkResponse> mListener;
@@ -432,16 +471,16 @@ public class Profile extends AppCompatActivity {
         }
 
         private byte[] buildMultipartBody(Map<String, String> params, Map<String, DataPart> dataParts) throws AuthFailureError {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            String lineEnd = "\r\n";
-            String twoHyphens = "--";
             try {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                String lineEnd = "\r\n";
+                String twoHyphens = "--";
                 for (Map.Entry<String, String> entry : params.entrySet()) {
                     bos.write((twoHyphens + boundary + lineEnd).getBytes());
                     bos.write(("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"" + lineEnd).getBytes());
                     bos.write(("Content-Type: text/plain; charset=UTF-8" + lineEnd).getBytes());
                     bos.write(lineEnd.getBytes());
-                    bos.write(entry.getValue().getBytes());
+                    bos.write((entry.getValue() == null ? "" : entry.getValue()).getBytes());
                     bos.write(lineEnd.getBytes());
                 }
                 for (Map.Entry<String, DataPart> entry : dataParts.entrySet()) {
@@ -454,34 +493,25 @@ public class Profile extends AppCompatActivity {
                     bos.write(lineEnd.getBytes());
                 }
                 bos.write((twoHyphens + boundary + twoHyphens + lineEnd).getBytes());
+                return bos.toByteArray();
             } catch (IOException e) {
-                e.printStackTrace();
+                return new byte[0];
             }
-            return bos.toByteArray();
         }
     }
 
     public class DataPart {
-        private String fileName;
-        private byte[] content;
-        private String type;
+        private final String fileName;
+        private final byte[] content;
+        private final String type;
 
         public DataPart(String fileName, byte[] content, String type) {
             this.fileName = fileName;
             this.content = content;
             this.type = type;
         }
-
-        public String getFileName() {
-            return fileName;
-        }
-
-        public byte[] getContent() {
-            return content;
-        }
-
-        public String getType() {
-            return type;
-        }
+        public String getFileName() { return fileName; }
+        public byte[] getContent() { return content; }
+        public String getType() { return type; }
     }
 }

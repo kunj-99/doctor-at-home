@@ -2,7 +2,7 @@ package com.infowave.thedoctorathomeuser.adapter;
 
 import android.content.Context;
 import android.content.Intent;
-// import android.util.Log;
+import android.util.Log; // ✅ Logging
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,7 +10,6 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -20,11 +19,14 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.cancle_appintment;
+import com.infowave.thedoctorathomeuser.doctor_details;
 import com.infowave.thedoctorathomeuser.track_doctor;
 
 import java.util.List;
 
 public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+    private static final String TAG = "OngoingAdapter";
 
     private static final int VIEW_TYPE_ITEM = 0;
     private static final int VIEW_TYPE_EMPTY = 1;
@@ -56,19 +58,31 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.durations = durations;
         this.doctorIds = doctorIds;
         setHasStableIds(true); // smoother RecyclerView operations
+
+        Log.d(TAG, "Adapter constructed. Sizes -> names=" + sz(names)
+                + ", specialties=" + sz(specialties)
+                + ", hospitals=" + sz(hospitals)
+                + ", ratings=" + sz(ratings)
+                + ", profilePictures=" + sz(profilePictures)
+                + ", appointmentIds=" + sz(appointmentIds)
+                + ", statuses=" + sz(statuses)
+                + ", durations=" + sz(durations)
+                + ", doctorIds=" + sz(doctorIds));
     }
+
+    private int sz(List<?> l) { return l == null ? 0 : l.size(); }
 
     @Override
     public int getItemViewType(int position) {
-        if (names == null || names.isEmpty()) {
-            return VIEW_TYPE_EMPTY;
-        }
-        return VIEW_TYPE_ITEM;
+        int type = (names == null || names.isEmpty()) ? VIEW_TYPE_EMPTY : VIEW_TYPE_ITEM;
+        Log.d(TAG, "getItemViewType(" + position + ") -> " + (type == VIEW_TYPE_EMPTY ? "EMPTY" : "ITEM"));
+        return type;
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        Log.d(TAG, "onCreateViewHolder(viewType=" + (viewType == VIEW_TYPE_EMPTY ? "EMPTY" : "ITEM") + ")");
         if (viewType == VIEW_TYPE_EMPTY) {
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_empty_state, parent, false);
@@ -82,8 +96,12 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        Log.d(TAG, "onBindViewHolder(position=" + position + ", type="
+                + (holder instanceof EmptyViewHolder ? "EMPTY" : "ITEM") + ")");
+
         if (holder instanceof EmptyViewHolder) {
             EmptyViewHolder emptyHolder = (EmptyViewHolder) holder;
+            Log.d(TAG, "Binding EMPTY state");
             Glide.with(context.getApplicationContext())
                     .load(R.drawable.nodataimg)
                     .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
@@ -92,24 +110,39 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         } else {
             DoctorViewHolder viewHolder = (DoctorViewHolder) holder;
 
-            // Bind data
-            String name = names.get(position);
-            String spec = specialties.get(position);
-            String hosp = hospitals.get(position);
-            float rating = ratings.get(position) == null ? 0f : ratings.get(position);
-            String dur = durations.get(position);
-            String picUrl = profilePictures.get(position);
-            int apptId = appointmentIds.get(position);
-            int docId = doctorIds.get(position);
-            String statusRaw = statuses.get(position);
-            String status = statusRaw == null ? "" : statusRaw.trim().toLowerCase();
+            // Extract + log values
+            String name = safeStr(names, position);
+            String spec = safeStr(specialties, position);
+            String hosp = safeStr(hospitals, position);
+            Float ratingObj = safeFloat(ratings, position);
+            float rating = ratingObj == null ? 0f : ratingObj;
+            String dur = safeStr(durations, position);
+            String picUrl = safeStr(profilePictures, position);
+            int apptId = safeInt(appointmentIds, position);
+            int docId = safeInt(doctorIds, position);
+            String statusRaw = safeStr(statuses, position);
+            String status = statusRaw.trim().toLowerCase();
 
+            Log.d(TAG, "Bind item -> pos=" + position
+                    + ", doctorId=" + docId
+                    + ", appointmentId=" + apptId
+                    + ", name=" + name
+                    + ", spec=" + spec
+                    + ", hosp=" + hosp
+                    + ", rating=" + rating
+                    + ", duration=" + dur
+                    + ", status=" + status
+                    + ", imageUrl=" + picUrl);
+
+            // Bind UI
             viewHolder.name.setText(name);
             viewHolder.specialty.setText(spec);
             viewHolder.hospital.setText(hosp);
             viewHolder.ratingBar.setRating(rating);
             viewHolder.experienceDuration.setText("Experience: " + (dur == null ? "" : dur));
 
+            // Image
+            Log.d(TAG, "Glide.load -> " + picUrl);
             Glide.with(context.getApplicationContext())
                     .load(picUrl)
                     .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
@@ -119,6 +152,18 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     .placeholder(R.drawable.plasholder)
                     .error(R.drawable.plasholder)
                     .into(viewHolder.image);
+
+            // Click on whole card → doctor_details (SEND doctor_id AS STRING)
+            viewHolder.itemView.setOnClickListener(v -> {
+                String docIdStr = String.valueOf(docId); // ✅ convert to String
+                Log.d(TAG, "Card clicked -> position=" + position
+                        + ", doctorId(int)=" + docId + ", doctorId(str)=" + docIdStr
+                        + ", imageUrl=" + picUrl);
+                Intent intent = new Intent(context, doctor_details.class);
+                intent.putExtra("doctor_id", docIdStr);   // ✅ String
+                intent.putExtra("doctor_image", picUrl);
+                context.startActivity(intent);
+            });
 
             // Buttons default state
             viewHolder.track.setVisibility(View.VISIBLE);
@@ -134,11 +179,13 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
             // Status handling
             if (status.contains("requested")) {
+                Log.d(TAG, "Status REQUESTED -> disabling Track");
                 viewHolder.track.setText("Requested");
                 viewHolder.track.setEnabled(false);
                 viewHolder.track.setBackgroundTintList(
                         ContextCompat.getColorStateList(context, R.color.gray));
             } else if (status.contains("pending")) {
+                Log.d(TAG, "Status PENDING -> disabling Track");
                 viewHolder.track.setText("Pending");
                 viewHolder.track.setEnabled(false);
                 viewHolder.track.setBackgroundTintList(
@@ -146,21 +193,22 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }
 
             viewHolder.cancel.setOnClickListener(v -> {
+                Log.d(TAG, "Cancel clicked -> appointmentId=" + apptId + ", doctorId=" + docId);
                 Intent intent = new Intent(context, cancle_appintment.class);
                 intent.putExtra("appointment_id", apptId);
                 context.startActivity(intent);
-                Toast.makeText(context, "You can cancel your appointment here.", Toast.LENGTH_SHORT).show();
             });
 
             viewHolder.track.setOnClickListener(v -> {
+                Log.d(TAG, "Track clicked -> enabled=" + viewHolder.track.isEnabled()
+                        + ", appointmentId=" + apptId + ", doctorId=" + docId);
                 if (viewHolder.track.isEnabled()) {
                     Intent intent = new Intent(context, track_doctor.class);
                     intent.putExtra("doctor_name", name);
                     intent.putExtra("appointment_id", apptId);
                     intent.putExtra("specialty", spec);
-                    intent.putExtra("doctor_id", docId);
+                    intent.putExtra("doctor_id", docId); // (track_doctor) unchanged: still int
                     context.startActivity(intent);
-                    Toast.makeText(context, "Tracking your doctor's location...", Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -168,23 +216,24 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemCount() {
-        if (names == null || names.isEmpty()) {
-            return 1;
-        }
-        return names.size();
+        int count = (names == null || names.isEmpty()) ? 1 : names.size();
+        Log.d(TAG, "getItemCount() -> " + count);
+        return count;
     }
 
     @Override
     public long getItemId(int position) {
-        // Prefer the real appointment id for true stability
+        long id = RecyclerView.NO_ID;
         if (appointmentIds != null && position >= 0 && position < appointmentIds.size()) {
-            return appointmentIds.get(position);
+            id = appointmentIds.get(position);
         }
-        return RecyclerView.NO_ID;
+        Log.d(TAG, "getItemId(" + position + ") -> " + id);
+        return id;
     }
 
     @Override
     public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+        Log.d(TAG, "onViewRecycled(holder=" + holder.getClass().getSimpleName() + ")");
         if (holder instanceof DoctorViewHolder) {
             Glide.with(context.getApplicationContext()).clear(((DoctorViewHolder) holder).image);
         } else if (holder instanceof EmptyViewHolder) {
@@ -192,6 +241,28 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         super.onViewRecycled(holder);
     }
+
+    /* ----------------- Helpers ----------------- */
+
+    private String safeStr(List<String> list, int pos) {
+        if (list == null || pos < 0 || pos >= list.size()) return "";
+        String v = list.get(pos);
+        return v == null ? "" : v;
+    }
+
+    private Integer safeInt(List<Integer> list, int pos) {
+        if (list == null || pos < 0 || pos >= list.size()) return 0;
+        Integer v = list.get(pos);
+        return v == null ? 0 : v;
+    }
+
+    private Float safeFloat(List<Float> list, int pos) {
+        if (list == null || pos < 0 || pos >= list.size()) return 0f;
+        Float v = list.get(pos);
+        return v == null ? 0f : v;
+    }
+
+    /* ----------------- ViewHolders ----------------- */
 
     static class DoctorViewHolder extends RecyclerView.ViewHolder {
         TextView name, specialty, hospital, experienceDuration;
@@ -209,6 +280,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             track = itemView.findViewById(R.id.Track_button);
             cancel = itemView.findViewById(R.id.Cancel_button);
             experienceDuration = itemView.findViewById(R.id.doctor_experience_duration);
+            Log.d(TAG, "DoctorViewHolder constructed");
         }
     }
 
@@ -220,6 +292,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             super(itemView);
             emptyImage = itemView.findViewById(R.id.empty_state_image);
             emptyText = itemView.findViewById(R.id.empty_state_text);
+            Log.d(TAG, "EmptyViewHolder constructed");
         }
     }
 }

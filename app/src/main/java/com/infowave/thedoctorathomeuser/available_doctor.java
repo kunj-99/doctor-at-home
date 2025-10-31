@@ -64,6 +64,10 @@ public class available_doctor extends AppCompatActivity {
 
     private RequestQueue queue;
 
+    // Absolute fallback image (no ApiConfig prefixing)
+    private static final String DEFAULT_DOCTOR_IMAGE_URL =
+            "https://thedoctorathome.in/doctor_images/default.png";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -102,10 +106,9 @@ public class available_doctor extends AppCompatActivity {
         } catch (Throwable ignored) { }
         // -----------------------------------------------
 
-        // Volley queue
         queue = Volley.newRequestQueue(this);
 
-        // Loader (guarded)
+        // Loader (guard against crashes if not present)
         try { loaderutil.showLoader(available_doctor.this); } catch (Throwable ignored) { }
 
         // Views
@@ -117,6 +120,10 @@ public class available_doctor extends AppCompatActivity {
         tvNoDoctors = findViewById(R.id.tv_no_doctors);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        // Attach an EMPTY adapter immediately to avoid: “No adapter attached; skipping layout”
+        attachEmptyAdapter();
+
         edtPincode.setFilters(new InputFilter[]{new InputFilter.LengthFilter(6)});
 
         // Intent extras
@@ -186,6 +193,17 @@ public class available_doctor extends AppCompatActivity {
         });
     }
 
+    private void attachEmptyAdapter() {
+        if (adapter == null) {
+            adapter = new DoctorAdapter(
+                    available_doctor.this,
+                    doctorIds, names, specialties, hospitals,
+                    ratings, imageUrls, Duration, autoStatuses
+            );
+            recyclerView.setAdapter(adapter);
+        }
+    }
+
     private void fetchUserPincode(String userId) {
         String url = ApiConfig.endpoint("user_pincode.php", "user_id", userId);
 
@@ -239,11 +257,12 @@ public class available_doctor extends AppCompatActivity {
                             newSpecialties.add(d.optString("specialization", ""));
                             newHospitals.add(d.optString("hospital_affiliation", ""));
                             newRatings.add((float) d.optDouble("rating", 0));
-                            String profilePicUrl = d.optString("profile_picture", "");
-                            if (profilePicUrl.isEmpty() || "null".equalsIgnoreCase(profilePicUrl)) {
-                                profilePicUrl = ApiConfig.endpoint("doctor_images/default.png");
-                            }
+
+                            // Use image exactly as provided by API; clean up any accidental double-prefix
+                            String raw = d.optString("profile_picture", "");
+                            String profilePicUrl = cleanUrl(raw);
                             newImageUrls.add(profilePicUrl);
+
                             newDuration.add(d.optString("experience_duration", ""));
                             newAutoStatuses.add(d.optString("auto_status", "Inactive"));
                         }
@@ -260,12 +279,7 @@ public class available_doctor extends AppCompatActivity {
                             autoStatuses.clear(); autoStatuses.addAll(newAutoStatuses);
 
                             if (adapter == null) {
-                                adapter = new DoctorAdapter(
-                                        available_doctor.this,
-                                        doctorIds, names, specialties, hospitals,
-                                        ratings, imageUrls, Duration, autoStatuses
-                                );
-                                recyclerView.setAdapter(adapter);
+                                attachEmptyAdapter();
                             } else {
                                 adapter.notifyDataSetChanged();
                             }
@@ -302,6 +316,43 @@ public class available_doctor extends AppCompatActivity {
         queue.add(req);
     }
 
+    /**
+     * Returns a clean, absolute URL for an image without any double-prefix.
+     * Rules:
+     *  - If empty → use DEFAULT_DOCTOR_IMAGE_URL
+     *  - If already starts with http/https → return as-is
+     *  - If it accidentally contains ".../doctor_images/https://..." → strip the leading part
+     *  - Otherwise return as-is (no prefixing here by design)
+     */
+    private String cleanUrl(String raw) {
+        if (raw == null) return DEFAULT_DOCTOR_IMAGE_URL;
+        String u = raw.trim();
+        // strip quotes if any (rare server bugs)
+        if ((u.startsWith("\"") && u.endsWith("\"")) || (u.startsWith("'") && u.endsWith("'"))) {
+            u = u.substring(1, u.length() - 1).trim();
+        }
+        if (u.isEmpty() || "null".equalsIgnoreCase(u)) {
+            return DEFAULT_DOCTOR_IMAGE_URL;
+        }
+        // If it already has a scheme, return as-is (FULL URL case)
+        if (u.startsWith("http://") || u.startsWith("https://")) {
+            // Fix the specific double-prefix pattern seen in logs:
+            // https://domain/doctor_images/https://domain/doctor_images/file.jpg
+            int secondHttps = u.indexOf("https://", 8); // find after the first scheme
+            int secondHttp  = u.indexOf("http://", 7);
+            int idx = -1;
+            if (secondHttps >= 0) idx = secondHttps;
+            else if (secondHttp >= 0) idx = secondHttp;
+            if (idx > 0) {
+                // Keep only from the second scheme onward
+                return u.substring(idx);
+            }
+            return u;
+        }
+        // Relative/filename case: leave untouched (backend should now send full URLs)
+        return u;
+    }
+
     private void updateDoctorAutoStatus(final Runnable onComplete) {
         String updateUrl = ApiConfig.endpoint("update_doctor_status.php");
 
@@ -321,6 +372,7 @@ public class available_doctor extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        super.onBackPressed();
         Intent intent = new Intent(available_doctor.this, MainActivity.class);
         intent.putExtra("open_fragment", 1);
         startActivity(intent);

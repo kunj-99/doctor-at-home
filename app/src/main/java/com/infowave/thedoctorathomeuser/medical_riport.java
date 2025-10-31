@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -30,6 +31,11 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -41,6 +47,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class medical_riport extends AppCompatActivity {
+
+    private static final String TAG = "MedicalReport";
 
     private String appointmentId;
     private String reportPhotoUrl = "";
@@ -59,7 +67,6 @@ public class medical_riport extends AppCompatActivity {
     private ImageView ivLoader;
 
     private RequestQueue requestQueue;
-    private static final String TAG = "MedicalReport";
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -98,8 +105,7 @@ public class medical_riport extends AppCompatActivity {
         loader = findViewById(R.id.loader);
         ivLoader = findViewById(R.id.iv_loader);
         loader.setVisibility(View.VISIBLE);
-
-        Glide.with(this).asGif().load(R.drawable.loader).into(ivLoader);
+        try { Glide.with(this).asGif().load(R.drawable.loader).into(ivLoader); } catch (Throwable ignored) {}
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -118,6 +124,7 @@ public class medical_riport extends AppCompatActivity {
             }
         });
     }
+
     /** Returns a clean, user-facing value. Converts null/empty/"null" to "N/A". */
     private String safe(String s) {
         return (s == null || s.trim().isEmpty() || "null".equalsIgnoreCase(s.trim())) ? "N/A" : s.trim();
@@ -125,11 +132,13 @@ public class medical_riport extends AppCompatActivity {
 
     private void fetchMedicalReport() {
         String url = ApiConfig.endpoint("get_medical_report.php", "appointment_id", appointmentId);
+        Log.d(TAG, "fetchMedicalReport → " + url);
 
         @SuppressLint("SetTextI18n")
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     try {
+                        Log.d(TAG, "Volley success, response: " + response);
                         String status = response.optString("status", "");
                         if (!"success".equalsIgnoreCase(status)) {
                             Toast.makeText(medical_riport.this, "Report not found.", Toast.LENGTH_SHORT).show();
@@ -145,73 +154,133 @@ public class medical_riport extends AppCompatActivity {
                         }
 
                         String photoUrl = data.optString("report_photo", "");
-                        if (!photoUrl.isEmpty()) {
+                        Log.d(TAG, "report_photo: " + photoUrl);
+
+                        if (!isEmpty(photoUrl)) {
+                            // IMAGE MODE — keep loader visible until Glide finishes
                             reportPhotoUrl = photoUrl;
                             ivReportPhoto.setVisibility(View.VISIBLE);
+
+                            // Hide other content (except Download button)
                             LinearLayout contentContainer = findViewById(R.id.content_container);
                             for (int i = 0; i < contentContainer.getChildCount(); i++) {
                                 View child = contentContainer.getChildAt(i);
-                                if (child.getId() != R.id.btn_download) child.setVisibility(View.GONE);
+                                if (child.getId() != R.id.btn_download && child.getId() != R.id.iv_report_photo) {
+                                    child.setVisibility(View.GONE);
+                                }
                             }
                             btnDownload.setVisibility(View.VISIBLE);
 
-                            Glide.with(medical_riport.this)
-                                    .load(photoUrl)
-                                    .error(R.drawable.error)
-                                    .into(ivReportPhoto);
+                            loadReportPhotoWithBlockingLoader(photoUrl);
 
                         } else {
-                            // Basic details
-                            tvPatientName.setText("Name: " + safe(data.optString("patient_name", "")));
-                            tvPatientAddress.setText("Address: " + safe(data.optString("patient_address", "")));
-                            tvVisitDate.setText("Date: " + safe(data.optString("visit_date", "")));
-                            tvTemperature.setText("Temperature: " + safe(data.optString("temperature", "")));
-                            tvPatientAge.setText("Age: " + safe(data.optString("age", "")) + (isEmpty(data.optString("age", "")) ? "" : " Years"));
-                            tvPatientWeight.setText("Weight: " + safe(data.optString("weight", "")) + (isEmpty(data.optString("weight", "")) ? "" : " kg"));
-                            tvPatientSex.setText("Sex: " + safe(data.optString("sex", "")));
-                            tvPulse.setText("Pulse: " + safe(data.optString("pulse", "")));
-                            tvSpo2.setText("SP02: " + safe(data.optString("spo2", "")));
-                            tvBloodPressure.setText("Blood Pressure: " + safe(data.optString("blood_pressure", "")));
-                            tvRespiratory.setText("Respiratory: " + safe(data.optString("respiratory_system", "")));
-
-                            // Pretty multiline for comma-separated text
-                            tvSymptoms.setText(prettyMultiline("Symptoms", data.optString("symptoms", "")));
-                            tvInvestigations.setText(prettyMultiline("Investigations", data.optString("investigations", "")));
-
-                            tvDoctorName.setText("Doctor: " + safe(data.optString("doctor_name", "")));
-                            // Replace hospital header with doctor’s name
-                            String doctorName = safe(data.optString("doctor_name", ""));
-                            tvHospitalName.setText("Dr. " + doctorName);
-                            tvHospitalAddress.setVisibility(View.GONE);
-
-                            //tvHospitalAddress.setText("");  // optional: remove address line
-
-
-                            // ===== Medications Table =====
-                            String rawMeds = data.optString("medications", "");
-                            String rawDosage = data.optString("dosage", "");
-
-                            List<String> meds = parseToList(rawMeds);
-                            List<String> doses = parseToList(rawDosage);
-
-                            // If backend sent a single long comma string, split as fallback
-                            if (meds.isEmpty() && !isEmpty(rawMeds)) meds = splitCommaFallback(rawMeds);
-                            if (doses.isEmpty() && !isEmpty(rawDosage)) doses = splitCommaFallback(rawDosage);
-
-                            buildMedicationTable(meds, doses);
+                            // TEXT MODE — fill all fields then hide loader immediately after binding
+                            bindTextReport(data);
+                            hideLoader();
                         }
                     } catch (Exception e) {
+                        Log.e(TAG, "Exception parsing response", e);
                         Toast.makeText(medical_riport.this, "Something went wrong while loading the report.", Toast.LENGTH_SHORT).show();
-                    } finally {
-                        new Handler().postDelayed(() -> loader.setVisibility(View.GONE), 500);
+                        hideLoader();
                     }
                 },
                 error -> {
+                    Log.e(TAG, "Volley error: " + error);
                     Toast.makeText(medical_riport.this, "Unable to load your report. Please check your internet connection.", Toast.LENGTH_SHORT).show();
-                    new Handler().postDelayed(() -> loader.setVisibility(View.GONE), 500);
+                    hideLoader();
                 }
         );
         requestQueue.add(request);
+    }
+
+    /**
+     * Loads the report image and ONLY hides the loader when the image either:
+     *  - successfully loads (onResourceReady), or
+     *  - fails (onLoadFailed).
+     * Also adds a safety timeout to avoid infinite spinner.
+     */
+    private void loadReportPhotoWithBlockingLoader(String url) {
+        Log.d(TAG, "Glide start → " + url);
+
+        // Safety timeout (e.g., if the connection stalls); adjust as needed
+        final long SAFETY_TIMEOUT_MS = 45000L; // 45s
+        final Handler watchdog = new Handler();
+        final Runnable timeout = () -> {
+            Log.w(TAG, "Glide safety timeout reached → hiding loader, showing image view anyway");
+            hideLoader();
+        };
+        watchdog.postDelayed(timeout, SAFETY_TIMEOUT_MS);
+
+        Glide.with(medical_riport.this)
+                .load(url)
+                .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                .dontAnimate()
+                .placeholder(R.drawable.plasholder)      // remains under loader
+                .error(R.drawable.error)
+                .listener(new RequestListener<Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(GlideException e, Object model,
+                                                Target<Drawable> target, boolean isFirstResource) {
+                        Log.e(TAG, "Glide onLoadFailed", e);
+                        hideLoader();
+                        watchdog.removeCallbacks(timeout);
+                        return false; // let Glide set error drawable
+                    }
+
+                    @Override
+                    public boolean onResourceReady(Drawable resource, Object model,
+                                                   Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                        Log.d(TAG, "Glide onResourceReady, dataSource=" + dataSource);
+                        hideLoader();
+                        watchdog.removeCallbacks(timeout);
+                        return false; // continue with normal set
+                    }
+                })
+                .into(ivReportPhoto);
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void bindTextReport(JSONObject data) {
+        // Basic details
+        tvPatientName.setText("Name: " + safe(data.optString("patient_name", "")));
+        tvPatientAddress.setText("Address: " + safe(data.optString("patient_address", "")));
+        tvVisitDate.setText("Date: " + safe(data.optString("visit_date", "")));
+        tvTemperature.setText("Temperature: " + safe(data.optString("temperature", "")));
+        tvPatientAge.setText("Age: " + safe(data.optString("age", "")) + (isEmpty(data.optString("age", "")) ? "" : " Years"));
+        tvPatientWeight.setText("Weight: " + safe(data.optString("weight", "")) + (isEmpty(data.optString("weight", "")) ? "" : " kg"));
+        tvPatientSex.setText("Sex: " + safe(data.optString("sex", "")));
+        tvPulse.setText("Pulse: " + safe(data.optString("pulse", "")));
+        tvSpo2.setText("SP02: " + safe(data.optString("spo2", "")));
+        tvBloodPressure.setText("Blood Pressure: " + safe(data.optString("blood_pressure", "")));
+        tvRespiratory.setText("Respiratory: " + safe(data.optString("respiratory_system", "")));
+
+        // Pretty multiline for comma-/array text
+        tvSymptoms.setText(prettyMultiline("Symptoms", data.optString("symptoms", "")));
+        tvInvestigations.setText(prettyMultiline("Investigations", data.optString("investigations", "")));
+
+        tvDoctorName.setText("Doctor: " + safe(data.optString("doctor_name", "")));
+        String doctorName = safe(data.optString("doctor_name", ""));
+        tvHospitalName.setText("Dr. " + doctorName);
+        tvHospitalAddress.setVisibility(View.GONE);
+
+        // ===== Medications Table =====
+        String rawMeds = data.optString("medications", "");
+        String rawDosage = data.optString("dosage", "");
+
+        List<String> meds = parseToList(rawMeds);
+        List<String> doses = parseToList(rawDosage);
+
+        if (meds.isEmpty() && !isEmpty(rawMeds)) meds = splitCommaFallback(rawMeds);
+        if (doses.isEmpty() && !isEmpty(rawDosage)) doses = splitCommaFallback(rawDosage);
+
+        buildMedicationTable(meds, doses);
+    }
+
+    private void hideLoader() {
+        if (loader != null && loader.getVisibility() == View.VISIBLE) {
+            Log.d(TAG, "hideLoader()");
+            loader.setVisibility(View.GONE);
+        }
     }
 
     // --- Helpers ---
@@ -222,11 +291,9 @@ public class medical_riport extends AppCompatActivity {
         if (isEmpty(input)) return out;
 
         try {
-            // Sanitize common backend variations
             String s = input.trim();
-            // fix single quotes -> double quotes; stray whitespace; trailing commas
             s = s.replace('\'', '"');
-            if (!s.startsWith("[")) s = "[" + s + "]";       // if "PCM","dolo"
+            if (!s.startsWith("[")) s = "[" + s + "]";
             s = s.replaceAll(",\\s*]", "]");
 
             JSONArray arr = new JSONArray(s);
@@ -235,9 +302,7 @@ public class medical_riport extends AppCompatActivity {
                 v = cleanItem(v);
                 if (!v.isEmpty()) out.add(v);
             }
-        } catch (Exception ignore) {
-            // Will fallback to comma split by caller if needed
-        }
+        } catch (Exception ignore) { }
         return out;
     }
 
@@ -251,7 +316,7 @@ public class medical_riport extends AppCompatActivity {
         return list;
     }
 
-    /** Remove quotes/brackets and extra spaces; normalize internal multiple spaces/commas. */
+    /** Remove quotes/brackets and extra spaces; normalize internal spaces/commas. */
     private String cleanItem(String v) {
         if (v == null) return "";
         v = v.replace("[", "").replace("]", "").replace("\"", "").trim();
@@ -263,12 +328,10 @@ public class medical_riport extends AppCompatActivity {
     /** Build the medication table rows professionally. */
     private void buildMedicationTable(List<String> meds, List<String> doses) {
         TableLayout table = findViewById(R.id.table_medications);
-        // Remove old rows except header (index 0)
         if (table.getChildCount() > 1) table.removeViews(1, table.getChildCount() - 1);
 
         int rows = Math.max(meds.size(), doses.size());
         if (rows == 0) {
-            // Show a single row with "None"
             TableRow row = new TableRow(this);
             row.addView(colText("#", true));
             row.addView(colText("None", false));
@@ -321,7 +384,6 @@ public class medical_riport extends AppCompatActivity {
         if (isEmpty(raw) || "null".equalsIgnoreCase(raw) || "[]".equals(raw)) {
             return label + ": None";
         }
-        // If backend already sends JSON-like array use parser
         List<String> parts = parseToList(raw);
         if (parts.isEmpty()) parts = splitCommaFallback(raw);
 
@@ -373,7 +435,7 @@ public class medical_riport extends AppCompatActivity {
             fos.close();
             Toast.makeText(this, "PDF saved in your Downloads folder.", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "PDF generation error", e);
             Toast.makeText(this, "Unable to generate PDF. Please try again.", Toast.LENGTH_SHORT).show();
         }
     }

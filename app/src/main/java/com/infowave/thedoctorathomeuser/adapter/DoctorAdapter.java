@@ -113,6 +113,7 @@ public class DoctorAdapter extends RecyclerView.Adapter<DoctorAdapter.DoctorView
         }
     }
 
+
     @Override public int getItemCount() { return names.size(); }
 
     static class DoctorViewHolder extends RecyclerView.ViewHolder {

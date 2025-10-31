@@ -29,6 +29,7 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
@@ -42,10 +43,13 @@ import java.util.Locale;
 
 /**
  * AnimalReportViewerActivity — Null-safe rendering (shows "N/A" for any null-ish values)
+ * Loader now hides ONLY after the image is fully loaded (or fails),
+ * with a safety timeout to avoid infinite spinners.
  */
 public class AnimalReportViewerActivity extends AppCompatActivity {
 
     private static final String TAG = "AnimalReportViewer";
+    private static final long IMAGE_SAFETY_TIMEOUT_MS = 45000L; // 45s
 
     // Loader
     private View loader;
@@ -107,7 +111,10 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
             return;
         }
 
-        // NOTE: ensure you already fixed the server path to /Users/get_vet_report.php
+        // Start loading
+        setLoading(true);
+
+        // Ensure correct endpoint (you already moved it to /Users if needed)
         String url = ApiConfig.endpoint("get_vet_report.php", "appointment_id", appointmentId);
         Log.d(TAG, "Request URL = " + url);
         fetchReport(url);
@@ -179,13 +186,11 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
 
     /* -------------------- Network -------------------- */
     private void fetchReport(String url) {
-        setLoading(true);
         RequestQueue q = Volley.newRequestQueue(this);
         StringRequest req = new StringRequest(
                 Request.Method.GET,
                 url,
                 resp -> {
-                    setLoading(false);
                     Log.d(TAG, "Volley success. Raw response length=" + (resp != null ? resp.length() : 0));
                     Log.v(TAG, "Response payload: " + truncate(resp, 4000));
 
@@ -194,6 +199,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                         if (resp == null || !resp.trim().startsWith("{")) {
                             Log.e(TAG, "Server did not return JSON. First 200 chars: " + truncate(resp, 200));
                             Toast.makeText(this, "Server error: invalid response.", Toast.LENGTH_SHORT).show();
+                            setLoading(false);
                             return;
                         }
 
@@ -204,6 +210,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                             String msg = root.optString("message");
                             Log.w(TAG, "API success=false, message=" + msg);
                             Toast.makeText(this, TextUtils.isEmpty(msg) ? "Report not available yet." : msg, Toast.LENGTH_SHORT).show();
+                            setLoading(false);
                             finish();
                             return;
                         }
@@ -211,6 +218,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                         if (r == null) {
                             Log.e(TAG, "report object is null");
                             Toast.makeText(this, "Invalid report data.", Toast.LENGTH_SHORT).show();
+                            setLoading(false);
                             finish();
                             return;
                         }
@@ -219,10 +227,10 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                     } catch (JSONException e) {
                         Log.e(TAG, "JSON parse error", e);
                         Toast.makeText(this, "Failed to parse report.", Toast.LENGTH_SHORT).show();
+                        setLoading(false);
                     }
                 },
                 err -> {
-                    setLoading(false);
                     int code = -1;
                     String body = null;
                     if (err.networkResponse != null) {
@@ -233,6 +241,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                     }
                     Log.e(TAG, "Volley error. status=" + code + " body=" + truncate(body, 2000), err);
                     Toast.makeText(this, "Unable to load report. Please check your internet.", Toast.LENGTH_SHORT).show();
+                    setLoading(false);
                 }
         );
         req.setShouldCache(false);
@@ -254,29 +263,14 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         String rawAttachment = r.optString("attachment_url", null);
         attachmentUrl = isNullish(rawAttachment) ? "" : rawAttachment.trim();
         Log.d(TAG, "attachment_url=" + attachmentUrl);
+
         if (!TextUtils.isEmpty(attachmentUrl)) {
             ivReportPhoto.setVisibility(View.VISIBLE);
-            try {
-                Glide.with(this)
-                        .load(attachmentUrl)
-                        .listener(new RequestListener<android.graphics.drawable.Drawable>() {
-                            @Override
-                            public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
-                                Log.e(TAG, "Glide load FAILED for: " + model, e);
-                                return false;
-                            }
-                            @Override
-                            public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, Target<android.graphics.drawable.Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                                Log.d(TAG, "Glide load OK: " + model + ", source=" + dataSource);
-                                return false;
-                            }
-                        })
-                        .into(ivReportPhoto);
-            } catch (Exception e) {
-                Log.e(TAG, "Glide exception", e);
-            }
+            loadAttachmentWithBlockingLoader(attachmentUrl);
         } else {
             ivReportPhoto.setVisibility(View.GONE);
+            // No image → we can safely hide the loader now
+            setLoading(false);
         }
 
         // Animal & Owner
@@ -357,6 +351,47 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         }
     }
 
+    /** Load image and hide loader only when it’s ready (or failed) + safety timeout. */
+    private void loadAttachmentWithBlockingLoader(String url) {
+        Log.d(TAG, "Glide start → " + url);
+
+        final android.os.Handler watchdog = new android.os.Handler();
+        final Runnable timeout = () -> {
+            Log.w(TAG, "Image safety timeout reached → hiding loader");
+            setLoading(false);
+        };
+        watchdog.postDelayed(timeout, IMAGE_SAFETY_TIMEOUT_MS);
+
+        Glide.with(this)
+                .load(url)
+                .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                .dontAnimate()
+                .placeholder(R.drawable.plasholder)
+                .error(R.drawable.error)
+                .listener(new RequestListener<android.graphics.drawable.Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                                                Target<android.graphics.drawable.Drawable> target,
+                                                boolean isFirstResource) {
+                        Log.e(TAG, "Glide load FAILED for: " + model, e);
+                        setLoading(false);
+                        watchdog.removeCallbacks(timeout);
+                        return false; // show error drawable
+                    }
+
+                    @Override
+                    public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model,
+                                                   Target<android.graphics.drawable.Drawable> target,
+                                                   DataSource dataSource, boolean isFirstResource) {
+                        Log.d(TAG, "Glide load OK: " + model + ", source=" + dataSource);
+                        setLoading(false);
+                        watchdog.removeCallbacks(timeout);
+                        return false; // continue normal
+                    }
+                })
+                .into(ivReportPhoto);
+    }
+
     /* -------------------- Medications helpers -------------------- */
 
     /** For combined structure: [{name, dosage}] */
@@ -369,7 +404,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
             String dose = sanitize(m.optString("dosage", null), "N/A");
             String multiName = splitByCommaNewLines(name);
             String multiDose = splitByCommaNewLines(dose);
-            Log.v(TAG, "Med #" + (i + 1) + " name=" + name + " dose=" + dose + " -> rows");
+            Log.e(TAG, "Med #" + (i + 1) + " name=" + name + " dose=" + dose + " -> rows");
             addMedicationRow(i + 1, multiName, multiDose);
         }
     }
