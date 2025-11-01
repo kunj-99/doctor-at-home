@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log; // ✅ LOGS
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,15 +39,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Patient/Human Ongoing tab.
- * - Uses OngoingAdapter (no changes required in adapter).
- * - Smooth UI: diff signature, disabled heavy animations, prefetch enabled.
- * - Silent networking: no Toast/logs; pull-to-refresh + light polling.
- */
 public class HumanOngoingFragment extends Fragment {
 
-    private static final long POLL_INTERVAL_MS = 3000L; // 3s light polling
+    private static final String TAG = "HumanOngoingFragment"; // ✅
+    private static final long POLL_INTERVAL_MS = 3000L;
     private static final String REQ_TAG = "human_ongoing_poll";
 
     // UI
@@ -54,29 +50,30 @@ public class HumanOngoingFragment extends Fragment {
     private SwipeRefreshLayout swipeRefresh;
     private ProgressBar progress;
 
-    // Networking
+    // Net
     private RequestQueue queue;
     private String apiUrl;
     private String patientId;
 
-    // Adapter + backing lists (as OngoingAdapter expects)
+    // Adapter + lists
     private OngoingAdapter adapter;
-    private final List<String>  doctorNames     = new ArrayList<>();
-    private final List<String>  specialties     = new ArrayList<>();
-    private final List<String>  hospitals       = new ArrayList<>();
-    private final List<Float>   ratings         = new ArrayList<>();
-    private final List<String>  profilePictures = new ArrayList<>();
-    private final List<Integer> appointmentIds  = new ArrayList<>();
-    private final List<String>  statuses        = new ArrayList<>();
-    private final List<String>  durations       = new ArrayList<>();
-    private final List<Integer> doctorIds       = new ArrayList<>();
+    private final List<String>  doctorNames       = new ArrayList<>();
+    private final List<String>  specialties       = new ArrayList<>();
+    private final List<String>  hospitals         = new ArrayList<>();
+    private final List<Float>   ratings           = new ArrayList<>();
+    private final List<String>  profilePictures   = new ArrayList<>();
+    private final List<Integer> appointmentIds    = new ArrayList<>();
+    private final List<String>  statuses          = new ArrayList<>();
+    private final List<String>  durations         = new ArrayList<>();   // "6 Years"
+    private final List<Integer> doctorIds         = new ArrayList<>();
+    private final List<Integer> experienceYears   = new ArrayList<>();   // numeric
+    private final List<String>  apptTimeDisplays  = new ArrayList<>();   // "Thu, 09 Oct • 02:15 PM"
+    private final List<Float>   amounts           = new ArrayList<>();   // 650f
 
-    // Live refresh
+    // local
     private final Handler liveHandler = new Handler();
     private Runnable liveRunnable;
     private boolean isPolling = false;
-
-    // Lightweight diff
     private String lastSig = "";
 
     @Nullable
@@ -84,7 +81,6 @@ public class HumanOngoingFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        // Reuse a simple list layout: progress + SwipeRefresh + RecyclerView
         return inflater.inflate(R.layout.fragment_human_ongoing, container, false);
     }
 
@@ -94,13 +90,11 @@ public class HumanOngoingFragment extends Fragment {
         swipeRefresh = root.findViewById(R.id.swipeRefresh);
         progress     = root.findViewById(R.id.progressBar);
 
-        // Recycler tuning for smoothness
         LinearLayoutManager lm = new LinearLayoutManager(requireContext());
         lm.setItemPrefetchEnabled(true);
         recyclerView.setLayoutManager(lm);
         recyclerView.setHasFixedSize(true);
 
-        // Disable change animations to reduce jank when lists update
         RecyclerView.ItemAnimator ia = recyclerView.getItemAnimator();
         if (ia instanceof DefaultItemAnimator) {
             ((DefaultItemAnimator) ia).setSupportsChangeAnimations(false);
@@ -110,30 +104,33 @@ public class HumanOngoingFragment extends Fragment {
 
         queue = Volley.newRequestQueue(requireContext());
 
-        // patient id
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
         if (patientId == null) patientId = "";
-        if (patientId.trim().isEmpty()) return;
+        if (patientId.trim().isEmpty()) {
+            Log.w(TAG, "patient_id is empty; aborting load");
+            return;
+        }
 
         apiUrl = ApiConfig.endpoint("getOngoingAppointment.php");
+        Log.d(TAG, "API URL -> " + apiUrl);
 
-        // Adapter
+        // Adapter with extended signature (time + amount)
         adapter = new OngoingAdapter(
                 requireContext(),
                 doctorNames, specialties, hospitals, ratings, profilePictures,
-                appointmentIds, statuses, durations, doctorIds
+                appointmentIds, statuses, durations,    doctorIds,
+                experienceYears,
+                apptTimeDisplays,
+                amounts
         );
         recyclerView.setAdapter(adapter);
 
-        // Pull-to-refresh
         swipeRefresh.setOnRefreshListener(() -> fetch(false));
 
-        // Initial load
         setLoading(true);
         fetch(true);
 
-        // Polling
         liveRunnable = new Runnable() {
             @Override public void run() {
                 if (!isAdded()) return;
@@ -171,70 +168,124 @@ public class HumanOngoingFragment extends Fragment {
 
     @SuppressLint("NotifyDataSetChanged")
     private void fetch(boolean firstLoad) {
+        Log.d(TAG, "fetch(firstLoad=" + firstLoad + ") sending request...");
         StringRequest req = new StringRequest(
                 Request.Method.POST,
                 apiUrl,
                 resp -> {
                     setLoading(false);
+                    // --- RAW RESPONSE LOG (trim to avoid logcat spam) ---
+                    String preview = resp == null ? "null" : resp.substring(0, Math.min(resp.length(), 800));
+                    Log.d(TAG, "Response(≤800): " + preview);
+
                     try {
                         JSONObject json = new JSONObject(resp);
-                        if (!json.optBoolean("success", false)) { applyEmpty(); return; }
+                        boolean ok = json.optBoolean("success", false);
+                        Log.d(TAG, "JSON success=" + ok);
+                        if (!ok) { applyEmpty(); return; }
 
                         JSONArray arr = json.optJSONArray("appointments");
-                        if (arr == null || arr.length() == 0) { applyEmpty(); return; }
+                        int len = (arr == null) ? 0 : arr.length();
+                        Log.d(TAG, "appointments length=" + len);
+                        if (len == 0) { applyEmpty(); return; }
 
-                        // temp store (human only)
-                        List<Integer> tApptIds = new ArrayList<>();
-                        List<Integer> tDocIds  = new ArrayList<>();
-                        List<String>  tNames   = new ArrayList<>();
-                        List<String>  tSpecs   = new ArrayList<>();
-                        List<String>  tHosp    = new ArrayList<>();
-                        List<Float>   tRating  = new ArrayList<>();
-                        List<String>  tPics    = new ArrayList<>();
-                        List<String>  tStats   = new ArrayList<>();
-                        List<String>  tDur     = new ArrayList<>();
-                        List<Long>    sortKeys = new ArrayList<>();
+                        // temp
+                        List<Integer> tApptIds   = new ArrayList<>();
+                        List<Integer> tDocIds    = new ArrayList<>();
+                        List<String>  tNames     = new ArrayList<>();
+                        List<String>  tSpecs     = new ArrayList<>();
+                        List<String>  tHosp      = new ArrayList<>();
+                        List<Float>   tRating    = new ArrayList<>();
+                        List<String>  tPics      = new ArrayList<>();
+                        List<String>  tStats     = new ArrayList<>();
+                        List<String>  tDur       = new ArrayList<>();
+                        List<Integer> tExpYears  = new ArrayList<>();
+                        List<String>  tTimeDisp  = new ArrayList<>();
+                        List<Float>   tAmounts   = new ArrayList<>();
+                        List<Long>    sortKeys   = new ArrayList<>();
 
-                        for (int i = 0; i < arr.length(); i++) {
+                        for (int i = 0; i < len; i++) {
                             JSONObject a = arr.getJSONObject(i);
 
-                            int isVet = a.optInt("is_vet_case", 0);
-                            if (isVet == 1) continue; // skip vet for this tab
+                            // LOG keys existence for debugging time/amount
+                            boolean hasTimeDisp = a.has("appointment_time_display");
+                            boolean hasAmount   = a.has("amount");
+                            Log.d(TAG, "idx=" + i
+                                    + " appt_id=" + a.optInt("appointment_id", -1)
+                                    + " has(appointment_time_display)=" + hasTimeDisp
+                                    + " has(amount)=" + hasAmount
+                                    + " raw_time='" + a.optString("appointment_time_display", "") + "'"
+                                    + " raw_amount=" + a.optDouble("amount", -1.0));
 
-                            int apptId   = a.optInt("appointment_id", 0);
-                            int docId    = a.optInt("doctor_id", 0);
-                            String date  = a.optString("appointment_date", "");
-                            String time  = a.optString("time_slot", "");
+                            if (a.optInt("is_vet_case", 0) == 1) {
+                                Log.d(TAG, "idx=" + i + " skipped (is_vet_case=1)");
+                                continue;
+                            }
+
+                            int apptId = a.optInt("appointment_id", 0);
+                            int docId  = a.optInt("doctor_id", 0);
+                            String date = a.optString("appointment_date", "");
+                            String time = a.optString("time_slot", "");
 
                             tApptIds.add(apptId);
                             tDocIds.add(docId);
                             tNames.add(a.optString("doctor_name", ""));
                             tSpecs.add(a.optString("specialty", ""));
+                            // hospital chip
                             tHosp.add(a.optString("hospital_name", ""));
-                            tRating.add((float) a.optDouble("experience", 0));
+
+                            tRating.add((float) a.optDouble("rating", 0.0));
+
                             String pic = a.optString("profile_picture", "");
                             if (pic == null || pic.trim().isEmpty()) {
                                 pic = ApiConfig.endpoint("doctor_images/default.png");
                             }
                             tPics.add(pic);
+
                             tStats.add(a.optString("status", ""));
-                            tDur.add(a.optString("experience_duration", ""));
+
+                            // Experience text ("6 Years") — built from number + unit
+                            int number = a.optInt("experience_years", 0);
+                            String unit = safe(a.optString("experience_duration", "")); // "Years"/"Months"
+                            tExpYears.add(number);
+                            String finalDuration;
+                            if (number > 0 && unit.length() > 0) {
+                                finalDuration = number + " " + unit;
+                            } else if (unit.length() > 0) {
+                                finalDuration = unit;
+                            } else if (number > 0) {
+                                finalDuration = number + " Years";
+                            } else {
+                                finalDuration = "";
+                            }
+                            tDur.add(finalDuration);
+
+                            // ✅ FIXED: read actual keys from PHP
+                            String disp = a.optString("appointment_time_display", "");
+                            float amt   = (float) a.optDouble("amount", 0.0);
+                            tTimeDisp.add(disp);
+                            tAmounts.add(amt);
+
+                            Log.d(TAG, "idx=" + i + " parsed -> timeDisp='" + disp + "', amount=" + amt);
+
                             sortKeys.add(buildSortKey(date, time));
                         }
 
-                        // order latest-first
                         List<Integer> order = orderDesc(sortKeys, tApptIds);
 
-                        // final ordered lists
-                        List<Integer> fApptIds = new ArrayList<>();
-                        List<Integer> fDocIds  = new ArrayList<>();
-                        List<String>  fNames   = new ArrayList<>();
-                        List<String>  fSpecs   = new ArrayList<>();
-                        List<String>  fHosp    = new ArrayList<>();
-                        List<Float>   fRating  = new ArrayList<>();
-                        List<String>  fPics    = new ArrayList<>();
-                        List<String>  fStats   = new ArrayList<>();
-                        List<String>  fDur     = new ArrayList<>();
+                        // final
+                        List<Integer> fApptIds   = new ArrayList<>();
+                        List<Integer> fDocIds    = new ArrayList<>();
+                        List<String>  fNames     = new ArrayList<>();
+                        List<String>  fSpecs     = new ArrayList<>();
+                        List<String>  fHosp      = new ArrayList<>();
+                        List<Float>   fRating    = new ArrayList<>();
+                        List<String>  fPics      = new ArrayList<>();
+                        List<String>  fStats     = new ArrayList<>();
+                        List<String>  fDur       = new ArrayList<>();
+                        List<Integer> fExpYears  = new ArrayList<>();
+                        List<String>  fTimeDisp  = new ArrayList<>();
+                        List<Float>   fAmounts   = new ArrayList<>();
 
                         for (int idx : order) {
                             fApptIds.add(tApptIds.get(idx));
@@ -246,27 +297,39 @@ public class HumanOngoingFragment extends Fragment {
                             fPics.add(tPics.get(idx));
                             fStats.add(tStats.get(idx));
                             fDur.add(tDur.get(idx));
+                            fExpYears.add(tExpYears.get(idx));
+                            fTimeDisp.add(tTimeDisp.get(idx));
+                            fAmounts.add(tAmounts.get(idx));
                         }
 
+                        Log.d(TAG, "final sizes -> names=" + fNames.size()
+                                + " timeDisp=" + fTimeDisp.size()
+                                + " amounts=" + fAmounts.size());
+
                         boolean changed = applyIfChanged(
-                                fNames, fSpecs, fHosp, fRating, fPics, fApptIds, fStats, fDur, fDocIds
+                                fNames, fSpecs, fHosp, fRating, fPics, fApptIds, fStats, fDur, fDocIds,
+                                fExpYears, fTimeDisp, fAmounts
                         );
 
+                        Log.d(TAG, "applyIfChanged -> " + changed);
                         if (changed) {
                             recyclerView.setAlpha(0f);
                             recyclerView.animate().alpha(1f).setDuration(180).start();
                         }
 
-                    } catch (JSONException ignored) {
-                        // silent
+                    } catch (JSONException e) {
+                        Log.e(TAG, "JSON parse error: " + e.getMessage(), e);
                     }
                 },
-                err -> setLoading(false)
+                err -> {
+                    setLoading(false);
+                    Log.e(TAG, "Volley error: " + err, err);
+                }
         ) {
-            @Override
-            protected java.util.Map<String, String> getParams() {
+            @Override protected java.util.Map<String, String> getParams() {
                 java.util.Map<String, String> p = new java.util.HashMap<>();
                 p.put("patient_id", patientId);
+                Log.d(TAG, "getParams -> patient_id=" + patientId);
                 return p;
             }
             @Override public Priority getPriority() { return Priority.LOW; }
@@ -276,8 +339,10 @@ public class HumanOngoingFragment extends Fragment {
     }
 
     private void applyEmpty() {
+        Log.w(TAG, "applyEmpty()");
         doctorNames.clear(); specialties.clear(); hospitals.clear(); ratings.clear();
         profilePictures.clear(); appointmentIds.clear(); statuses.clear(); durations.clear(); doctorIds.clear();
+        experienceYears.clear(); apptTimeDisplays.clear(); amounts.clear();
         if (adapter != null) adapter.notifyDataSetChanged();
         lastSig = "";
     }
@@ -291,20 +356,35 @@ public class HumanOngoingFragment extends Fragment {
                                    List<Integer> newApptIds,
                                    List<String> newStatuses,
                                    List<String> newDurations,
-                                   List<Integer> newDoctorIds) {
-
+                                   List<Integer> newDoctorIds,
+                                   List<Integer> newExperienceYears,
+                                   List<String>  newApptTimeDisp,
+                                   List<Float>   newAmounts) {
         String sig = buildSig(newApptIds, newStatuses);
-        if (sig.equals(lastSig)) return false;
+        boolean same = sig.equals(lastSig);
+        Log.d(TAG, "buildSig same=" + same);
+        if (same) return false;
 
-        doctorNames.clear();     doctorNames.addAll(newNames);
-        specialties.clear();     specialties.addAll(newSpecs);
-        hospitals.clear();       hospitals.addAll(newHosp);
-        ratings.clear();         ratings.addAll(newRatings);
-        profilePictures.clear(); profilePictures.addAll(newPics);
-        appointmentIds.clear();  appointmentIds.addAll(newApptIds);
-        statuses.clear();        statuses.addAll(newStatuses);
-        durations.clear();       durations.addAll(newDurations);
-        doctorIds.clear();       doctorIds.addAll(newDoctorIds);
+        doctorNames.clear();       doctorNames.addAll(newNames);
+        specialties.clear();       specialties.addAll(newSpecs);
+        hospitals.clear();         hospitals.addAll(newHosp);
+        ratings.clear();           ratings.addAll(newRatings);
+        profilePictures.clear();   profilePictures.addAll(newPics);
+        appointmentIds.clear();    appointmentIds.addAll(newApptIds);
+        statuses.clear();          statuses.addAll(newStatuses);
+        durations.clear();         durations.addAll(newDurations);
+        doctorIds.clear();         doctorIds.addAll(newDoctorIds);
+        experienceYears.clear();   experienceYears.addAll(newExperienceYears);
+        apptTimeDisplays.clear();  apptTimeDisplays.addAll(newApptTimeDisp);
+        amounts.clear();           amounts.addAll(newAmounts);
+
+        // Extra visibility in logs for first few rows
+        for (int i = 0; i < Math.min(3, appointmentIds.size()); i++) {
+            Log.d(TAG, "Row " + i
+                    + " -> apptId=" + appointmentIds.get(i)
+                    + ", timeDisp='" + apptTimeDisplays.get(i) + "'"
+                    + ", amount=" + amounts.get(i));
+        }
 
         if (adapter != null) adapter.notifyDataSetChanged();
         lastSig = sig;
@@ -319,8 +399,6 @@ public class HumanOngoingFragment extends Fragment {
         }
         return sb.toString();
     }
-
-    /* ---- helpers ---- */
 
     private static String safe(String s) { return s == null ? "" : s.trim(); }
 

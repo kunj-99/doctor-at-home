@@ -150,6 +150,7 @@ public class Register extends AppCompatActivity {
         return true;
     }
 
+    @SuppressLint("SetTextI18n")
     private void registerUser() {
         signup.setEnabled(false);
         signup.setText("Processing...");

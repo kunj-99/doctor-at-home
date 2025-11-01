@@ -178,11 +178,11 @@
                     android:id="@+id/tvConsultationFee"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
                     android:text="₹650"
                     android:textColor="#065F46"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:fontFamily="sans-serif-medium" />
+                    android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
 
