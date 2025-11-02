@@ -37,15 +37,14 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         default void onBookNowClick(JSONObject doctor) {}
     }
 
+    private static final long REFRESH_INTERVAL_MS = 2000L; // 2s polling
+    private static final int  MAX_REQUESTS        = 2;     // Human flow parity
+
     private final Context context;
     private final List<JSONObject> doctors;
     private final int animalCategoryId;
     private final OnDoctorClickListener listener;
 
-    /**
-     * Use this ctor from your Activity:
-     * new VetDoctorsAdapter(this, doctorsList, animalCategoryId, this)
-     */
     public VetDoctorsAdapter(@NonNull Context context,
                              @NonNull List<JSONObject> doctors,
                              int animalCategoryId,
@@ -54,10 +53,9 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         this.doctors = doctors;
         this.animalCategoryId = animalCategoryId;
         this.listener = listener;
-        setHasStableIds(true); // Enable stable IDs to improve recycling during frequent refreshes
+        setHasStableIds(true);
     }
 
-    // Provide stable IDs based on doctor_id
     @Override
     public long getItemId(int position) {
         if (position < 0 || position >= doctors.size()) return RecyclerView.NO_ID;
@@ -110,26 +108,20 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
             h.ivDoctorImage.setImageResource(R.drawable.ic_doctor_placeholder);
         }
 
-        // Initial state from auto_status
+        // Initial button state from auto_status
         h.autoStatus = auto;
         if ("inactive".equalsIgnoreCase(auto)) {
-            h.btnBookNow.setText("Currently Not Accepting");
-            h.btnBookNow.setEnabled(false);
-            h.btnBookNow.setBackgroundColor(
-                    ContextCompat.getColor(ctx, android.R.color.darker_gray)
-            );
+            h.setDisabledState("Currently Not Accepting");
         } else {
-            h.btnBookNow.setEnabled(true);
-            h.btnBookNow.setText("Book Appointment");
-            h.btnBookNow.setBackgroundColor(Color.parseColor("#1976D2"));
+            h.setPrimaryState("Book Appointment");
         }
 
-        // Details tap (optional, delegated)
+        // Item click → doctor details (if needed by your listener)
         h.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onDoctorClick(d);
         });
 
-        // Book flow
+        // Book / Request
         h.btnBookNow.setOnClickListener(v -> {
             if (listener != null) listener.onBookNowClick(d);
 
@@ -137,6 +129,8 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
             intent.putExtra("doctor_id", id);
             intent.putExtra("doctor_name", name);
             intent.putExtra("animal_category_id", animalCategoryId);
+            // carry auto_status for downstream logic/analytics
+            intent.putExtra("auto_status", auto);
 
             if (!(context instanceof android.app.Activity)) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -144,7 +138,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
             context.startActivity(intent);
         });
 
-        // Start auto-refresh of status/counters
+        // Start per-row smooth polling
         h.startAutoRefresh(String.valueOf(id));
     }
 
@@ -153,7 +147,6 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         return doctors.size();
     }
 
-    // Ensure we stop per-row polling when ViewHolders leave the screen/recycle
     @Override
     public void onViewDetachedFromWindow(@NonNull ViewHolder holder) {
         super.onViewDetachedFromWindow(holder);
@@ -180,17 +173,20 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         private final android.os.Handler handler = new android.os.Handler(Looper.getMainLooper());
         private Runnable refreshRunnable;
 
+        // Debounce: avoid overlapping network calls at 2s cadence
+        private boolean requestInFlight = false;
+
         ViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivDoctorImage = itemView.findViewById(R.id.ivDoctorImage);
-            tvDoctorName = itemView.findViewById(R.id.tvDoctorName);
-            tvSpecialization = itemView.findViewById(R.id.tvSpecialization);
-            tvRatingText = itemView.findViewById(R.id.tvRating);
-            tvExperience = itemView.findViewById(R.id.tvExperience);
-            tvLocation = itemView.findViewById(R.id.tvLocation);
-            tvEducation = itemView.findViewById(R.id.tvEducation);
+            ivDoctorImage     = itemView.findViewById(R.id.ivDoctorImage);
+            tvDoctorName      = itemView.findViewById(R.id.tvDoctorName);
+            tvSpecialization  = itemView.findViewById(R.id.tvSpecialization);
+            tvRatingText      = itemView.findViewById(R.id.tvRating);
+            tvExperience      = itemView.findViewById(R.id.tvExperience);
+            tvLocation        = itemView.findViewById(R.id.tvLocation);
+            tvEducation       = itemView.findViewById(R.id.tvEducation);
             tvConsultationFee = itemView.findViewById(R.id.tvConsultationFee);
-            btnBookNow = itemView.findViewById(R.id.btnBookNow);
+            btnBookNow        = itemView.findViewById(R.id.btnBookNow);
 
             ratingBar = itemView.findViewById(R.id.ratingBar);
             tvRequests = itemView.findViewById(R.id.tvRequests);
@@ -200,19 +196,25 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
 
         void startAutoRefresh(String doctorId) {
             stopAutoRefresh();
-            refreshRunnable = () -> {
-                checkDoctorAppointmentStatus(doctorId);
-                handler.postDelayed(refreshRunnable, 5000);
+            refreshRunnable = new Runnable() {
+                @Override public void run() {
+                    checkDoctorAppointmentStatus(doctorId);
+                    handler.postDelayed(this, REFRESH_INTERVAL_MS);
+                }
             };
             handler.post(refreshRunnable);
         }
 
         void stopAutoRefresh() {
             if (refreshRunnable != null) handler.removeCallbacks(refreshRunnable);
+            requestInFlight = false;
         }
 
         @SuppressLint("SetTextI18n")
         private void checkDoctorAppointmentStatus(String doctorId) {
+            if (requestInFlight) return;
+            requestInFlight = true;
+
             String url = ApiConfig.endpoint("checkDoctorAppointment.php", "doctor_id", doctorId);
 
             JsonObjectRequest req = new JsonObjectRequest(
@@ -223,6 +225,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                         int etaMin  = response.optInt("total_eta", 0);
                         boolean hasActive = response.optBoolean("has_active_appointment", false);
 
+                        // Counters
                         tvRequests.setVisibility(View.VISIBLE);
                         tvRequests.setText("Requests: " + reqNum);
 
@@ -248,40 +251,61 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                             tvEta.setVisibility(View.GONE);
                         }
 
+                        // Button state (Human parity)
                         if ("inactive".equalsIgnoreCase(autoStatus)) {
-                            btnBookNow.setText("Currently Not Accepting");
-                            btnBookNow.setEnabled(false);
-                            btnBookNow.setBackgroundColor(
-                                    ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray)
-                            );
-                            return;
-                        }
-
-                        if (hasActive) {
-                            btnBookNow.setText("Request for visit");
-                            btnBookNow.setBackgroundColor(Color.parseColor("#5494DA"));
+                            setDisabledState("Currently Not Accepting");
                         } else {
-                            btnBookNow.setText("Book Appointment");
-                            btnBookNow.setBackgroundColor(Color.parseColor("#1976D2"));
+                            if (hasActive) {
+                                setSecondaryState("Request for visit");
+                            } else {
+                                setPrimaryState("Book Appointment");
+                            }
+                            // spam-throttle: disable if requests >= 2
+                            btnBookNow.setEnabled(reqNum < MAX_REQUESTS);
+                            if (reqNum >= MAX_REQUESTS) {
+                                // subtle visual cue
+                                btnBookNow.setBackgroundColor(
+                                        ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray));
+                            }
                         }
-
-                        // throttle
-                        btnBookNow.setEnabled(reqNum < 2);
+                        requestInFlight = false;
                     },
                     error -> {
+                        // On error, keep UI interactive (don’t confuse user)
                         tvRequests.setVisibility(View.GONE);
                         tvPending.setVisibility(View.GONE);
                         tvEta.setVisibility(View.GONE);
+
                         if (!"inactive".equalsIgnoreCase(autoStatus)) {
-                            btnBookNow.setText("Book Appointment");
+                            setPrimaryState("Book Appointment");
                             btnBookNow.setEnabled(true);
-                            btnBookNow.setBackgroundColor(Color.parseColor("#1976D2"));
                         }
+                        requestInFlight = false;
                     }
             );
 
             RequestQueue q = VolleySingleton.getInstance(itemView.getContext()).getRequestQueue();
+            req.setShouldCache(false);
             q.add(req);
+        }
+
+        void setPrimaryState(String text) {
+            btnBookNow.setEnabled(true);
+            btnBookNow.setText(text);
+            btnBookNow.setBackgroundColor(Color.parseColor("#1976D2")); // primary blue
+        }
+
+        void setSecondaryState(String text) {
+            btnBookNow.setEnabled(true);
+            btnBookNow.setText(text);
+            btnBookNow.setBackgroundColor(Color.parseColor("#5494DA")); // lighter blue
+        }
+
+        void setDisabledState(String text) {
+            btnBookNow.setEnabled(false);
+            btnBookNow.setText(text);
+            btnBookNow.setBackgroundColor(
+                    ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray));
         }
     }
 }

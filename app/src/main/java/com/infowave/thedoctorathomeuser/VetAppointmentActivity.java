@@ -67,6 +67,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     private int doctorId = -1;
     private int animalCategoryId = -1;
     private String doctorName;
+    private String doctorAutoStatus; // carries availability from list
 
     // UI refs
     private Spinner spPincode, spBreed, spVaccination;
@@ -127,6 +128,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         doctorId = getIntent().getIntExtra("doctor_id", -1);
         animalCategoryId = getIntent().getIntExtra("animal_category_id", -1);
         doctorName = getIntent().getStringExtra("doctor_name");
+        doctorAutoStatus = getIntent().getStringExtra("auto_status"); // may be null
         if (doctorName == null) doctorName = "";
 
         if (doctorId == -1 || animalCategoryId == -1) {
@@ -329,10 +331,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                                     if (itm instanceof JSONObject) {
                                         JSONObject v = (JSONObject) itm;
 
-                                        // Backend keys as per your PHP:
-                                        //  id    -> vaccination_id
-                                        //  name  -> vaccination_name
-                                        //  price -> price (double)
                                         int    id    = v.optInt("id", v.optInt("vaccination_id", 0));
                                         String name  = v.optString("name",
                                                 v.optString("vaccination_name",
@@ -340,17 +338,14 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                                                                 v.optString("vaccine_name", "Unknown"))));
                                         double price = v.optDouble("price", 0.0);
 
-                                        // Push SOURCE lists first
                                         vaccinationNameList.add(name);
                                         vaccinationIdList.add(id);
                                         vaccinationPriceList.add(price);
 
-                                        // Build DISPLAY string (perfect mapping by index)
                                         String display = name + " — " + formatPrice(price);
                                         vaccinationDisplayItems.add(display);
 
                                     } else {
-                                        // Fallback if array has strings (rare)
                                         String name = arrVaccinations.getString(i);
                                         vaccinationNameList.add(name);
                                         vaccinationIdList.add(0);
@@ -379,7 +374,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     }
 
     private String formatPrice(double price) {
-        // Show ₹ with 0 decimals when possible, else 2 decimals
         long rounded = Math.round(price);
         if (Math.abs(price - rounded) < 0.005) {
             return "₹ " + rounded;
@@ -397,7 +391,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                     else Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
                 });
 
-        // Use Current Location (same feel as human)
         btnPickLocation.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -408,7 +401,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             }
         });
 
-        // Tap embedded map → open fullscreen overlay
         mapClickCatcherVet.setOnClickListener(v -> openMapOverlay());
     }
 
@@ -418,7 +410,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         googleMap = gMap;
         enableMyLocationLayerIfPermitted();
 
-        // Default center (India) until user picks / current location fetched
         LatLng indiaCenter = new LatLng(22.9734, 78.6569);
         setMarkerAndCamera(indiaCenter, false);
 
@@ -435,7 +426,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             }
         });
 
-        // पहली बार मैप आ गया तो लोकेशन ट्राय करना (human जैसा feel)
+        // first map load → try current location
         loaderutil.showLoader(this);
         fetchAndCenterOnLocation();
     }
@@ -478,7 +469,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             marker = googleMap.addMarker(new MarkerOptions()
                     .position(latLng)
                     .title("Selected Location")
-                    .draggable(true)); // default = RED pin
+                    .draggable(true));
         } else {
             marker.setPosition(latLng);
         }
@@ -487,7 +478,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         else         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f));
     }
 
-    // ---------- Fullscreen overlay map (like human) ----------
+    // ---------- Fullscreen overlay map ----------
     private void openMapOverlay() {
         overlayContainer.setVisibility(View.VISIBLE);
         if (fullscreenMapFragment == null) {
@@ -507,7 +498,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             setupOverlayMap(fullscreenMap);
         }
 
-        // Buttons
         btnCancelOverlay.setOnClickListener(v -> closeMapOverlay(false));
         btnSelectOverlay.setOnClickListener(v -> closeMapOverlay(true));
     }
@@ -534,7 +524,6 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     private void closeMapOverlay(boolean useSelected) {
         overlayContainer.setVisibility(View.GONE);
         if (useSelected && tempOverlayLocation != null) {
-            // Reflect selection on embedded map
             setMarkerAndCamera(tempOverlayLocation, true);
         }
     }
@@ -661,6 +650,11 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         double latitude  = (currentLatLng != null) ? currentLatLng.latitude  : 0.0;
         double longitude = (currentLatLng != null) ? currentLatLng.longitude : 0.0;
 
+        // -------- Derive initial status like HUMAN flow --------
+        String auto = (doctorAutoStatus == null) ? "" : doctorAutoStatus.trim().toLowerCase(Locale.ROOT);
+        boolean isActive = auto.equals("active") || auto.equals("online") || auto.equals("available");
+        String initialStatus = isActive ? "Confirmed" : "Requested";
+
         // Launch pending_bill (same keys you already use)
         Intent intent = new Intent(this, pending_bill.class);
         intent.putExtra("patient_name", ownerName);
@@ -671,7 +665,11 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
         intent.putExtra("doctor_id", String.valueOf(doctorId));
         intent.putExtra("doctorName", doctorName);
-        intent.putExtra("appointment_status", "Requested");
+
+        // *** CRITICAL: status must follow human flow parity ***
+        intent.putExtra("appointment_status", initialStatus);
+        intent.putExtra("status", initialStatus);
+
         intent.putExtra("pincode", pincode);
         intent.putExtra("latitude", latitude);
         intent.putExtra("longitude", longitude);
@@ -685,7 +683,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         intent.putExtra("animal_breed", animalBreed);
         intent.putExtra("vaccination_id", vaccinationId == 0 ? "" : String.valueOf(vaccinationId));
         intent.putExtra("vaccination_name", vaccinationName);
-        // >>> CRITICAL: pass the EXACT selected vaccination price <<<
+        // pass the EXACT selected vaccination price
         intent.putExtra("vaccination_price", vaccinationPrice);
 
         startActivity(intent);
