@@ -12,6 +12,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -46,9 +47,9 @@ import java.util.Set;
 
 /**
  * AnimalReportViewerActivity
- * - If photo exists → show ONLY the photo (full, not cropped) with small padding and the Download button.
- *   Everything else is hidden (including title/date/back/virtual sections).
- * - If no photo → show the virtual report as before (minus created/updated fields).
+ * - If photo exists → show ONLY the photo (full, not cropped) with small padding + Download button.
+ *   Everything else is hidden (title/date/back/virtual sections all gone).
+ * - If no photo → show the virtual report (NO created/updated anywhere).
  */
 public class AnimalReportViewerActivity extends AppCompatActivity {
 
@@ -101,7 +102,6 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
 
         bindViews();
 
-        // Optional back
         if (btnBack != null) btnBack.setOnClickListener(v -> onBackPressed());
         btnDownload.setOnClickListener(v -> downloadAction());
 
@@ -258,22 +258,22 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
     /* -------------------- Bind Report -------------------- */
     @SuppressLint("SetTextI18n")
     private void bindReport(JSONObject r) {
-        // Attachment
+        // Attachment first: Photo-only mode if present
         String rawAttachment = r.optString("attachment_url", null);
         attachmentUrl = isNullish(rawAttachment) ? "" : rawAttachment.trim();
         Log.d(TAG, "attachment_url=" + attachmentUrl);
 
         if (!TextUtils.isEmpty(attachmentUrl)) {
-            // PHOTO-ONLY MODE
-            enterPhotoOnlyMode();                 // hide everything except photo + download
+            // PHOTO-ONLY MODE → hide everything except photo + download
+            enterPhotoOnlyMode();
             ivReportPhoto.setVisibility(View.VISIBLE);
             loadAttachmentWithBlockingLoader(attachmentUrl);
             return; // nothing else to bind
         }
 
-        // ---- NO PHOTO → show virtual report (created/updated removed) ----
+        // ---- NO PHOTO → show virtual report (created/updated REMOVED) ----
 
-        // Header (keep if you want for virtual mode)
+        // Header (optional in virtual mode)
         String title = sanitize(r.optString("report_title", null), "Veterinary Report");
         String date  = sanitize(r.optString("report_date", null), "N/A");
         if (tvReportTitle != null) tvReportTitle.setText(title);
@@ -350,41 +350,61 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         setLoading(false);
     }
 
-    /** PHOTO-ONLY MODE: hide everything except photo and download button; add small padding around photo. */
+    /** PHOTO-ONLY MODE: hide everything except photo and download button; keep all ancestors of both so they stay visible. */
     private void enterPhotoOnlyMode() {
-        int keepPhotoId = R.id.iv_report_photo;
-        int keepDownloadId = R.id.btn_download;
-        int keepLoaderId = R.id.loader;
+        View photo = ivReportPhoto;
+        View download = btnDownload;
+        View loaderView = loader;
 
-        // Hide the entire view tree except the kept views
-        ViewGroup root = findViewById(android.R.id.content);
-        Set<Integer> keep = new HashSet<>();
-        keep.add(keepPhotoId);
-        keep.add(keepDownloadId);
-        keep.add(keepLoaderId);
-        hideTreeExcept(root, keep);
+        // Resolve root (actual activity root view)
+        ViewGroup content = findViewById(android.R.id.content);
+        View rootCandidate = (content != null && content.getChildCount() > 0) ? content.getChildAt(0) : content;
+        ViewGroup root = (rootCandidate instanceof ViewGroup) ? (ViewGroup) rootCandidate : content;
 
-        // Ensure photo takes the space nicely with small margins
-        int pad = (int) (getResources().getDisplayMetrics().density * 12); // ~12dp padding on all sides
+        // Collect kept views + their ancestors up to root
+        Set<View> keepViews = new HashSet<>();
+        addWithAncestors(photo, keepViews, root);
+        addWithAncestors(download, keepViews, root);
+        addWithAncestors(loaderView, keepViews, root);
+
+        // Hide everything else
+        hideTreeExceptViews(root, keepViews);
+
+        // Ensure photo fills nicely with padding
+        int pad = (int) (getResources().getDisplayMetrics().density * 12); // ~12dp
         ivReportPhoto.setPadding(pad, pad, pad, pad);
         ivReportPhoto.setAdjustViewBounds(true);
         ivReportPhoto.setScaleType(ImageView.ScaleType.FIT_CENTER);
+
         ViewGroup.LayoutParams lp = ivReportPhoto.getLayoutParams();
-        lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-        lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
-        ivReportPhoto.setLayoutParams(lp);
+        if (lp != null) {
+            lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            ivReportPhoto.setLayoutParams(lp);
+        }
+        ivReportPhoto.bringToFront();
     }
 
-    private void hideTreeExcept(View view, Set<Integer> keepIds) {
-        if (view == null) return;
-        boolean keep = keepIds.contains(view.getId());
-        if (!keep && view.getId() != android.R.id.content) {
-            view.setVisibility(View.GONE);
+    private void addWithAncestors(@Nullable View v, Set<View> keep, @Nullable View stopAt) {
+        while (v != null) {
+            keep.add(v);
+            if (v == stopAt) break;
+            ViewParent p = v.getParent();
+            if (!(p instanceof View)) break;
+            v = (View) p;
         }
-        if (view instanceof ViewGroup) {
-            ViewGroup vg = (ViewGroup) view;
+    }
+
+    private void hideTreeExceptViews(@Nullable View v, Set<View> keep) {
+        if (v == null) return;
+        boolean mustKeep = keep.contains(v);
+        if (!mustKeep && v.getId() != android.R.id.content) {
+            v.setVisibility(View.GONE);
+        }
+        if (v instanceof ViewGroup) {
+            ViewGroup vg = (ViewGroup) v;
             for (int i = 0; i < vg.getChildCount(); i++) {
-                hideTreeExcept(vg.getChildAt(i), keepIds);
+                hideTreeExceptViews(vg.getChildAt(i), keep);
             }
         }
     }
@@ -404,14 +424,17 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                 .load(url)
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
                 .dontAnimate()
-                .fitCenter()                 // ensure full image (no crop)
+                .fitCenter()
                 .skipMemoryCache(false)
+                .placeholder(android.R.color.transparent)
+                .error(android.R.color.transparent)
                 .listener(new RequestListener<android.graphics.drawable.Drawable>() {
                     @Override
                     public boolean onLoadFailed(@Nullable GlideException e, Object model,
                                                 Target<android.graphics.drawable.Drawable> target,
                                                 boolean isFirstResource) {
                         Log.e(TAG, "Glide load FAILED for: " + model, e);
+                        Toast.makeText(AnimalReportViewerActivity.this, "Failed to load image.", Toast.LENGTH_SHORT).show();
                         setLoading(false);
                         watchdog.removeCallbacks(timeout);
                         return false;
