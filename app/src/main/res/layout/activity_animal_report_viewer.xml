@@ -485,44 +485,6 @@
             </androidx.cardview.widget.CardView>
 
             <!-- System Timestamps -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/card_timestamps"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:paddingBottom="8dp"
-                        android:text="System"
-                        android:textColor="@color/black"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tv_created_at"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Created: -"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/tv_updated_at"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Updated: -"
-                        android:textSize="16sp" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
             <!-- Download Button -->
             <Button
