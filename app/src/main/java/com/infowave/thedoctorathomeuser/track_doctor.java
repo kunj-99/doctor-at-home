@@ -12,6 +12,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,6 +27,9 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.signature.ObjectKey;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -45,64 +49,48 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Track doctor's live location screen with PERFECT black status bars (top & bottom)
- * implemented via scrim Views sized from system bar insets.
- *
- * Layout requirements:
- * - Root view id: @+id/root_container (LinearLayout)
- * - Top scrim View id: @+id/status_bar_scrim
- * - Bottom scrim View id: @+id/navigation_bar_scrim
- * - MapView id: @+id/mapView
- * - Buttons: @+id/button_bill, @+id/button_done
- * - Distance/Duration: @+id/tvDistance, @+id/tvDuration
- */
 public class track_doctor extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
-
-    // If you keep this, it’s unused now (we build full URL inline). Safe to remove.
-    // private static final String GET_LOCATION_URL = ApiConfig.endpoint("get_live_location.php");
-
-    // Your Directions API key (already present in your original)
     private static final String API_KEY = "AIzaSyCkUxQSJ1jNt0q_CcugieFl5vezsNAUxe0";
+    private static final String DEFAULT_DOCTOR_IMAGE_URL =
+            "https://thedoctorathome.in/doctor_images/default.png";
 
     private MapView mapView;
     private GoogleMap googleMap;
     private Marker doctorMarker;
     private Marker userMarker;
     private Polyline currentPolyline;
+
     private final Handler handler = new Handler();
     private Runnable updateRunnable;
 
-    private String doctorId;
-    private String appointmentId;
+    // Read as String to avoid ClassCastException (you passed String extras)
+    private String doctorId = "";
+    private String appointmentId = "";
 
     private FusedLocationProviderClient fusedLocationClient;
     private LatLng userLocation;
 
-    private TextView tvDistance, tvDuration;
+    private TextView tvDistance, tvDuration, tvDoctorName;
+    private ImageView ivDoctorPhoto;
     private RequestQueue requestQueue;
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // Lifecycle
-    // ─────────────────────────────────────────────────────────────────────────────
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_track_doctor);
 
-        // ── Perfect black system bars using scrim Views (top & bottom) ──────────
+        // Perfect black system bars with scrims
         getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         getWindow().setStatusBarColor(ContextCompat.getColor(this, android.R.color.black));
         getWindow().setNavigationBarColor(ContextCompat.getColor(this, android.R.color.black));
-
         WindowInsetsControllerCompat controller =
                 new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
-        controller.setAppearanceLightStatusBars(false);     // white icons
-        controller.setAppearanceLightNavigationBars(false); // white icons
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
 
         final View statusScrim = findViewById(R.id.status_bar_scrim);
         final View navScrim = findViewById(R.id.navigation_bar_scrim);
@@ -110,32 +98,33 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-
             if (statusScrim != null) {
                 ViewGroup.LayoutParams lpTop = statusScrim.getLayoutParams();
                 lpTop.height = sys.top;
                 statusScrim.setLayoutParams(lpTop);
                 statusScrim.setVisibility(sys.top > 0 ? View.VISIBLE : View.GONE);
             }
-
             if (navScrim != null) {
                 ViewGroup.LayoutParams lpBot = navScrim.getLayoutParams();
-                lpBot.height = sys.bottom; // 0 on gesture nav
+                lpBot.height = sys.bottom;
                 navScrim.setLayoutParams(lpBot);
                 navScrim.setVisibility(sys.bottom > 0 ? View.VISIBLE : View.GONE);
             }
-
-            return insets; // Don’t consume; let child views layout normally
+            return insets;
         });
-        // ────────────────────────────────────────────────────────────────────────
 
-        tvDistance = findViewById(R.id.tvDistance);
-        tvDuration = findViewById(R.id.tvDuration);
+        tvDistance    = findViewById(R.id.tvDistance);
+        tvDuration    = findViewById(R.id.tvDuration);
+        tvDoctorName  = findViewById(R.id.doctor_name);   // ensure exists in XML
+        ivDoctorPhoto = findViewById(R.id.civ_profile);  // ensure exists in XML
 
-        doctorId = String.valueOf(getIntent().getIntExtra("doctor_id", -1));
-        appointmentId = String.valueOf(getIntent().getIntExtra("appointment_id", -1));
-
-        if (doctorId.equals("-1") || appointmentId.equals("-1")) {
+        // Read extras as String (fixes ClassCastException from getIntExtra)
+        Intent it = getIntent();
+        if (it != null) {
+            doctorId = nvl(it.getStringExtra("doctor_id"));
+            appointmentId = nvl(it.getStringExtra("appointment_id"));
+        }
+        if (doctorId.isEmpty() || appointmentId.isEmpty()) {
             Toast.makeText(this, "Could not load appointment. Please try again.", Toast.LENGTH_LONG).show();
             finish();
             return;
@@ -144,17 +133,22 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
+            ActivityCompat.requestPermissions(
+                    this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_PERMISSION_REQUEST_CODE);
+                    LOCATION_PERMISSION_REQUEST_CODE
+            );
         } else {
             fetchUserLocation();
         }
 
         mapView = findViewById(R.id.mapView);
-        Bundle mapBundle = (savedInstanceState != null) ? savedInstanceState.getBundle(MAPVIEW_BUNDLE_KEY) : null;
-        mapView.onCreate(mapBundle);
-        mapView.getMapAsync(this);
+        if (mapView != null) {
+            Bundle mapBundle = (savedInstanceState != null)
+                    ? savedInstanceState.getBundle(MAPVIEW_BUNDLE_KEY) : null;
+            mapView.onCreate(mapBundle);
+            mapView.getMapAsync(this);
+        }
 
         requestQueue = Volley.newRequestQueue(this);
 
@@ -162,8 +156,13 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         Button buttonDone = findViewById(R.id.button_done);
 
         buttonBill.setOnClickListener(v -> {
+            int apptIdInt = parseIntSafe(appointmentId, -1);
+            if (apptIdInt <= 0) {
+                Toast.makeText(this, "Invalid appointment ID.", Toast.LENGTH_SHORT).show();
+                return;
+            }
             Intent intent = new Intent(track_doctor.this, complet_bill.class);
-            intent.putExtra("appointment_id", Integer.parseInt(appointmentId));
+            intent.putExtra("appointment_id", apptIdInt);
             startActivity(intent);
         });
 
@@ -173,6 +172,9 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
             startActivity(intent);
             finish();
         });
+
+        // Fetch doctor name + photo dynamically using your existing PHP
+        fetchDoctorBriefUsingExistingApi();
     }
 
     @Override
@@ -180,7 +182,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         googleMap = map;
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
-            googleMap.setMyLocationEnabled(true);
+            try { googleMap.setMyLocationEnabled(true); } catch (SecurityException ignored) {}
         }
         startLocationUpdates();
     }
@@ -197,36 +199,97 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         handler.post(updateRunnable);
     }
 
-    private void fetchLiveLocation() {
-        String url = ApiConfig.endpoint("get_live_location.php", "doctor_id", doctorId) + "&appointment_id=" + appointmentId;
+    /** Use existing fetch_doctor.php */
+    private void fetchDoctorBriefUsingExistingApi() {
+        String url = ApiConfig.endpoint("fetch_doctor.php", "doctor_id", doctorId);
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        JsonObjectRequest req = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
+                resp -> {
+                    try {
+                        if (!resp.optBoolean("success", false)) return;
+                        JSONObject data = resp.optJSONObject("data");
+                        if (data == null) return;
+
+                        String name = data.optString("full_name", "");
+                        String pic  = cleanUrlOrDefault(data.optString("profile_picture", ""));
+
+                        if (tvDoctorName != null) tvDoctorName.setText(name);
+
+                        if (ivDoctorPhoto != null) {
+                            Glide.with(getApplicationContext())
+                                    .load(pic)
+                                    .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                                    .signature(new ObjectKey(pic))
+                                    .thumbnail(0.25f)
+                                    .circleCrop()
+                                    .dontAnimate()
+                                    .placeholder(R.drawable.ic_doctor_placeholder)
+                                    .error(R.drawable.ic_doctor_placeholder)
+                                    .into(ivDoctorPhoto);
+                        }
+                    } catch (Exception ignored) { }
+                },
+                error -> { /* silent */ }
+        );
+        requestQueue.add(req);
+    }
+
+    private static String cleanUrlOrDefault(String raw) {
+        if (raw == null) return DEFAULT_DOCTOR_IMAGE_URL;
+        String u = raw.trim();
+        if ((u.startsWith("\"") && u.endsWith("\"")) || (u.startsWith("'") && u.endsWith("'"))) {
+            u = u.substring(1, u.length() - 1).trim();
+        }
+        if (u.isEmpty() || "null".equalsIgnoreCase(u)) return DEFAULT_DOCTOR_IMAGE_URL;
+        if (u.startsWith("http://") || u.startsWith("https://")) {
+            int secondHttps = u.indexOf("https://", 8);
+            int secondHttp  = u.indexOf("http://", 7);
+            int idx = -1;
+            if (secondHttps >= 0) idx = secondHttps;
+            else if (secondHttp >= 0) idx = secondHttp;
+            if (idx > 0) return u.substring(idx); // fix double-prefix
+            return u;
+        }
+        // If older rows store relative paths and you want to force absolute:
+        // return "https://thedoctorathome.in/doctor_images/" + u;
+        return DEFAULT_DOCTOR_IMAGE_URL;
+    }
+
+    private void fetchLiveLocation() {
+        String url = ApiConfig.endpoint("get_live_location.php", "doctor_id", doctorId)
+                + "&appointment_id=" + appointmentId;
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
                 response -> {
                     try {
                         if (response.has("live_latitude") && response.has("live_longitude")) {
                             double lat = response.getDouble("live_latitude");
                             double lon = response.getDouble("live_longitude");
                             updateDoctorMarker(lat, lon);
-                        } else {
-                            Toast.makeText(track_doctor.this, "Doctor location not yet available.", Toast.LENGTH_SHORT).show();
                         }
-                    } catch (Exception e) {
-                        Toast.makeText(track_doctor.this, "Could not update doctor location.", Toast.LENGTH_SHORT).show();
-                    }
+                    } catch (Exception ignored) { }
                 },
-                error -> Toast.makeText(track_doctor.this, "Unable to get doctor location. Please check your internet.", Toast.LENGTH_SHORT).show());
+                error -> { /* silent */ }
+        );
         requestQueue.add(request);
     }
 
     private void updateDoctorMarker(double lat, double lon) {
         if (googleMap == null) return;
         LatLng doctorPosition = new LatLng(lat, lon);
+
         if (doctorMarker == null) {
             doctorMarker = googleMap.addMarker(new MarkerOptions()
                     .position(doctorPosition)
                     .title("Doctor Location")
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.doctor)));
-            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(doctorPosition, 15));
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(doctorPosition, 15f));
         } else {
             doctorMarker.setPosition(doctorPosition);
         }
@@ -237,9 +300,8 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
 
     private void fetchUserLocation() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
+                != PackageManager.PERMISSION_GRANTED) return;
+
         fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
             if (location != null) {
                 userLocation = new LatLng(location.getLatitude(), location.getLongitude());
@@ -256,21 +318,21 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                 if (doctorMarker != null) {
                     calculateDistanceAndDuration(doctorMarker.getPosition(), userLocation);
                 }
-            } else {
-                Toast.makeText(this, "Unable to access your location.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void calculateDistanceAndDuration(LatLng origin, LatLng destination) {
         String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
-        String str_dest = "destination=" + destination.latitude + "," + destination.longitude;
-        String mode = "mode=driving";
+        String str_dest   = "destination=" + destination.latitude + "," + destination.longitude;
+        String mode       = "mode=driving";
         String parameters = str_origin + "&" + str_dest + "&" + mode + "&key=" + API_KEY;
-        String output = "json";
-        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + parameters;
+        String url        = "https://maps.googleapis.com/maps/api/directions/json?" + parameters;
 
-        @SuppressLint("SetTextI18n") JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET,
+                url,
+                null,
                 response -> {
                     try {
                         JSONArray routes = response.getJSONArray("routes");
@@ -288,20 +350,19 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                             String polylinePoints = overviewPolyline.getString("points");
                             List<LatLng> polylineList = decodePoly(polylinePoints);
 
-                            if (currentPolyline != null) {
-                                currentPolyline.remove();
-                            }
+                            if (currentPolyline != null) currentPolyline.remove();
                             PolylineOptions polylineOptions = new PolylineOptions()
                                     .addAll(polylineList)
-                                    .width(10)
+                                    .width(10f)
                                     .color(Color.BLUE);
-                            currentPolyline = googleMap.addPolyline(polylineOptions);
+                            if (googleMap != null) {
+                                currentPolyline = googleMap.addPolyline(polylineOptions);
+                            }
                         }
-                    } catch (Exception e) {
-                        Toast.makeText(this, "Unable to show route.", Toast.LENGTH_SHORT).show();
-                    }
+                    } catch (Exception ignored) { }
                 },
-                error -> Toast.makeText(this, "Could not connect to directions service.", Toast.LENGTH_SHORT).show());
+                error -> { /* silent */ }
+        );
         requestQueue.add(request);
     }
 
@@ -309,29 +370,20 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         List<LatLng> poly = new ArrayList<>();
         int index = 0, len = encoded.length();
         int lat = 0, lng = 0;
-
         while (index < len) {
             int b, shift = 0, result = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1f) << shift;
-                shift += 5;
-            } while (b >= 0x20);
+            do { b = encoded.charAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; }
+            while (b >= 0x20);
             int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
             lat += dlat;
 
-            shift = 0;
-            result = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1f) << shift;
-                shift += 5;
-            } while (b >= 0x20);
+            shift = 0; result = 0;
+            do { b = encoded.charAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; }
+            while (b >= 0x20);
             int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
             lng += dlng;
 
-            LatLng p = new LatLng(((double) lat / 1E5), ((double) lng / 1E5));
-            poly.add(p);
+            poly.add(new LatLng(((double) lat / 1E5), ((double) lng / 1E5)));
         }
         return poly;
     }
@@ -339,41 +391,41 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onResume() {
         super.onResume();
-        mapView.onResume();
-        if (googleMap != null && updateRunnable != null) {
-            handler.post(updateRunnable);
-        }
+        if (mapView != null) mapView.onResume();
+        if (updateRunnable != null) handler.post(updateRunnable);
     }
 
     @Override
     protected void onPause() {
+        if (mapView != null) mapView.onPause();
+        if (updateRunnable != null) handler.removeCallbacks(updateRunnable);
         super.onPause();
-        mapView.onPause();
-        handler.removeCallbacks(updateRunnable);
     }
 
     @Override
     protected void onDestroy() {
+        if (updateRunnable != null) handler.removeCallbacks(updateRunnable);
+        if (mapView != null) mapView.onDestroy();
         super.onDestroy();
-        mapView.onDestroy();
-        handler.removeCallbacks(updateRunnable);
     }
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        Bundle mapBundle = outState.getBundle(MAPVIEW_BUNDLE_KEY);
-        if (mapBundle == null) {
-            mapBundle = new Bundle();
-            outState.putBundle(MAPVIEW_BUNDLE_KEY, mapBundle);
+        if (mapView != null) {
+            Bundle mapBundle = outState.getBundle(MAPVIEW_BUNDLE_KEY);
+            if (mapBundle == null) {
+                mapBundle = new Bundle();
+                outState.putBundle(MAPVIEW_BUNDLE_KEY, mapBundle);
+            }
+            mapView.onSaveInstanceState(mapBundle);
         }
-        mapView.onSaveInstanceState(mapBundle);
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        mapView.onLowMemory();
+        if (mapView != null) mapView.onLowMemory();
     }
 
     @Override
@@ -382,10 +434,19 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 fetchUserLocation();
+                if (googleMap != null) {
+                    try { googleMap.setMyLocationEnabled(true); } catch (SecurityException ignored) { }
+                }
             } else {
                 Toast.makeText(this, "Location permission is required for tracking.", Toast.LENGTH_SHORT).show();
             }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    private static String nvl(String s) { return s == null ? "" : s.trim(); }
+
+    private static int parseIntSafe(String s, int fallback) {
+        try { return Integer.parseInt(nvl(s)); } catch (Exception e) { return fallback; }
     }
 }

@@ -5,8 +5,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.InputFilter;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +24,7 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -64,6 +68,32 @@ public class available_doctor extends AppCompatActivity {
 
     private RequestQueue queue;
 
+    // === Auto refresh controls ===
+    private static final long REFRESH_INTERVAL_MS = 5000L; // change as you like (e.g., 5000 for 5s)
+    private final Handler refreshHandler = new Handler(Looper.getMainLooper());
+    private boolean isPollingActive = false;
+    private boolean isFetching = false;      // prevent overlapping calls
+    private boolean isQuietRefresh = false;  // suppress loader/toast during background refresh
+
+    private final Runnable refreshRunnable = new Runnable() {
+        @Override public void run() {
+            if (!isPollingActive) return;
+            if (TextUtils.isEmpty(userPincode) || TextUtils.isEmpty(categoryId)) {
+                scheduleNext();
+                return;
+            }
+            if (isFetching) { // skip this tick if a request is running
+                scheduleNext();
+                return;
+            }
+            isQuietRefresh = true; // background: no loader / no toast
+            // update auto-status first, then fetch
+            updateDoctorAutoStatus(() -> fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false));
+            scheduleNext();
+        }
+        private void scheduleNext() { refreshHandler.postDelayed(this, REFRESH_INTERVAL_MS); }
+    };
+
     // Absolute fallback image (no ApiConfig prefixing)
     private static final String DEFAULT_DOCTOR_IMAGE_URL =
             "https://thedoctorathome.in/doctor_images/default.png";
@@ -104,7 +134,7 @@ public class available_doctor extends AppCompatActivity {
                 });
             }
         } catch (Throwable ignored) { }
-        // -----------------------------------------------
+
 
         queue = Volley.newRequestQueue(this);
 
@@ -120,6 +150,10 @@ public class available_doctor extends AppCompatActivity {
         tvNoDoctors = findViewById(R.id.tv_no_doctors);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // subtle change animations on item updates
+        if (recyclerView.getItemAnimator() instanceof DefaultItemAnimator) {
+            ((DefaultItemAnimator) recyclerView.getItemAnimator()).setSupportsChangeAnimations(true);
+        }
 
         // Attach an EMPTY adapter immediately to avoid: “No adapter attached; skipping layout”
         attachEmptyAdapter();
@@ -137,9 +171,10 @@ public class available_doctor extends AppCompatActivity {
             finish();
         });
 
-        // Pull-to-refresh
+        // Pull-to-refresh (manual)
         swipeRefresh.setOnRefreshListener(() -> {
             if (!userPincode.isEmpty() && categoryId != null) {
+                isQuietRefresh = false; // user intent → show normal UI
                 updateDoctorAutoStatus(() -> fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false));
             } else {
                 swipeRefresh.setRefreshing(false);
@@ -155,6 +190,7 @@ public class available_doctor extends AppCompatActivity {
                     userPincode = s.toString().trim();
                     if (categoryId != null) {
                         swipeRefresh.setRefreshing(true);
+                        isQuietRefresh = false;
                         fetchDoctorsByPincodeAndCategory(userPincode, categoryId, true);
                     }
                 }
@@ -163,6 +199,7 @@ public class available_doctor extends AppCompatActivity {
                 if (s.toString().trim().isEmpty() && !defaultPincode.isEmpty()) {
                     userPincode = defaultPincode;
                     swipeRefresh.setRefreshing(true);
+                    isQuietRefresh = false;
                     fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
                 }
             }
@@ -174,6 +211,7 @@ public class available_doctor extends AppCompatActivity {
             if (!pincode.isEmpty() && categoryId != null) {
                 userPincode = pincode;
                 swipeRefresh.setRefreshing(true);
+                isQuietRefresh = false;
                 fetchDoctorsByPincodeAndCategory(pincode, categoryId, true);
             } else {
                 Toast.makeText(available_doctor.this, "Please enter a valid pincode.", Toast.LENGTH_SHORT).show();
@@ -191,6 +229,27 @@ public class available_doctor extends AppCompatActivity {
                 Toast.makeText(available_doctor.this, "Could not find your user profile. Please log in again.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        startPolling();
+    }
+
+    @Override protected void onPause() {
+        super.onPause();
+        stopPolling();
+    }
+
+    private void startPolling() {
+        if (isPollingActive) return;
+        isPollingActive = true;
+        refreshHandler.postDelayed(refreshRunnable, REFRESH_INTERVAL_MS);
+    }
+
+    private void stopPolling() {
+        isPollingActive = false;
+        refreshHandler.removeCallbacksAndMessages(null);
     }
 
     private void attachEmptyAdapter() {
@@ -225,6 +284,7 @@ public class available_doctor extends AppCompatActivity {
                         return;
                     }
                     swipeRefresh.setRefreshing(true);
+                    isQuietRefresh = false;
                     fetchDoctorsByPincodeAndCategory(userPincode, categoryId, false);
                 },
                 error -> {
@@ -237,6 +297,9 @@ public class available_doctor extends AppCompatActivity {
 
     private void fetchDoctorsByPincodeAndCategory(String pincode, String categoryId, boolean userSearch) {
         String url = ApiConfig.endpoint("getDoctorsByCategory.php", "pincode", pincode, "category_id", categoryId);
+
+        if (isFetching) return;
+        isFetching = true;
 
         JsonArrayRequest req = new JsonArrayRequest(Request.Method.GET, url, null,
                 response -> {
@@ -258,7 +321,6 @@ public class available_doctor extends AppCompatActivity {
                             newHospitals.add(d.optString("hospital_affiliation", ""));
                             newRatings.add((float) d.optDouble("rating", 0));
 
-                            // Use image exactly as provided by API; clean up any accidental double-prefix
                             String raw = d.optString("profile_picture", "");
                             String profilePicUrl = cleanUrl(raw);
                             newImageUrls.add(profilePicUrl);
@@ -267,8 +329,18 @@ public class available_doctor extends AppCompatActivity {
                             newAutoStatuses.add(d.optString("auto_status", "Inactive"));
                         }
 
-                        boolean changed = !newDoctorIds.equals(doctorIds) || !newAutoStatuses.equals(autoStatuses);
-                        if (changed) {
+                        boolean listChanged =
+                                !newDoctorIds.equals(doctorIds) ||
+                                        !newNames.equals(names) ||
+                                        !newSpecialties.equals(specialties) ||
+                                        !newHospitals.equals(hospitals) ||
+                                        !newRatings.equals(ratings) ||
+                                        !newImageUrls.equals(imageUrls) ||
+                                        !newDuration.equals(Duration);
+
+                        boolean onlyStatusChanged = !newAutoStatuses.equals(autoStatuses) && !listChanged;
+
+                        if (listChanged) {
                             doctorIds.clear(); doctorIds.addAll(newDoctorIds);
                             names.clear(); names.addAll(newNames);
                             specialties.clear(); specialties.addAll(newSpecialties);
@@ -284,31 +356,45 @@ public class available_doctor extends AppCompatActivity {
                                 adapter.notifyDataSetChanged();
                             }
 
-                            recyclerView.setAlpha(0f);
-                            recyclerView.animate().alpha(1f).setDuration(300).start();
+                            // subtle fade only on big swaps (first load / major change)
+                            if (!isQuietRefresh) {
+                                recyclerView.setAlpha(0f);
+                                recyclerView.animate().alpha(1f).setDuration(250).start();
+                            }
+                        } else if (onlyStatusChanged) {
+                            // Fast path: only the status labels changed → rebind all items
+                            autoStatuses.clear(); autoStatuses.addAll(newAutoStatuses);
+                            adapter.notifyItemRangeChanged(0, autoStatuses.size());
                         }
 
                         tvNoDoctors.setVisibility(doctorIds.isEmpty() ? View.VISIBLE : View.GONE);
                         recyclerView.setVisibility(doctorIds.isEmpty() ? View.GONE : View.VISIBLE);
 
-                        if (doctorIds.isEmpty()) {
+                        if (doctorIds.isEmpty() && !isQuietRefresh) {
                             Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
                         }
 
                     } catch (JSONException e) {
-                        Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                        if (!isQuietRefresh) {
+                            Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                        }
                     } finally {
-                        try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
+                        isFetching = false;
+                        try { if (!isQuietRefresh) loaderutil.hideLoader(); } catch (Throwable ignored) { }
                         if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
+                        isQuietRefresh = false; // reset
                     }
                 },
                 error -> {
-                    tvNoDoctors.setVisibility(View.VISIBLE);
-                    recyclerView.setVisibility(View.GONE);
-                    Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
-
-                    try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
+                    isFetching = false;
+                    if (!isQuietRefresh) {
+                        tvNoDoctors.setVisibility(View.VISIBLE);
+                        recyclerView.setVisibility(View.GONE);
+                        Toast.makeText(this, "Currently no doctors at your pincode.", Toast.LENGTH_SHORT).show();
+                        try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
+                    }
                     if (swipeRefresh.isRefreshing()) swipeRefresh.setRefreshing(false);
+                    isQuietRefresh = false;
                 }
         );
 
@@ -318,38 +404,27 @@ public class available_doctor extends AppCompatActivity {
 
     /**
      * Returns a clean, absolute URL for an image without any double-prefix.
-     * Rules:
-     *  - If empty → use DEFAULT_DOCTOR_IMAGE_URL
-     *  - If already starts with http/https → return as-is
-     *  - If it accidentally contains ".../doctor_images/https://..." → strip the leading part
-     *  - Otherwise return as-is (no prefixing here by design)
      */
     private String cleanUrl(String raw) {
         if (raw == null) return DEFAULT_DOCTOR_IMAGE_URL;
         String u = raw.trim();
-        // strip quotes if any (rare server bugs)
         if ((u.startsWith("\"") && u.endsWith("\"")) || (u.startsWith("'") && u.endsWith("'"))) {
             u = u.substring(1, u.length() - 1).trim();
         }
         if (u.isEmpty() || "null".equalsIgnoreCase(u)) {
             return DEFAULT_DOCTOR_IMAGE_URL;
         }
-        // If it already has a scheme, return as-is (FULL URL case)
         if (u.startsWith("http://") || u.startsWith("https://")) {
-            // Fix the specific double-prefix pattern seen in logs:
-            // https://domain/doctor_images/https://domain/doctor_images/file.jpg
-            int secondHttps = u.indexOf("https://", 8); // find after the first scheme
+            int secondHttps = u.indexOf("https://", 8);
             int secondHttp  = u.indexOf("http://", 7);
             int idx = -1;
             if (secondHttps >= 0) idx = secondHttps;
             else if (secondHttp >= 0) idx = secondHttp;
             if (idx > 0) {
-                // Keep only from the second scheme onward
                 return u.substring(idx);
             }
             return u;
         }
-        // Relative/filename case: leave untouched (backend should now send full URLs)
         return u;
     }
 

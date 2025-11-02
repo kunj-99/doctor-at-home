@@ -2,14 +2,17 @@ package com.infowave.thedoctorathomeuser;
 
 public class VetAppointment {
 
-    // Core fields (same as your original)
-    private final String petTitle;   // e.g., "Bruno (Dog)"
-    private final String reason;     // e.g., "Skin allergy consultation"
-    private final String vetName;    // e.g., "Dr. K. Desai"
-    private final String when;       // e.g., "Thu, 09 Oct • 02:15 PM"
-    private final String amount;     // e.g., "₹650"
-    private final String status;     // e.g., "Ongoing" | "Scheduled"
-    private final String imageUrl;   // optional avatar URL
+    private final String petTitle;
+    private final String reason;
+    private final String vetName;
+    private final String when;
+    private final String amount;
+    private final String status;
+    private final String imageUrl;
+
+    // NEW: ids used for tracking
+    private final String doctorId;
+    private final String appointmentId;
 
     public VetAppointment(String petTitle,
                           String reason,
@@ -17,32 +20,29 @@ public class VetAppointment {
                           String when,
                           String amount,
                           String status,
-                          String imageUrl) {
-        // Null-safety: empty string fallback to avoid NPEs in adapters
-        this.petTitle = safe(petTitle);
-        this.reason   = safe(reason);
-        this.vetName  = safe(vetName);
-        this.when     = safe(when);
-        this.amount   = safe(amount);
-        this.status   = safe(status);
-        this.imageUrl = safe(imageUrl);
+                          String imageUrl,
+                          String doctorId,
+                          String appointmentId) {
+        this.petTitle = petTitle;
+        this.reason = reason;
+        this.vetName = vetName;
+        this.when = when;
+        this.amount = amount;
+        this.status = status;
+        this.imageUrl = imageUrl;
+        this.doctorId = doctorId;
+        this.appointmentId = appointmentId;
     }
 
-    // -------- Original getters (backward compatible) --------
     public String getPetTitle() { return petTitle; }
-    public String getReason()   { return reason; }
-    public String getVetName()  { return vetName; }
-    public String getWhen()     { return when; }
-    public String getAmount()   { return amount; }
-    public String getStatus()   { return status; }
+    public String getReason() { return reason; }
+    public String getVetName() { return vetName; }
+    public String getWhen() { return when; }
+    public String getAmount() { return amount; }
+    public String getStatus() { return status; }
     public String getImageUrl() { return imageUrl; }
 
-    // -------- Convenience getters (used by new fragment/adapters) --------
-    public String getTitle()        { return petTitle; }   // maps to petTitle
-    public String getSubtitle()     { return reason; }     // maps to reason
-    public String getDoctorName()   { return vetName; }    // maps to vetName
-    public String getPrice()        { return amount; }     // maps to amount
-
-    // -------- Utility --------
-    private static String safe(String s) { return s == null ? "" : s; }
+    // NEW getters
+    public String getDoctorId() { return doctorId; }
+    public String getAppointmentId() { return appointmentId; }
 }

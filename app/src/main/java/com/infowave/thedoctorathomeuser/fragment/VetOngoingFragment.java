@@ -41,7 +41,7 @@ import java.util.Locale;
 
 /**
  * Vet/Animal Ongoing tab.
- * - Uses VetOngoingAdapter (unchanged).
+ * - Uses VetOngoingAdapter.
  * - Silent networking, pull-to-refresh, light polling.
  * - Diff signature to minimize UI churn.
  */
@@ -77,7 +77,6 @@ public class VetOngoingFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        // Use a simple list layout; create res/layout/fragment_vet_ongoing.xml same as human layout (IDs: progressBar, swipeRefresh, recyclerView)
         return inflater.inflate(R.layout.fragment_vet_ongoing, container, false);
     }
 
@@ -170,7 +169,7 @@ public class VetOngoingFragment extends Fragment {
                         // temp vet rows + sort keys
                         List<VetAppointment> tItems = new ArrayList<>();
                         List<Long> sortKeys = new ArrayList<>();
-                        List<Integer> idOrder = new ArrayList<>(); // use index as id for a tie-breaker
+                        List<Integer> idOrder = new ArrayList<>(); // tie-breaker
 
                         for (int i = 0; i < arr.length(); i++) {
                             JSONObject a = arr.getJSONObject(i);
@@ -178,15 +177,21 @@ public class VetOngoingFragment extends Fragment {
                             int isVet = a.optInt("is_vet_case", 0);
                             if (isVet != 1) continue; // skip humans
 
-                            String animalName = a.optString("animal_name", "");
-                            String reason     = a.optString("reason_for_visit", "");
-                            String doctor     = a.optString("doctor_name", "");
-                            String date       = a.optString("appointment_date", "");
-                            String time       = a.optString("time_slot", "");
-                            String whenLabel  = a.optString("when_text", "");
-                            String fee        = a.optString("fee_text", a.optString("fee",""));
-                            String status     = a.optString("status", "");
-                            String img        = a.optString("profile_picture", "");
+                            String animalName   = a.optString("animal_name", "");
+                            String reason       = a.optString("reason_for_visit", "");
+                            String doctor       = a.optString("doctor_name", "");
+                            String date         = a.optString("appointment_date", "");
+                            String time         = a.optString("time_slot", "");
+                            String whenLabel    = a.optString("when_text", "");
+                            String fee          = a.optString("fee_text", a.optString("fee",""));
+                            String status       = a.optString("status", "");
+                            String img          = a.optString("profile_picture", "");
+
+                            // NEW: IDs used for "Track Doctor"
+                            String doctorId     = a.optString("doctor_id",
+                                    a.optString("doctorId", "")); // alternate key safety
+                            String appointmentId= a.optString("appointment_id",
+                                    a.optString("appt_id", ""));  // alternate key safety
 
                             String title = (animalName == null || animalName.trim().isEmpty()) ? "Pet" : animalName.trim();
                             String when  = !isEmpty(whenLabel) ? whenLabel : (safe(date) + (isEmpty(time) ? "" : (" • " + safe(time))));
@@ -199,7 +204,9 @@ public class VetOngoingFragment extends Fragment {
                                     safe(when),
                                     price,
                                     safe(status),
-                                    safe(img)
+                                    safe(img),
+                                    safe(doctorId),
+                                    safe(appointmentId)
                             ));
 
                             sortKeys.add(buildSortKey(date, time));
