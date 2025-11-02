@@ -11,6 +11,7 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -39,13 +40,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 /**
- * AnimalReportViewerActivity — When an attachment photo exists:
- *  - Hides virtual report fields/sections
- *  - Loads image full (no crop): FIT_CENTER + adjustViewBounds
- *  - Download keeps working through Android DownloadManager
+ * AnimalReportViewerActivity
+ * - If photo exists → show ONLY the photo (full, not cropped) with small padding and the Download button.
+ *   Everything else is hidden (including title/date/back/virtual sections).
+ * - If no photo → show the virtual report as before (minus created/updated fields).
  */
 public class AnimalReportViewerActivity extends AppCompatActivity {
 
@@ -81,9 +84,8 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
     private View cardVaccination;
     private TextView tvVaccinationName, tvVaccinationNotes;
 
-    // Doctor & System
+    // Doctor
     private TextView tvDoctorSignature;
-    private TextView tvCreatedAt, tvUpdatedAt;
 
     // Actions
     private Button btnDownload;
@@ -99,7 +101,8 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
 
         bindViews();
 
-        btnBack.setOnClickListener(v -> onBackPressed());
+        // Optional back
+        if (btnBack != null) btnBack.setOnClickListener(v -> onBackPressed());
         btnDownload.setOnClickListener(v -> downloadAction());
 
         appointmentId = getIntent().getStringExtra("appointment_id");
@@ -130,7 +133,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         tvReportDate = findViewById(R.id.tv_report_date);
         ivReportPhoto = findViewById(R.id.iv_report_photo);
 
-        // Show full, uncropped image programmatically
+        // Photo config (full, uncropped)
         if (ivReportPhoto != null) {
             ivReportPhoto.setAdjustViewBounds(true);
             ivReportPhoto.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -176,10 +179,8 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         tvVaccinationName = findViewById(R.id.tv_vaccination_name);
         tvVaccinationNotes = findViewById(R.id.tv_vaccination_notes);
 
-        // Doctor & System
+        // Doctor
         tvDoctorSignature = findViewById(R.id.tv_doctor_signature);
-        tvCreatedAt = findViewById(R.id.tv_created_at);
-        tvUpdatedAt = findViewById(R.id.tv_updated_at);
 
         // Actions
         btnDownload = findViewById(R.id.btn_download);
@@ -257,87 +258,76 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
     /* -------------------- Bind Report -------------------- */
     @SuppressLint("SetTextI18n")
     private void bindReport(JSONObject r) {
-        // Header
-        String title = sanitize(r.optString("report_title", null), "Veterinary Report");
-        String date = sanitize(r.optString("report_date", null), "N/A");
-        tvReportTitle.setText(title);
-        tvReportDate.setText("Date: " + date);
-        Log.d(TAG, "Bind header: title=" + title + ", date=" + date);
-
         // Attachment
         String rawAttachment = r.optString("attachment_url", null);
         attachmentUrl = isNullish(rawAttachment) ? "" : rawAttachment.trim();
         Log.d(TAG, "attachment_url=" + attachmentUrl);
 
         if (!TextUtils.isEmpty(attachmentUrl)) {
-            // Photo available → show full image + hide all virtual sections.
+            // PHOTO-ONLY MODE
+            enterPhotoOnlyMode();                 // hide everything except photo + download
             ivReportPhoto.setVisibility(View.VISIBLE);
             loadAttachmentWithBlockingLoader(attachmentUrl);
-            hideVirtualSections();
-        } else {
-            ivReportPhoto.setVisibility(View.GONE);
-            // No image → show virtual fields normally
-            showVirtualSections();
-            setLoading(false);
+            return; // nothing else to bind
         }
 
+        // ---- NO PHOTO → show virtual report (created/updated removed) ----
+
+        // Header (keep if you want for virtual mode)
+        String title = sanitize(r.optString("report_title", null), "Veterinary Report");
+        String date  = sanitize(r.optString("report_date", null), "N/A");
+        if (tvReportTitle != null) tvReportTitle.setText(title);
+        if (tvReportDate  != null) tvReportDate.setText("Date: " + date);
+
         // Animal & Owner
-        setAndLog(tvAnimalName, "Animal: ", sanitize(r.optString("animal_name", null), "N/A"));
-        setAndLog(tvSpeciesBreed, "Species/Breed: ", sanitize(r.optString("species_breed", null), "N/A"));
-        setAndLog(tvAnimalSex, "Sex: ", sanitize(r.optString("sex", null), "N/A"));
-        setAndLog(tvAnimalAge, "Age (years): ", sanitize(numStr(r, "age_years"), "N/A"));
-        setAndLog(tvAnimalWeight, "Weight (kg): ", sanitize(numStr(r, "weight_kg"), "N/A"));
-        setAndLog(tvOwnerAddress, "Owner Address: ", sanitize(r.optString("owner_address", null), "N/A"));
+        setAndLog(tvAnimalName,    "Animal: ",           sanitize(r.optString("animal_name", null), "N/A"));
+        setAndLog(tvSpeciesBreed,  "Species/Breed: ",    sanitize(r.optString("species_breed", null), "N/A"));
+        setAndLog(tvAnimalSex,     "Sex: ",              sanitize(r.optString("sex", null), "N/A"));
+        setAndLog(tvAnimalAge,     "Age (years): ",      sanitize(numStr(r, "age_years"), "N/A"));
+        setAndLog(tvAnimalWeight,  "Weight (kg): ",      sanitize(numStr(r, "weight_kg"), "N/A"));
+        setAndLog(tvOwnerAddress,  "Owner Address: ",    sanitize(r.optString("owner_address", null), "N/A"));
 
         String nextVisit = sanitize(r.optString("next_visit_date", null), "");
-        tvNextVisitDate.setVisibility(TextUtils.isEmpty(nextVisit) ? View.GONE : View.VISIBLE);
-        tvNextVisitDate.setText("Next Visit: " + (TextUtils.isEmpty(nextVisit) ? "N/A" : nextVisit));
-        Log.d(TAG, "next_visit_date=" + nextVisit + ", visible=" + (tvNextVisitDate.getVisibility() == View.VISIBLE));
-
+        if (tvNextVisitDate != null) {
+            tvNextVisitDate.setVisibility(TextUtils.isEmpty(nextVisit) ? View.GONE : View.VISIBLE);
+            tvNextVisitDate.setText("Next Visit: " + (TextUtils.isEmpty(nextVisit) ? "N/A" : nextVisit));
+        }
         boolean isFollowup = r.optBoolean("is_followup", false);
-        tvIsFollowup.setText("Follow-up: " + (isFollowup ? "Yes" : "No"));
-        Log.d(TAG, "is_followup=" + isFollowup);
+        setAndLog(tvIsFollowup, "Follow-up: ", (isFollowup ? "Yes" : "No"));
 
         // Vitals & Clinical
-        setAndLog(tvTemperatureC, "Temperature (°C): ", sanitize(numStr(r, "temperature_c"), "N/A"));
-        setAndLog(tvPulseBpm, "Pulse (bpm): ", sanitize(numStr(r, "pulse_bpm"), "N/A"));
-        setAndLog(tvSpo2Pct, "SpO₂ (%): ", sanitize(numStr(r, "spo2_pct"), "N/A"));
-        setAndLog(tvBpMmhg, "Blood Pressure (mmHg): ", sanitize(r.optString("bp_mmhg", null), "N/A"));
+        setAndLog(tvTemperatureC,       "Temperature (°C): ",  sanitize(numStr(r, "temperature_c"), "N/A"));
+        setAndLog(tvPulseBpm,           "Pulse (bpm): ",       sanitize(numStr(r, "pulse_bpm"), "N/A"));
+        setAndLog(tvSpo2Pct,            "SpO₂ (%): ",          sanitize(numStr(r, "spo2_pct"), "N/A"));
+        setAndLog(tvBpMmhg,             "Blood Pressure (mmHg): ", sanitize(r.optString("bp_mmhg", null), "N/A"));
         setAndLog(tvRespiratoryRateBpm, "Respiratory Rate (bpm): ", sanitize(numStr(r, "respiratory_rate_bpm"), "N/A"));
-
-        setAndLog(tvPainScore, "Pain Score (0–10): ", sanitize(numStr(r, "pain_score_0_10"), "N/A"));
-        setAndLog(tvHydrationStatus, "Hydration: ", sanitize(r.optString("hydration_status", null), "N/A"));
-        setAndLog(tvMucousMembranes, "Mucous Membranes: ", sanitize(r.optString("mucous_membranes", null), "N/A"));
-        setAndLog(tvCrtSec, "CRT (sec): ", sanitize(numStr(r, "crt_sec"), "N/A"));
+        setAndLog(tvPainScore,          "Pain Score (0–10): ", sanitize(numStr(r, "pain_score_0_10"), "N/A"));
+        setAndLog(tvHydrationStatus,    "Hydration: ",         sanitize(r.optString("hydration_status", null), "N/A"));
+        setAndLog(tvMucousMembranes,    "Mucous Membranes: ",  sanitize(r.optString("mucous_membranes", null), "N/A"));
+        setAndLog(tvCrtSec,             "CRT (sec): ",         sanitize(numStr(r, "crt_sec"), "N/A"));
 
         // Findings
-        setAndLog(tvSymptoms, "Symptoms: ", sanitize(r.optString("symptoms", null), "N/A"));
-        setAndLog(tvBehaviorGait, "Behavior/Gait: ", sanitize(r.optString("behavior_gait", null), "N/A"));
-        setAndLog(tvSkinCoat, "Skin/Coat: ", sanitize(r.optString("skin_coat", null), "N/A"));
-        setAndLog(tvRespiratorySystem, "Respiratory System: ", sanitize(r.optString("respiratory_system", null), "N/A"));
-        setAndLog(tvReasons, "Reasons/Notes: ", sanitize(r.optString("reasons", null), "N/A"));
+        setAndLog(tvSymptoms,           "Symptoms: ",          sanitize(r.optString("symptoms", null), "N/A"));
+        setAndLog(tvBehaviorGait,       "Behavior/Gait: ",     sanitize(r.optString("behavior_gait", null), "N/A"));
+        setAndLog(tvSkinCoat,           "Skin/Coat: ",         sanitize(r.optString("skin_coat", null), "N/A"));
+        setAndLog(tvRespiratorySystem,  "Respiratory System: ",sanitize(r.optString("respiratory_system", null), "N/A"));
+        setAndLog(tvReasons,            "Reasons/Notes: ",     sanitize(r.optString("reasons", null), "N/A"));
 
         // Investigations
         boolean reqInv = r.optBoolean("requires_investigation", false);
-        tvRequiresInvestigation.setText("Requires Investigation: " + (reqInv ? "Yes" : "No"));
-        setAndLog(tvInvestigationNotes, "Notes: ", sanitize(r.optString("investigation_notes", null), "N/A"));
-        Log.d(TAG, "requires_investigation=" + reqInv);
+        setAndLog(tvRequiresInvestigation, "Requires Investigation: ", (reqInv ? "Yes" : "No"));
+        setAndLog(tvInvestigationNotes,    "Notes: ",               sanitize(r.optString("investigation_notes", null), "N/A"));
 
-        // Doctor & System
+        // Doctor
         setAndLog(tvDoctorSignature, "Signature/Name: ", sanitize(r.optString("doctor_signature", null), "N/A"));
-        setAndLog(tvCreatedAt, "Created: ", sanitize(r.optString("created_at", null), "N/A"));
-        setAndLog(tvUpdatedAt, "Updated: ", sanitize(r.optString("updated_at", null), "N/A"));
 
         // Medications (combined → fallback to raw arrays)
         JSONArray medsCombined = r.optJSONArray("medications");
         if (medsCombined != null && medsCombined.length() > 0) {
-            Log.d(TAG, "Using combined medications array, count=" + medsCombined.length());
             inflateMedicationsFromCombined(medsCombined);
         } else {
-            String medsRaw = r.optString("medications_json", "[]");
+            String medsRaw  = r.optString("medications_json", "[]");
             String dosesRaw = r.optString("dosage_json", "[]");
-            Log.d(TAG, "Combined meds empty. Fallback raw arrays. meds_json=" + truncate(medsRaw, 500) +
-                    ", dosage_json=" + truncate(dosesRaw, 500));
             try {
                 JSONArray names = new JSONArray(medsRaw);
                 JSONArray doses = new JSONArray(dosesRaw);
@@ -347,89 +337,56 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
             }
         }
 
-        // Vaccination – show only if present (hidden anyway when photo-only mode)
-        String vaccName = sanitize(r.optString("vaccination_name", null), "");
+        // Vaccination – show only if present
+        String vaccName  = sanitize(r.optString("vaccination_name", null), "");
         String vaccNotes = sanitize(r.optString("vaccination_notes", null), "");
         boolean showVacc = !(TextUtils.isEmpty(vaccName) && TextUtils.isEmpty(vaccNotes));
         if (cardVaccination != null) cardVaccination.setVisibility(showVacc ? View.VISIBLE : View.GONE);
-        Log.d(TAG, "Vaccination visible=" + showVacc + " name=" + vaccName + " notes=" + vaccNotes);
         if (showVacc) {
             tvVaccinationName.setText("Name: " + (TextUtils.isEmpty(vaccName) ? "N/A" : vaccName));
             tvVaccinationNotes.setText("Notes: " + (TextUtils.isEmpty(vaccNotes) ? "N/A" : vaccNotes));
         }
+
+        setLoading(false);
     }
 
-    /** Hide all virtual report sections (cards/tables/text blocks) when photo is present. */
-    private void hideVirtualSections() {
-        // Toggle known containers if present (string-based → no compile errors if absent)
-        String[] maybeContainers = new String[]{
-                "card_animal_owner", "card_vitals", "card_findings",
-                "card_investigations", "card_medications", "card_vaccination",
-                "card_doctor", "section_virtual_report"
-        };
-        for (String idName : maybeContainers) hideIfExists(idName, View.GONE);
+    /** PHOTO-ONLY MODE: hide everything except photo and download button; add small padding around photo. */
+    private void enterPhotoOnlyMode() {
+        int keepPhotoId = R.id.iv_report_photo;
+        int keepDownloadId = R.id.btn_download;
+        int keepLoaderId = R.id.loader;
 
-        // Also hide parents of leaf views (in case layouts differ)
-        hideParent(tvAnimalName);
-        hideParent(tvSpeciesBreed);
-        hideParent(tvAnimalSex);
-        hideParent(tvAnimalAge);
-        hideParent(tvAnimalWeight);
-        hideParent(tvOwnerAddress);
-        hideParent(tvNextVisitDate);
-        hideParent(tvIsFollowup);
+        // Hide the entire view tree except the kept views
+        ViewGroup root = findViewById(android.R.id.content);
+        Set<Integer> keep = new HashSet<>();
+        keep.add(keepPhotoId);
+        keep.add(keepDownloadId);
+        keep.add(keepLoaderId);
+        hideTreeExcept(root, keep);
 
-        hideParent(tvTemperatureC);
-        hideParent(tvPulseBpm);
-        hideParent(tvSpo2Pct);
-        hideParent(tvBpMmhg);
-        hideParent(tvRespiratoryRateBpm);
-        hideParent(tvPainScore);
-        hideParent(tvHydrationStatus);
-        hideParent(tvMucousMembranes);
-        hideParent(tvCrtSec);
-
-        hideParent(tvSymptoms);
-        hideParent(tvBehaviorGait);
-        hideParent(tvSkinCoat);
-        hideParent(tvRespiratorySystem);
-        hideParent(tvReasons);
-
-        hideParent(tvRequiresInvestigation);
-        hideParent(tvInvestigationNotes);
-
-        if (tblMeds != null) tblMeds.setVisibility(View.GONE);
-        if (cardVaccination != null) cardVaccination.setVisibility(View.GONE);
-        // Keep header (title/date), image and download button visible.
+        // Ensure photo takes the space nicely with small margins
+        int pad = (int) (getResources().getDisplayMetrics().density * 12); // ~12dp padding on all sides
+        ivReportPhoto.setPadding(pad, pad, pad, pad);
+        ivReportPhoto.setAdjustViewBounds(true);
+        ivReportPhoto.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        ViewGroup.LayoutParams lp = ivReportPhoto.getLayoutParams();
+        lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+        ivReportPhoto.setLayoutParams(lp);
     }
 
-    /** Show virtual sections again (when there is no photo). */
-    private void showVirtualSections() {
-        String[] maybeContainers = new String[]{
-                "card_animal_owner", "card_vitals", "card_findings",
-                "card_investigations", "card_medications", "card_vaccination",
-                "card_doctor", "section_virtual_report"
-        };
-        for (String idName : maybeContainers) hideIfExists(idName, View.VISIBLE);
-
-        if (tblMeds != null) tblMeds.setVisibility(View.VISIBLE);
-        if (cardVaccination != null) cardVaccination.setVisibility(View.VISIBLE);
-    }
-
-    /** Utility: set visibility if a view id exists; no compile-time R.id reference needed. */
-    private void hideIfExists(String idName, int visibility) {
-        int id = getResources().getIdentifier(idName, "id", getPackageName());
-        if (id != 0) {
-            View v = findViewById(id);
-            if (v != null) v.setVisibility(visibility);
+    private void hideTreeExcept(View view, Set<Integer> keepIds) {
+        if (view == null) return;
+        boolean keep = keepIds.contains(view.getId());
+        if (!keep && view.getId() != android.R.id.content) {
+            view.setVisibility(View.GONE);
         }
-    }
-
-    /** Hide the nearest sensible parent row/card for a leaf TextView. */
-    private void hideParent(View child) {
-        if (child == null) return;
-        View p = (View) child.getParent();
-        if (p != null) p.setVisibility(View.GONE);
+        if (view instanceof ViewGroup) {
+            ViewGroup vg = (ViewGroup) view;
+            for (int i = 0; i < vg.getChildCount(); i++) {
+                hideTreeExcept(vg.getChildAt(i), keepIds);
+            }
+        }
     }
 
     /** Load image and hide loader only when it’s ready (or failed) + safety timeout. */
@@ -473,10 +430,11 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                 .into(ivReportPhoto);
     }
 
-    /* -------------------- Medications helpers -------------------- */
+    /* -------------------- Medications helpers (virtual mode) -------------------- */
 
     /** For combined structure: [{name, dosage}] */
     private void inflateMedicationsFromCombined(JSONArray meds) {
+        if (tblMeds == null) return;
         clearMedicationRows();
         for (int i = 0; i < meds.length(); i++) {
             JSONObject m = meds.optJSONObject(i);
@@ -485,32 +443,28 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
             String dose = sanitize(m.optString("dosage", null), "N/A");
             String multiName = splitByCommaNewLines(name);
             String multiDose = splitByCommaNewLines(dose);
-            Log.e(TAG, "Med #" + (i + 1) + " name=" + name + " dose=" + dose + " -> rows");
             addMedicationRow(i + 1, multiName, multiDose);
         }
     }
 
     /** Fallback: separate arrays for names and doses */
     private void inflateMedicationsFromRawArrays(JSONArray names, JSONArray doses) {
+        if (tblMeds == null) return;
         clearMedicationRows();
         int max = Math.max(names != null ? names.length() : 0, doses != null ? doses.length() : 0);
-        Log.d(TAG, "inflateMedicationsFromRawArrays: max=" + max);
         for (int i = 0; i < max; i++) {
             String name = "N/A";
             String dose = "N/A";
             if (names != null && i < names.length()) name = sanitize(names.optString(i, null), "N/A");
             if (doses != null && i < doses.length()) dose = sanitize(doses.optString(i, null), "N/A");
-
             String multiName = splitByCommaNewLines(name);
             String multiDose = splitByCommaNewLines(dose);
-            Log.v(TAG, "Raw med #" + (i + 1) + " name=" + name + " dose=" + dose);
             addMedicationRow(i + 1, multiName, multiDose);
         }
     }
 
     private void clearMedicationRows() {
         int childCount = tblMeds.getChildCount();
-        Log.d(TAG, "clearMedicationRows: existingRows=" + childCount);
         if (childCount > 1) tblMeds.removeViews(1, childCount - 1); // keep header
     }
 
@@ -532,7 +486,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         String[] parts = s.split(",");
         StringBuilder b = new StringBuilder();
         for (String p : parts) {
-            String t = sanitize(p, ""); // treat each token
+            String t = sanitize(p, "");
             if (t.isEmpty() || "N/A".equals(t)) continue;
             if (b.length() > 0) b.append('\n');
             b.append(t);
@@ -550,7 +504,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         return tv;
     }
 
-    /* -------------------- Utilities (NULL-SAFE) -------------------- */
+    /* -------------------- Utilities -------------------- */
 
     private String sanitize(String s, String fallback) {
         if (s == null) return fallback == null ? "N/A" : fallback;
@@ -617,8 +571,8 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                 }
             }
         } else {
+            // Share virtual summary only when no photo
             String share = buildShareSummary();
-            Log.v(TAG, "Sharing text summary length=" + share.length());
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");
             i.putExtra(Intent.EXTRA_SUBJECT, "Veterinary Report");
@@ -629,35 +583,33 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
 
     private String buildShareSummary() {
         StringBuilder sb = new StringBuilder();
-        sb.append(tvReportTitle.getText()).append("\n")
-                .append(tvReportDate.getText()).append("\n\n")
-                .append(tvAnimalName.getText()).append("\n")
-                .append(tvSpeciesBreed.getText()).append("\n")
-                .append(tvAnimalSex.getText()).append("\n")
-                .append(tvAnimalAge.getText()).append("\n")
-                .append(tvAnimalWeight.getText()).append("\n")
-                .append(tvOwnerAddress.getText()).append("\n")
-                .append(tvIsFollowup.getText()).append("\n")
-                .append(tvNextVisitDate.getText()).append("\n\n")
-                .append(tvTemperatureC.getText()).append("\n")
-                .append(tvPulseBpm.getText()).append("\n")
-                .append(tvSpo2Pct.getText()).append("\n")
-                .append(tvBpMmhg.getText()).append("\n")
-                .append(tvRespiratoryRateBpm.getText()).append("\n")
-                .append(tvPainScore.getText()).append("\n")
-                .append(tvHydrationStatus.getText()).append("\n")
-                .append(tvMucousMembranes.getText()).append("\n")
-                .append(tvCrtSec.getText()).append("\n\n")
-                .append(tvSymptoms.getText()).append("\n")
-                .append(tvBehaviorGait.getText()).append("\n")
-                .append(tvSkinCoat.getText()).append("\n")
-                .append(tvRespiratorySystem.getText()).append("\n")
-                .append(tvReasons.getText()).append("\n\n")
-                .append(tvRequiresInvestigation.getText()).append("\n")
-                .append(tvInvestigationNotes.getText()).append("\n")
-                .append(tvDoctorSignature.getText()).append("\n")
-                .append(tvCreatedAt.getText()).append("\n")
-                .append(tvUpdatedAt.getText());
+        if (tvReportTitle != null) sb.append(tvReportTitle.getText()).append("\n");
+        if (tvReportDate  != null) sb.append(tvReportDate.getText()).append("\n\n");
+        if (tvAnimalName   != null) sb.append(tvAnimalName.getText()).append("\n");
+        if (tvSpeciesBreed != null) sb.append(tvSpeciesBreed.getText()).append("\n");
+        if (tvAnimalSex    != null) sb.append(tvAnimalSex.getText()).append("\n");
+        if (tvAnimalAge    != null) sb.append(tvAnimalAge.getText()).append("\n");
+        if (tvAnimalWeight != null) sb.append(tvAnimalWeight.getText()).append("\n");
+        if (tvOwnerAddress != null) sb.append(tvOwnerAddress.getText()).append("\n");
+        if (tvIsFollowup   != null) sb.append(tvIsFollowup.getText()).append("\n");
+        if (tvNextVisitDate!= null) sb.append(tvNextVisitDate.getText()).append("\n\n");
+        if (tvTemperatureC != null) sb.append(tvTemperatureC.getText()).append("\n");
+        if (tvPulseBpm     != null) sb.append(tvPulseBpm.getText()).append("\n");
+        if (tvSpo2Pct      != null) sb.append(tvSpo2Pct.getText()).append("\n");
+        if (tvBpMmhg       != null) sb.append(tvBpMmhg.getText()).append("\n");
+        if (tvRespiratoryRateBpm != null) sb.append(tvRespiratoryRateBpm.getText()).append("\n");
+        if (tvPainScore    != null) sb.append(tvPainScore.getText()).append("\n");
+        if (tvHydrationStatus != null) sb.append(tvHydrationStatus.getText()).append("\n");
+        if (tvMucousMembranes != null) sb.append(tvMucousMembranes.getText()).append("\n");
+        if (tvCrtSec       != null) sb.append(tvCrtSec.getText()).append("\n\n");
+        if (tvSymptoms     != null) sb.append(tvSymptoms.getText()).append("\n");
+        if (tvBehaviorGait != null) sb.append(tvBehaviorGait.getText()).append("\n");
+        if (tvSkinCoat     != null) sb.append(tvSkinCoat.getText()).append("\n");
+        if (tvRespiratorySystem != null) sb.append(tvRespiratorySystem.getText()).append("\n");
+        if (tvReasons      != null) sb.append(tvReasons.getText()).append("\n\n");
+        if (tvRequiresInvestigation != null) sb.append(tvRequiresInvestigation.getText()).append("\n");
+        if (tvInvestigationNotes    != null) sb.append(tvInvestigationNotes.getText()).append("\n");
+        if (tvDoctorSignature       != null) sb.append(tvDoctorSignature.getText());
         return sb.toString();
     }
 }
