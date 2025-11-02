@@ -141,7 +141,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         // Bind top info
         v.name.setText(name);
         v.specialty.setText(spec);
-        v.hospital.setText(hosp); // ⚠️ as requested, hospital chip remains
+        v.hospital.setText(hosp);
 
         // Experience
         v.experienceDuration.setText(durationText.isEmpty() ? "" : ("Experience: " + durationText));
@@ -156,7 +156,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             v.ratingBar.setRating(rating);
         }
 
-        // NEW: time and amount
+        // time and amount
         v.tvAppointmentTime.setText(timeDisp);
         v.tvConsultationFee.setText("₹" + trimTrailingZeros(amount));
 
@@ -174,12 +174,12 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         // Card click → details
         v.itemView.setOnClickListener(view -> {
             Intent i = new Intent(context, doctor_details.class);
-            i.putExtra("doctor_id", String.valueOf(docId));
+            i.putExtra("doctor_id", String.valueOf(docId)); // keep behavior consistent with details screen
             i.putExtra("doctor_image", picUrl);
             context.startActivity(i);
         });
 
-        // Buttons
+        // Buttons default state
         v.track.setVisibility(View.VISIBLE);
         v.track.setEnabled(true);
         v.track.setText("Track");
@@ -209,13 +209,18 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             context.startActivity(i);
         });
 
+        // ✅ TRACK INTENT — send all essentials consistently as String extras
         v.track.setOnClickListener(view -> {
             if (!v.track.isEnabled()) return;
             Intent i = new Intent(context, track_doctor.class);
+            i.putExtra("appointment_id", String.valueOf(apptId));
+            i.putExtra("doctor_id", String.valueOf(docId));
             i.putExtra("doctor_name", name);
-            i.putExtra("appointment_id", apptId);
             i.putExtra("specialty", spec);
-            i.putExtra("doctor_id", docId);
+            i.putExtra("doctor_image", picUrl);
+            // If `track_doctor` expects anything else (e.g., hospital or time), uncomment:
+            // i.putExtra("hospital", hosp);
+            // i.putExtra("appointment_time_display", timeDisp);
             context.startActivity(i);
         });
     }
