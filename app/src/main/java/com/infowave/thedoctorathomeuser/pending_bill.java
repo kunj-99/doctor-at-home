@@ -1073,9 +1073,12 @@ public class pending_bill extends AppCompatActivity {
     private void onBookingSuccess() {
         Intent i = new Intent(this, MainActivity.class);
         i.putExtra("open_fragment", 2);
+        // 0 = Human Ongoing, 1 = Vet Ongoing
+        i.putExtra("ongoing_tab", (isVetCase == 1 ? 1 : 0));
         startActivity(i);
         finish();
     }
+
 
     private void enablePayButton() {
         payButton.setEnabled(true);

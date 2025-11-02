@@ -82,6 +82,12 @@ public class OngoingAppointmentFragment extends Fragment {
             tab.setText(position == 0 ? "Patient Ongoing" : "Vet Ongoing");
         }).attach();
 
+// Read which tab should open (0 = Human, 1 = Vet) from Activity Intent
+        int initialTab = requireActivity().getIntent().getIntExtra("ongoing_tab", 0);
+        if (initialTab < 0 || initialTab > 1) initialTab = 0;
+        viewPager.setCurrentItem(initialTab, false);
+
+
         // Bottom CTA → Book page on main pager
         bookButton.setOnClickListener(v -> {
             if (mainPager != null) mainPager.setCurrentItem(PAGE_BOOK_APPOINTMENT, true);

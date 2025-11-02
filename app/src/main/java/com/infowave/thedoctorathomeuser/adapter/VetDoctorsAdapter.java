@@ -87,6 +87,9 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         String auto  = d.optString("auto_status", "Inactive");
         int    id    = d.optInt("doctor_id", -1);
 
+        // IMPORTANT: initialize lastHasActive from the card JSON if provided
+        h.lastHasActive = d.optBoolean("has_active_appointment", false);
+
         h.tvDoctorName.setText(name);
         h.tvSpecialization.setText(spec);
         h.tvRatingText.setText(rate > 0 ? String.valueOf(rate) : "—");
@@ -113,7 +116,12 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         if ("inactive".equalsIgnoreCase(auto)) {
             h.setDisabledState("Currently Not Accepting");
         } else {
-            h.setPrimaryState("Book Appointment");
+            // Render CTA using current lastHasActive
+            if (h.lastHasActive) {
+                h.setSecondaryState("Request for visit");
+            } else {
+                h.setPrimaryState("Book Appointment");
+            }
         }
 
         // Item click → doctor details (if needed by your listener)
@@ -121,16 +129,19 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
             if (listener != null) listener.onDoctorClick(d);
         });
 
-        // Book / Request
+        // Book / Request → forward CTA based on latest polled state
         h.btnBookNow.setOnClickListener(v -> {
             if (listener != null) listener.onBookNowClick(d);
+
+            // CTA decided from last known has_active_appointment
+            String cta = h.lastHasActive ? "Request for visit" : "Book Appointment";
 
             Intent intent = new Intent(context, VetAppointmentActivity.class);
             intent.putExtra("doctor_id", id);
             intent.putExtra("doctor_name", name);
             intent.putExtra("animal_category_id", animalCategoryId);
-            // carry auto_status for downstream logic/analytics
             intent.putExtra("auto_status", auto);
+            intent.putExtra("appointment_status", cta); // <<< IMPORTANT
 
             if (!(context instanceof android.app.Activity)) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -169,6 +180,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
 
         AppCompatButton btnBookNow;
         String autoStatus;
+        boolean lastHasActive = false; // remembers latest state for CTA
 
         private final android.os.Handler handler = new android.os.Handler(Looper.getMainLooper());
         private Runnable refreshRunnable;
@@ -225,6 +237,9 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                         int etaMin  = response.optInt("total_eta", 0);
                         boolean hasActive = response.optBoolean("has_active_appointment", false);
 
+                        // remember for CTA
+                        lastHasActive = hasActive;
+
                         // Counters
                         tvRequests.setVisibility(View.VISIBLE);
                         tvRequests.setText("Requests: " + reqNum);
@@ -263,7 +278,6 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                             // spam-throttle: disable if requests >= 2
                             btnBookNow.setEnabled(reqNum < MAX_REQUESTS);
                             if (reqNum >= MAX_REQUESTS) {
-                                // subtle visual cue
                                 btnBookNow.setBackgroundColor(
                                         ContextCompat.getColor(itemView.getContext(), android.R.color.darker_gray));
                             }
@@ -277,6 +291,7 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
                         tvEta.setVisibility(View.GONE);
 
                         if (!"inactive".equalsIgnoreCase(autoStatus)) {
+                            // fall back to primary CTA if unknown
                             setPrimaryState("Book Appointment");
                             btnBookNow.setEnabled(true);
                         }

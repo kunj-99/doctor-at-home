@@ -67,7 +67,9 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     private int doctorId = -1;
     private int animalCategoryId = -1;
     private String doctorName;
-    private String doctorAutoStatus; // carries availability from list
+    private String doctorAutoStatus;           // carries availability from list (auto_status)
+    private String adapterProvidedCTA = null;  // "Book Appointment" / "Request for visit" (from adapter)
+    private String derivedInitialStatus = null;// "Confirmed"/"Requested" after mapping
 
     // UI refs
     private Spinner spPincode, spBreed, spVaccination;
@@ -124,19 +126,32 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_vet_appointment);
 
-        // Intent extras
-        doctorId = getIntent().getIntExtra("doctor_id", -1);
+        // ============ INTENT EXTRAS ============
+        doctorId         = getIntent().getIntExtra("doctor_id", -1);
         animalCategoryId = getIntent().getIntExtra("animal_category_id", -1);
-        doctorName = getIntent().getStringExtra("doctor_name");
+        doctorName       = getIntent().getStringExtra("doctor_name");
         doctorAutoStatus = getIntent().getStringExtra("auto_status"); // may be null
+        adapterProvidedCTA = getIntent().getStringExtra("appointment_status"); // from adapter, if sent
+
         if (doctorName == null) doctorName = "";
+
+        Log.d(TAG, "[onCreate] doctorId=" + doctorId
+                + ", animalCategoryId=" + animalCategoryId
+                + ", doctorName=" + doctorName
+                + ", auto_status=" + doctorAutoStatus
+                + ", adapterProvidedCTA=" + adapterProvidedCTA);
 
         if (doctorId == -1 || animalCategoryId == -1) {
             Toast.makeText(this, "Invalid booking parameters. Please try again.", Toast.LENGTH_LONG).show();
+            Log.e(TAG, "[onCreate] Invalid parameters, finishing.");
             finish(); return;
         }
 
-        // System bars styling
+        // Decide initial status (HUMAN parity) — Prefer adapter CTA if present, else derive from auto_status
+        derivedInitialStatus = decideInitialStatus(adapterProvidedCTA, doctorAutoStatus);
+        Log.d(TAG, "[onCreate] derivedInitialStatus=" + derivedInitialStatus);
+
+        // ============ SYSTEM BARS ============
         getWindow().setStatusBarColor(Color.BLACK);
         getWindow().setNavigationBarColor(Color.BLACK);
         WindowInsetsController controller = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
@@ -162,26 +177,14 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             return insets;
         });
 
-        // Bind views
+        // ============ BIND / INIT ============
         initViews();
-
-        // Toolbar
         setupToolbar();
-
-        // Dropdown adapters
         setupDropdowns();
-
-        // Mode toggle
         setupModeToggle();
         applyMode(Mode.VISIT);
-
-        // Location
         setupLocation();
-
-        // Confirm submit
         setupConfirm();
-
-        // Load dropdown master data
         loadDropdownsMaster();
 
         // MapView lifecycle
@@ -191,6 +194,43 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
         // Volley
         requestQueue = Volley.newRequestQueue(this);
+    }
+
+    // --- Decide initial status with logs ---
+    private String decideInitialStatus(@Nullable String ctaFromAdapter, @Nullable String autoStatusRaw) {
+        // 1) If adapter already sent CTA text, map that to final DB values
+        if (!TextUtils.isEmpty(ctaFromAdapter)) {
+            String cta = ctaFromAdapter.trim();
+            if (cta.equalsIgnoreCase("Request for visit")) {
+                Log.d(TAG, "[decideInitialStatus] adapterProvidedCTA='Request for visit' → status='Requested'");
+                return "Requested";
+            }
+            if (cta.equalsIgnoreCase("Book Appointment")) {
+                Log.d(TAG, "[decideInitialStatus] adapterProvidedCTA='Book Appointment' → status='Confirmed'");
+                return "Confirmed";
+            }
+            // If adapter sent direct DB status, accept it
+            if (cta.equalsIgnoreCase("Requested") || cta.equalsIgnoreCase("Confirmed")) {
+                Log.d(TAG, "[decideInitialStatus] adapterProvidedCTA as direct DB status → " + cta);
+                return toTitleCase(cta);
+            }
+            Log.w(TAG, "[decideInitialStatus] Unknown CTA from adapter: " + cta + " → fallback to auto_status");
+        }
+
+        // 2) Else, derive from auto_status
+        String auto = (autoStatusRaw == null) ? "" : autoStatusRaw.trim().toLowerCase(Locale.ROOT);
+        boolean isActive = auto.equals("active") || auto.equals("online") || auto.equals("available");
+        String derived = isActive ? "Confirmed" : "Requested";
+        Log.d(TAG, "[decideInitialStatus] auto_status='" + autoStatusRaw + "' → status='" + derived + "'");
+        return derived;
+    }
+
+    private String toTitleCase(String s) {
+        if (s == null) return "";
+        String low = s.toLowerCase(Locale.ROOT);
+        if ("requested".equals(low)) return "Requested";
+        if ("confirmed".equals(low)) return "Confirmed";
+        return s;
     }
 
     private void initViews() {
@@ -268,6 +308,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
     private void applyMode(Mode mode) {
         currentMode = mode;
+        Log.d(TAG, "[applyMode] mode=" + mode);
         if (mode == Mode.VISIT) {
             cardReason.setVisibility(View.VISIBLE);
             cardVaccination.setVisibility(View.GONE);
@@ -288,11 +329,15 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                 "animal_category_id", String.valueOf(animalCategoryId)
         );
 
+        Log.d(TAG, "[loadDropdownsMaster] GET " + url);
+
         StringRequest req = new StringRequest(Request.Method.GET, url,
                 response -> {
                     try {
                         JSONObject obj = new JSONObject(response);
-                        if (obj.optBoolean("success")) {
+                        boolean success = obj.optBoolean("success");
+                        Log.d(TAG, "[loadDropdownsMaster] success=" + success);
+                        if (success) {
                             JSONArray arrPincode      = obj.optJSONArray("pincodes");
                             JSONArray arrBreed        = obj.optJSONArray("breeds");
                             JSONArray arrVaccinations = obj.optJSONArray("vaccinations");
@@ -301,20 +346,23 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                             pincodeItems.clear(); pincodeItems.add("Select Pincode");
                             if (arrPincode != null) {
                                 for (int i = 0; i < arrPincode.length(); i++) {
-                                    pincodeItems.add(arrPincode.getString(i));
+                                    String pin = arrPincode.getString(i);
+                                    pincodeItems.add(pin);
                                 }
                             }
+                            Log.d(TAG, "[loadDropdownsMaster] pincodes=" + pincodeItems.size());
 
                             // ----- Breeds -----
                             breedItems.clear(); breedItems.add("Select Breed");
                             if (arrBreed != null) {
                                 for (int i = 0; i < arrBreed.length(); i++) {
-                                    breedItems.add(arrBreed.getString(i));
+                                    String b = arrBreed.getString(i);
+                                    breedItems.add(b);
                                 }
                             }
+                            Log.d(TAG, "[loadDropdownsMaster] breeds=" + breedItems.size());
 
                             // ----- Vaccinations (id, name, price) -----
-                            // Reset and keep placeholder at index 0
                             vaccinationDisplayItems.clear();
                             vaccinationNameList.clear();
                             vaccinationIdList.clear();
@@ -355,18 +403,24 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                                     }
                                 }
                             }
+                            Log.d(TAG, "[loadDropdownsMaster] vaccinations=" + (vaccinationDisplayItems.size()-1));
 
                             pincodeAdapter.notifyDataSetChanged();
                             breedAdapter.notifyDataSetChanged();
                             vaccinationAdapter.notifyDataSetChanged();
                         } else {
                             Toast.makeText(this, "Failed to load options", Toast.LENGTH_SHORT).show();
+                            Log.w(TAG, "[loadDropdownsMaster] API success=false");
                         }
                     } catch (JSONException e) {
                         Toast.makeText(this, "Parse error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "[loadDropdownsMaster] parse error", e);
                     }
                 },
-                error -> Toast.makeText(this, "Network error", Toast.LENGTH_SHORT).show()
+                error -> {
+                    Toast.makeText(this, "Network error", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "[loadDropdownsMaster] network error", error);
+                }
         );
 
         if (requestQueue == null) requestQueue = Volley.newRequestQueue(this);
@@ -387,6 +441,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
         requestLocationPermissionLauncher =
                 registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                    Log.d(TAG, "[locationPerm] granted=" + isGranted);
                     if (isGranted) fetchAndCenterOnLocation();
                     else Toast.makeText(this, "Location permission denied", Toast.LENGTH_SHORT).show();
                 });
@@ -408,6 +463,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     @Override
     public void onMapReady(@NonNull GoogleMap gMap) {
         googleMap = gMap;
+        Log.d(TAG, "[onMapReady] map ready");
         enableMyLocationLayerIfPermitted();
 
         LatLng indiaCenter = new LatLng(22.9734, 78.6569);
@@ -437,6 +493,9 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             googleMap.setMyLocationEnabled(true);
+            Log.d(TAG, "[enableMyLocationLayer] enabled");
+        } else {
+            Log.d(TAG, "[enableMyLocationLayer] permission not granted");
         }
     }
 
@@ -447,13 +506,16 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                     loaderutil.hideLoader();
                     if (location != null) {
                         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                        Log.d(TAG, "[fetchAndCenterOnLocation] got last location: " + latLng);
                         setMarkerAndCamera(latLng, true);
                     } else {
+                        Log.w(TAG, "[fetchAndCenterOnLocation] location null");
                         Toast.makeText(this, "Unable to get location. Try again.", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .addOnFailureListener(e -> {
                     loaderutil.hideLoader();
+                    Log.e(TAG, "[fetchAndCenterOnLocation] error", e);
                     Toast.makeText(this, "Location error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
@@ -476,11 +538,14 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
 
         if (animate) googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f));
         else         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f));
+
+        Log.d(TAG, "[setMarkerAndCamera] lat=" + latLng.latitude + ", lng=" + latLng.longitude + ", animate=" + animate);
     }
 
     // ---------- Fullscreen overlay map ----------
     private void openMapOverlay() {
         overlayContainer.setVisibility(View.VISIBLE);
+        Log.d(TAG, "[openMapOverlay] open");
         if (fullscreenMapFragment == null) {
             FragmentManager fm = getSupportFragmentManager();
             fullscreenMapFragment = SupportMapFragment.newInstance();
@@ -512,17 +577,20 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         if (overlayMarker != null) overlayMarker.remove();
         overlayMarker = map.addMarker(new MarkerOptions().position(start).title("Selected Location"));
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(start, 16f));
+        Log.d(TAG, "[setupOverlayMap] start=" + start);
 
         map.setOnMapClickListener(latLng -> {
             tempOverlayLocation = latLng;
             if (overlayMarker != null) overlayMarker.remove();
             overlayMarker = map.addMarker(new MarkerOptions().position(latLng).title("Selected Location"));
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f));
+            Log.d(TAG, "[setupOverlayMap] picked=" + latLng);
         });
     }
 
     private void closeMapOverlay(boolean useSelected) {
         overlayContainer.setVisibility(View.GONE);
+        Log.d(TAG, "[closeMapOverlay] useSelected=" + useSelected + ", temp=" + tempOverlayLocation);
         if (useSelected && tempOverlayLocation != null) {
             setMarkerAndCamera(tempOverlayLocation, true);
         }
@@ -581,6 +649,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
             ok = false;
         }
 
+        Log.d(TAG, "[validateForm] ok=" + ok);
         return ok;
     }
 
@@ -650,26 +719,29 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         double latitude  = (currentLatLng != null) ? currentLatLng.latitude  : 0.0;
         double longitude = (currentLatLng != null) ? currentLatLng.longitude : 0.0;
 
-        // -------- Derive initial status like HUMAN flow --------
-        String auto = (doctorAutoStatus == null) ? "" : doctorAutoStatus.trim().toLowerCase(Locale.ROOT);
-        boolean isActive = auto.equals("active") || auto.equals("online") || auto.equals("available");
-        String initialStatus = isActive ? "Confirmed" : "Requested";
+        Log.d(TAG, "[submitAppointment] adapterProvidedCTA=" + adapterProvidedCTA
+                + ", auto_status=" + doctorAutoStatus
+                + ", finalStatus=" + derivedInitialStatus);
 
-        // Launch pending_bill (same keys you already use)
+        // ---- Launch pending_bill (same keys you already use) ----
         Intent intent = new Intent(this, pending_bill.class);
+
+        // Patient/owner
         intent.putExtra("patient_name", ownerName);
-        intent.putExtra("age", animalAgeInt);
+        intent.putExtra("age", animalAgeInt);                      // (re-using 'age' field for vet flow)
         intent.putExtra("gender", animalGender);
         intent.putExtra("problem", reasonForVisit);
         intent.putExtra("address", ownerAddress);
 
+        // Doctor
         intent.putExtra("doctor_id", String.valueOf(doctorId));
         intent.putExtra("doctorName", doctorName);
 
         // *** CRITICAL: status must follow human flow parity ***
-        intent.putExtra("appointment_status", initialStatus);
-        intent.putExtra("status", initialStatus);
+        intent.putExtra("appointment_status", derivedInitialStatus);
+        intent.putExtra("status", derivedInitialStatus);
 
+        // Location & pin
         intent.putExtra("pincode", pincode);
         intent.putExtra("latitude", latitude);
         intent.putExtra("longitude", longitude);
@@ -683,8 +755,19 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         intent.putExtra("animal_breed", animalBreed);
         intent.putExtra("vaccination_id", vaccinationId == 0 ? "" : String.valueOf(vaccinationId));
         intent.putExtra("vaccination_name", vaccinationName);
-        // pass the EXACT selected vaccination price
-        intent.putExtra("vaccination_price", vaccinationPrice);
+        intent.putExtra("vaccination_price", vaccinationPrice); // exact selected price
+
+        Log.d(TAG, "[submitAppointment] → launching pending_bill with extras:"
+                + " doctor_id=" + doctorId
+                + ", doctorName=" + doctorName
+                + ", is_vet_case=1"
+                + ", animal_category_id=" + animalCategoryId
+                + ", appointment_status=" + derivedInitialStatus
+                + ", pincode=" + pincode
+                + ", lat=" + latitude + ", lng=" + longitude
+                + ", vaccination_id=" + vaccinationId
+                + ", vaccination_name=" + vaccinationName
+                + ", vaccination_price=" + vaccinationPrice);
 
         startActivity(intent);
         finish();
