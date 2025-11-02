@@ -10,13 +10,17 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -50,6 +54,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+
+
+import android.graphics.Color;
+import android.os.Build;
+import android.os.Bundle;
+import android.view.View;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 public class Profile extends AppCompatActivity {
 
@@ -104,6 +118,39 @@ public class Profile extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
+
+        // 1) Draw-behind (so we can paint our own bars)
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+
+        // 2) Color the REAL system bars pure black.
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+
+        // 3) Force white icons/text on both bars.
+        View root = findViewById(R.id.profile_root);
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), root);
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
+
+        // 4) Extra safety for OEMs/themes that set “light” flags.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            root.setSystemUiVisibility(root.getSystemUiVisibility()
+                    & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            root.setSystemUiVisibility(root.getSystemUiVisibility()
+                    & ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
+
+        // 5) Keep exact black on API 29+ (prevents auto-contrast greying).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setStatusBarContrastEnforced(false);
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
+
+
+
 
         // 1) Force adjustResize at runtime (no manifest/XML change required)
         getWindow().setSoftInputMode(
@@ -185,6 +232,14 @@ public class Profile extends AppCompatActivity {
 
         fetchProfile();
     }
+    private void setHeight(View v, int h) {
+        if (v == null) return;
+        ViewGroup.LayoutParams lp = v.getLayoutParams();
+        if (lp.height != h) {
+            lp.height = h;
+            v.setLayoutParams(lp);
+        }
+    }
 
     public void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -205,6 +260,8 @@ public class Profile extends AppCompatActivity {
             }
         }
     }
+
+
 
     private void showDatePicker() {
         Calendar calendar = Calendar.getInstance();
