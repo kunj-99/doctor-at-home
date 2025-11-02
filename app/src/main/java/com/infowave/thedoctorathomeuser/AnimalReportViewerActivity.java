@@ -42,9 +42,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 /**
- * AnimalReportViewerActivity — Null-safe rendering (shows "N/A" for any null-ish values)
- * Loader now hides ONLY after the image is fully loaded (or fails),
- * with a safety timeout to avoid infinite spinners.
+ * AnimalReportViewerActivity — When an attachment photo exists:
+ *  - Hides virtual report fields/sections
+ *  - Loads image full (no crop): FIT_CENTER + adjustViewBounds
+ *  - Download keeps working through Android DownloadManager
  */
 public class AnimalReportViewerActivity extends AppCompatActivity {
 
@@ -114,7 +115,6 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         // Start loading
         setLoading(true);
 
-        // Ensure correct endpoint (you already moved it to /Users if needed)
         String url = ApiConfig.endpoint("get_vet_report.php", "appointment_id", appointmentId);
         Log.d(TAG, "Request URL = " + url);
         fetchReport(url);
@@ -129,6 +129,12 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         tvReportTitle = findViewById(R.id.tv_report_title);
         tvReportDate = findViewById(R.id.tv_report_date);
         ivReportPhoto = findViewById(R.id.iv_report_photo);
+
+        // Show full, uncropped image programmatically
+        if (ivReportPhoto != null) {
+            ivReportPhoto.setAdjustViewBounds(true);
+            ivReportPhoto.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        }
 
         // Animal & Owner
         tvAnimalName = findViewById(R.id.tv_animal_name);
@@ -181,7 +187,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
 
     private void setLoading(boolean loading) {
         Log.d(TAG, "setLoading: " + loading);
-        loader.setVisibility(loading ? View.VISIBLE : View.GONE);
+        if (loader != null) loader.setVisibility(loading ? View.VISIBLE : View.GONE);
     }
 
     /* -------------------- Network -------------------- */
@@ -195,7 +201,6 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                     Log.v(TAG, "Response payload: " + truncate(resp, 4000));
 
                     try {
-                        // Guard: if server returned HTML by mistake
                         if (resp == null || !resp.trim().startsWith("{")) {
                             Log.e(TAG, "Server did not return JSON. First 200 chars: " + truncate(resp, 200));
                             Toast.makeText(this, "Server error: invalid response.", Toast.LENGTH_SHORT).show();
@@ -265,11 +270,14 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         Log.d(TAG, "attachment_url=" + attachmentUrl);
 
         if (!TextUtils.isEmpty(attachmentUrl)) {
+            // Photo available → show full image + hide all virtual sections.
             ivReportPhoto.setVisibility(View.VISIBLE);
             loadAttachmentWithBlockingLoader(attachmentUrl);
+            hideVirtualSections();
         } else {
             ivReportPhoto.setVisibility(View.GONE);
-            // No image → we can safely hide the loader now
+            // No image → show virtual fields normally
+            showVirtualSections();
             setLoading(false);
         }
 
@@ -339,7 +347,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
             }
         }
 
-        // Vaccination – show only if present
+        // Vaccination – show only if present (hidden anyway when photo-only mode)
         String vaccName = sanitize(r.optString("vaccination_name", null), "");
         String vaccNotes = sanitize(r.optString("vaccination_notes", null), "");
         boolean showVacc = !(TextUtils.isEmpty(vaccName) && TextUtils.isEmpty(vaccNotes));
@@ -349,6 +357,79 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
             tvVaccinationName.setText("Name: " + (TextUtils.isEmpty(vaccName) ? "N/A" : vaccName));
             tvVaccinationNotes.setText("Notes: " + (TextUtils.isEmpty(vaccNotes) ? "N/A" : vaccNotes));
         }
+    }
+
+    /** Hide all virtual report sections (cards/tables/text blocks) when photo is present. */
+    private void hideVirtualSections() {
+        // Toggle known containers if present (string-based → no compile errors if absent)
+        String[] maybeContainers = new String[]{
+                "card_animal_owner", "card_vitals", "card_findings",
+                "card_investigations", "card_medications", "card_vaccination",
+                "card_doctor", "section_virtual_report"
+        };
+        for (String idName : maybeContainers) hideIfExists(idName, View.GONE);
+
+        // Also hide parents of leaf views (in case layouts differ)
+        hideParent(tvAnimalName);
+        hideParent(tvSpeciesBreed);
+        hideParent(tvAnimalSex);
+        hideParent(tvAnimalAge);
+        hideParent(tvAnimalWeight);
+        hideParent(tvOwnerAddress);
+        hideParent(tvNextVisitDate);
+        hideParent(tvIsFollowup);
+
+        hideParent(tvTemperatureC);
+        hideParent(tvPulseBpm);
+        hideParent(tvSpo2Pct);
+        hideParent(tvBpMmhg);
+        hideParent(tvRespiratoryRateBpm);
+        hideParent(tvPainScore);
+        hideParent(tvHydrationStatus);
+        hideParent(tvMucousMembranes);
+        hideParent(tvCrtSec);
+
+        hideParent(tvSymptoms);
+        hideParent(tvBehaviorGait);
+        hideParent(tvSkinCoat);
+        hideParent(tvRespiratorySystem);
+        hideParent(tvReasons);
+
+        hideParent(tvRequiresInvestigation);
+        hideParent(tvInvestigationNotes);
+
+        if (tblMeds != null) tblMeds.setVisibility(View.GONE);
+        if (cardVaccination != null) cardVaccination.setVisibility(View.GONE);
+        // Keep header (title/date), image and download button visible.
+    }
+
+    /** Show virtual sections again (when there is no photo). */
+    private void showVirtualSections() {
+        String[] maybeContainers = new String[]{
+                "card_animal_owner", "card_vitals", "card_findings",
+                "card_investigations", "card_medications", "card_vaccination",
+                "card_doctor", "section_virtual_report"
+        };
+        for (String idName : maybeContainers) hideIfExists(idName, View.VISIBLE);
+
+        if (tblMeds != null) tblMeds.setVisibility(View.VISIBLE);
+        if (cardVaccination != null) cardVaccination.setVisibility(View.VISIBLE);
+    }
+
+    /** Utility: set visibility if a view id exists; no compile-time R.id reference needed. */
+    private void hideIfExists(String idName, int visibility) {
+        int id = getResources().getIdentifier(idName, "id", getPackageName());
+        if (id != 0) {
+            View v = findViewById(id);
+            if (v != null) v.setVisibility(visibility);
+        }
+    }
+
+    /** Hide the nearest sensible parent row/card for a leaf TextView. */
+    private void hideParent(View child) {
+        if (child == null) return;
+        View p = (View) child.getParent();
+        if (p != null) p.setVisibility(View.GONE);
     }
 
     /** Load image and hide loader only when it’s ready (or failed) + safety timeout. */
@@ -366,8 +447,8 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                 .load(url)
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
                 .dontAnimate()
-                .placeholder(R.drawable.plasholder)
-                .error(R.drawable.error)
+                .fitCenter()                 // ensure full image (no crop)
+                .skipMemoryCache(false)
                 .listener(new RequestListener<android.graphics.drawable.Drawable>() {
                     @Override
                     public boolean onLoadFailed(@Nullable GlideException e, Object model,
@@ -376,7 +457,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                         Log.e(TAG, "Glide load FAILED for: " + model, e);
                         setLoading(false);
                         watchdog.removeCallbacks(timeout);
-                        return false; // show error drawable
+                        return false;
                     }
 
                     @Override
@@ -386,7 +467,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                         Log.d(TAG, "Glide load OK: " + model + ", source=" + dataSource);
                         setLoading(false);
                         watchdog.removeCallbacks(timeout);
-                        return false; // continue normal
+                        return false;
                     }
                 })
                 .into(ivReportPhoto);
@@ -471,7 +552,6 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
 
     /* -------------------- Utilities (NULL-SAFE) -------------------- */
 
-    /** Treat any null-ish value as empty; return fallback (default "N/A") */
     private String sanitize(String s, String fallback) {
         if (s == null) return fallback == null ? "N/A" : fallback;
         String t = s.trim();
@@ -491,7 +571,6 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         return low.equals("null") || low.equals("undefined");
     }
 
-    /** Reads number-like fields safely; returns null for absent/JSONObject.NULL */
     private String numStr(JSONObject obj, String key) {
         if (obj == null || key == null) return null;
         if (!obj.has(key)) return null;
@@ -503,7 +582,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
 
     private void setAndLog(TextView tv, String prefix, String value) {
         String val = sanitize(value, "N/A");
-        tv.setText(prefix + val);
+        if (tv != null) tv.setText(prefix + val);
         Log.d(TAG, "Bind " + prefix + " = " + val);
     }
 
@@ -521,6 +600,9 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                 DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
                 DownloadManager.Request r = new DownloadManager.Request(Uri.parse(attachmentUrl));
                 r.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                r.setAllowedOverRoaming(true);
+                r.allowScanningByMediaScanner();
+                r.setMimeType("image/*");
                 String fileName = String.format(Locale.getDefault(), "vet_report_%s.jpg", appointmentId);
                 r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
                 long id = dm.enqueue(r);
