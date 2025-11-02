@@ -20,6 +20,17 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import android.graphics.Color;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 public class suppor extends AppCompatActivity {
 
     // private static final String TAG = "suppor";
@@ -31,7 +42,7 @@ public class suppor extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_suppor);
-
+        setupBarsWithScrimsNoRootPadding();
         // Start fetching data from the API
         new FetchContactDataTask().execute();
     }
@@ -45,6 +56,52 @@ public class suppor extends AppCompatActivity {
         }
         return phoneNumber;
     }
+
+    private void setupBarsWithScrimsNoRootPadding() {
+        // Draw behind bars
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        // Real bars transparent
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+        // White icons on black
+        WindowInsetsControllerCompat c =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        c.setAppearanceLightStatusBars(false);
+        c.setAppearanceLightNavigationBars(false);
+
+        final View root = findViewById(R.id.main);
+        final View top = findViewById(R.id.status_bar_scrim);
+        final View bottom = findViewById(R.id.navigation_bar_scrim);
+        if (root == null || top == null || bottom == null) return;
+
+        // Ensure scrim is physically at the very top (above any header)
+        top.bringToFront();
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            final Insets s = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+            final Insets n = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+
+            // Size scrims – DO NOT pad the root (that created the gap)
+            ViewGroup.LayoutParams lpTop = top.getLayoutParams();
+            if (lpTop.height != s.top) {
+                lpTop.height = s.top;
+                top.setLayoutParams(lpTop);
+            }
+            top.setVisibility(s.top > 0 ? View.VISIBLE : View.GONE);
+
+            ViewGroup.LayoutParams lpBot = bottom.getLayoutParams();
+            if (lpBot.height != n.bottom) {
+                lpBot.height = n.bottom;
+                bottom.setLayoutParams(lpBot);
+            }
+            bottom.setVisibility(n.bottom > 0 ? View.VISIBLE : View.GONE);
+
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        root.requestApplyInsets();
+    }
+
 
     private class FetchContactDataTask extends AsyncTask<Void, Void, String> {
 

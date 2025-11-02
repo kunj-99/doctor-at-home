@@ -8,6 +8,11 @@
     android:orientation="vertical"
     android:background="@color/white"
     app:ignore="NamespaceTypo">
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
 
     <!-- Title Bar -->
     <TextView
@@ -291,4 +296,11 @@
 
         </LinearLayout>
     </ScrollView>
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
+
+
 </LinearLayout>

@@ -19,6 +19,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+// Imports
+import android.graphics.Color;
+import android.os.Build;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.FrameLayout;
+
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 public class cancle_appintment extends AppCompatActivity {
 
     private TextInputEditText reasonInput, upiIdInput;
@@ -36,7 +51,7 @@ public class cancle_appintment extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cancle_appintment);
-
+        setupSystemBarScrims();
         // Retrieve Appointment ID safely
         if (getIntent().hasExtra("appointment_id")) {
             appointmentId = String.valueOf(getIntent().getIntExtra("appointment_id", -1));
@@ -146,6 +161,77 @@ public class cancle_appintment extends AppCompatActivity {
         RequestQueue requestQueue = Volley.newRequestQueue(this);
         requestQueue.add(stringRequest);
     }
+    private void setupSystemBarScrims() {
+        Window window = getWindow();
+
+        // Draw behind system bars so our scrims can cover them
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        // We want LIGHT icons on a dark (black) background
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(window, window.getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
+
+        // Get the content root (FrameLayout) and your actual screen root (the first child)
+        FrameLayout content = findViewById(android.R.id.content);
+        if (content == null) return;
+        View root = (content.getChildCount() > 0) ? content.getChildAt(0) : null;
+        if (root == null) return;
+
+        // Create scrim views (no XML/ID changes)
+        View statusScrim = new View(this);
+        View navScrim = new View(this);
+        statusScrim.setBackgroundColor(Color.BLACK);
+        navScrim.setBackgroundColor(Color.BLACK);
+
+        // Add scrims to the FrameLayout overlay space (top/bottom), without affecting your layout
+        FrameLayout.LayoutParams lpTop = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.TOP);
+        FrameLayout.LayoutParams lpBottom = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.BOTTOM);
+
+        content.addView(statusScrim, lpTop);
+        content.addView(navScrim, lpBottom);
+
+        // Handle insets: set scrim heights and pad your content so the title bar isn't under status bar
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets status = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+            Insets nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+
+            // 1) Size scrims to exact bar sizes (works for cutouts & gesture nav)
+            ViewGroup.LayoutParams stLp = statusScrim.getLayoutParams();
+            if (stLp.height != status.top) {
+                stLp.height = status.top;
+                statusScrim.setLayoutParams(stLp);
+            }
+            statusScrim.setVisibility(status.top > 0 ? View.VISIBLE : View.GONE);
+
+            ViewGroup.LayoutParams nbLp = navScrim.getLayoutParams();
+            if (nbLp.height != nav.bottom) {
+                nbLp.height = nav.bottom;
+                navScrim.setLayoutParams(nbLp);
+            }
+            navScrim.setVisibility(nav.bottom > 0 ? View.VISIBLE : View.GONE);
+
+            // 2) Prevent overlap: pad your screen root (keeps your 75dp title fully visible)
+            v.setPadding(
+                    v.getPaddingLeft(),
+                    status.top,
+                    v.getPaddingRight(),
+                    nav.bottom
+            );
+
+            // We handled everything
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        // Request initial insets pass
+        root.requestApplyInsets();
+    }
+
 
     // Update UPI ID for the appointment
     private void updateUpi(String upi, final Runnable onSuccess) {

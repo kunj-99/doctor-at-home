@@ -4,7 +4,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
     <!-- Main Content -->
     <ScrollView
         android:layout_width="match_parent"
@@ -518,5 +522,9 @@
             android:textSize="20sp"
             android:layout_marginTop="16dp"/>
     </LinearLayout>
-
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@android:color/black" />
 </FrameLayout>

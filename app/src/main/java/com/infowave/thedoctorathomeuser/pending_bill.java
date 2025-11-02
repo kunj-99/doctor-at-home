@@ -40,6 +40,16 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import android.graphics.Color;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
 public class pending_bill extends AppCompatActivity {
 
     private static final String TAG = "PendingBill";
@@ -134,7 +144,7 @@ public class pending_bill extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pending_bill);
-
+        setupSystemBarScrims();
         // PhonePe launcher
         ppCheckoutLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -343,6 +353,58 @@ public class pending_bill extends AppCompatActivity {
             tv.setText("-");
         else
             tv.setText(val);
+    }
+    private void setupSystemBarScrims() {
+        // 1) Draw behind system bars so the scrim views become visible
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+
+        // 2) Make the real system bars transparent; we'll fake them with the scrim views
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+
+        // 3) Because your scrims are black, you want *light* icons (no "light appearance")
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(window, window.getDecorView());
+        controller.setAppearanceLightStatusBars(false);     // false => light icons on dark bg
+        controller.setAppearanceLightNavigationBars(false); // false => light icons on dark bg
+
+        // 4) Find your scrim views
+        View statusScrim = findViewById(R.id.status_bar_scrim);
+        View navScrim    = findViewById(R.id.navigation_bar_scrim);
+        View root        = findViewById(R.id.root_container);
+
+        if (root == null || statusScrim == null || navScrim == null) return;
+
+        // 5) Apply insets so scrims match exact bar sizes (works for all nav modes)
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+            Insets navBars    = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+
+            // Top: set scrim height to status bar height
+            ViewGroup.LayoutParams lpTop = statusScrim.getLayoutParams();
+            if (lpTop.height != statusBars.top) {
+                lpTop.height = statusBars.top;
+                statusScrim.setLayoutParams(lpTop);
+            }
+            statusScrim.setBackgroundColor(Color.BLACK);
+            statusScrim.setVisibility(statusBars.top > 0 ? View.VISIBLE : View.GONE);
+
+            // Bottom: set scrim height to nav bar height (0 on gesture nav without 3-button bar)
+            ViewGroup.LayoutParams lpBottom = navScrim.getLayoutParams();
+            if (lpBottom.height != navBars.bottom) {
+                lpBottom.height = navBars.bottom;
+                navScrim.setLayoutParams(lpBottom);
+            }
+            navScrim.setBackgroundColor(Color.BLACK);
+            navScrim.setVisibility(navBars.bottom > 0 ? View.VISIBLE : View.GONE);
+
+            // We’re handling the insets ourselves.
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        // 6) Request initial insets
+        root.requestApplyInsets();
     }
 
     private void setRowVisibility(View v, boolean visible) {
