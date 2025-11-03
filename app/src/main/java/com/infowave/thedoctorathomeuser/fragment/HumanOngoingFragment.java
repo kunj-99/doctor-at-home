@@ -19,6 +19,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+// ✅ ADDED: to intercept system back presses without touching your Activity
+import androidx.activity.OnBackPressedCallback;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
@@ -138,6 +141,20 @@ public class HumanOngoingFragment extends Fragment {
                 liveHandler.postDelayed(this, POLL_INTERVAL_MS);
             }
         };
+
+        // ✅ ADDED: Intercept back press to avoid returning to the booking form
+        // This consumes the back press while this fragment is in view.
+        // If you later want to redirect to a specific screen, replace the body with your nav action.
+        OnBackPressedCallback blockBackHere = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Intentionally consume the back press so user doesn't go back to the booking form
+                Log.d(TAG, "Back press consumed in HumanOngoingFragment to prevent returning to booking form.");
+                // Optional: show a tiny feedback (commented out by default)
+                // Toast.makeText(requireContext(), "You're already on the ongoing screen.", Toast.LENGTH_SHORT).show();
+            }
+        };
+        requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), blockBackHere);
     }
 
     @Override public void onResume() {
