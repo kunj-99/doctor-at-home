@@ -6,21 +6,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -30,7 +28,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
@@ -55,16 +55,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-
-import android.graphics.Color;
-import android.os.Build;
-import android.os.Bundle;
-import android.view.View;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
-
 public class Profile extends AppCompatActivity {
 
     private static final int PICK_IMAGE = 1;
@@ -84,104 +74,76 @@ public class Profile extends AppCompatActivity {
     private Bitmap selectedBitmap = null;
     private String oldImageUrl = "";
 
-    // --- Keyboard handling helpers ---
-    private View rootContent;           // android.R.id.content
-    private ScrollView findNearestScroll(View v) {
-        ViewParent p = v.getParent();
-        while (p instanceof View) {
-            if (p instanceof ScrollView) return (ScrollView) p;
-            p = p.getParent();
-        }
-        return null;
-    }
-    private void scrollIntoView(EditText field) {
-        ScrollView sv = findNearestScroll(field);
-        if (sv != null) {
-            sv.post(() -> {
-                int y = field.getBottom() + sv.getPaddingBottom();
-                sv.smoothScrollTo(0, Math.max(0, y - sv.getHeight()));
-            });
-        } else {
-            // Fallback: scroll the whole content if no ScrollView present
-            rootContent.post(() -> field.getParent().requestChildFocus(field, field));
-        }
-    }
-    private void attachFocusAutoScroll(EditText... fields) {
-        for (EditText f : fields) {
-            f.setOnFocusChangeListener((v, hasFocus) -> {
-                if (hasFocus) scrollIntoView((EditText) v);
-            });
-        }
-    }
+    // ==== System bar & layout refs (no fragments) ====
+    private View root;                // R.id.profile_root
+    private View statusBarScrim;      // R.id.status_bar_scrim
+    private View navBarScrim;         // R.id.navigation_bar_scrim
+    private ScrollView scrollView;    // R.id.profile_scroll
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        // 1) Draw-behind (so we can paint our own bars)
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        // ===== System bars via views =====
+        root = findViewById(R.id.profile_root);
+        statusBarScrim = findViewById(R.id.status_bar_scrim);
+        navBarScrim = findViewById(R.id.navigation_bar_scrim);
+        scrollView = findViewById(R.id.profile_scroll);
 
-        // 2) Color the REAL system bars pure black.
-        getWindow().setStatusBarColor(Color.BLACK);
-        getWindow().setNavigationBarColor(Color.BLACK);
+        // Draw behind bars so scrims can cover them
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
 
-        // 3) Force white icons/text on both bars.
-        View root = findViewById(R.id.profile_root);
-        WindowInsetsControllerCompat controller =
-                new WindowInsetsControllerCompat(getWindow(), root);
+        // White icons on black bars
+        WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
         controller.setAppearanceLightStatusBars(false);
         controller.setAppearanceLightNavigationBars(false);
 
-        // 4) Extra safety for OEMs/themes that set “light” flags.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            root.setSystemUiVisibility(root.getSystemUiVisibility()
-                    & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            root.setSystemUiVisibility(root.getSystemUiVisibility()
-                    & ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        }
+        // Ensure scrims are above all content
+        statusBarScrim.bringToFront();
+        navBarScrim.bringToFront();
 
-        // 5) Keep exact black on API 29+ (prevents auto-contrast greying).
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            getWindow().setStatusBarContrastEnforced(false);
-            getWindow().setNavigationBarContrastEnforced(false);
-        }
+        // Size scrims and pad content based on real insets + keyboard
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
 
+            setHeight(statusBarScrim, sys.top);
+            setHeight(navBarScrim, sys.bottom);
 
+            int bottomPad = Math.max(sys.bottom, ime.bottom);
+            scrollView.setPadding(
+                    scrollView.getPaddingLeft(),
+                    sys.top, // push content below status bar
+                    scrollView.getPaddingRight(),
+                    bottomPad + dp(24) // keep your original 24dp space
+            );
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
 
-
-        // 1) Force adjustResize at runtime (no manifest/XML change required)
+        // Keep adjustResize for smooth form behavior
         getWindow().setSoftInputMode(
                 WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
                         | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         );
 
-        // 2) Add bottom padding when IME (keyboard) is shown so last field stays visible
-        rootContent = findViewById(android.R.id.content);
-        ViewCompat.setOnApplyWindowInsetsListener(rootContent, (v, insets) -> {
-            Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
-            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(0, sys.top, 0, Math.max(ime.bottom, sys.bottom));
-            return insets;
-        });
-
+        // ===== Your existing logic (unchanged) =====
         SharedPreferences sp = getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String patientIdStr = sp.getString("patient_id", "");
         if (patientIdStr.isEmpty()) {
             finish();
             return;
         }
+        patientId = Integer.parseInt(patientIdStr);
 
         ImageView btnBack = findViewById(R.id.iv_back_arrow);
         btnBack.setOnClickListener(v -> {
-            Intent intent = new Intent(Profile.this, MainActivity.class);
-            startActivity(intent);
+            startActivity(new Intent(Profile.this, MainActivity.class));
             finish();
         });
-
-        patientId = Integer.parseInt(patientIdStr);
 
         civProfile = findViewById(R.id.civ_profile);
         etFullName = findViewById(R.id.et_full_name);
@@ -223,7 +185,6 @@ public class Profile extends AppCompatActivity {
             } catch (AuthFailureError ignored) {}
         });
 
-        // 3) Auto-scroll any focused EditText into view (covers every field)
         attachFocusAutoScroll(
                 etFullName, etDOB, etAddress, etMobile, etEmail,
                 etEmergencyName, etEmergencyNumber, etMedicalHistory,
@@ -232,6 +193,8 @@ public class Profile extends AppCompatActivity {
 
         fetchProfile();
     }
+
+    // ===== System bar helpers =====
     private void setHeight(View v, int h) {
         if (v == null) return;
         ViewGroup.LayoutParams lp = v.getLayoutParams();
@@ -241,7 +204,42 @@ public class Profile extends AppCompatActivity {
         }
     }
 
-    public void openGallery() {
+    private int dp(int value) {
+        return Math.round(getResources().getDisplayMetrics().density * value);
+    }
+
+    // ===== Keyboard auto-scroll helpers =====
+    private void attachFocusAutoScroll(EditText... fields) {
+        for (EditText f : fields) {
+            f.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) scrollIntoView((EditText) v);
+            });
+        }
+    }
+
+    private ScrollView findNearestScroll(View v) {
+        ViewParent p = v.getParent();
+        while (p instanceof View) {
+            if (p instanceof ScrollView) return (ScrollView) p;
+            p = p.getParent();
+        }
+        return null;
+    }
+
+    private void scrollIntoView(EditText field) {
+        ScrollView sv = findNearestScroll(field);
+        if (sv != null) {
+            sv.post(() -> {
+                int y = field.getBottom() + sv.getPaddingBottom();
+                sv.smoothScrollTo(0, Math.max(0, y - sv.getHeight()));
+            });
+        } else {
+            root.post(() -> field.getParent().requestChildFocus(field, field));
+        }
+    }
+
+    // ===== Gallery & Date Picker =====
+    private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, PICK_IMAGE);
     }
@@ -261,8 +259,6 @@ public class Profile extends AppCompatActivity {
         }
     }
 
-
-
     private void showDatePicker() {
         Calendar calendar = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
@@ -279,41 +275,36 @@ public class Profile extends AppCompatActivity {
         int month = calendar.get(Calendar.MONTH);
         int day = calendar.get(Calendar.DAY_OF_MONTH);
 
-        DatePickerDialog datePickerDialog = new DatePickerDialog(Profile.this,
-                (DatePicker view, int selectedYear, int selectedMonth, int selectedDay) -> {
-                    Calendar selectedCalendar = Calendar.getInstance();
-                    selectedCalendar.set(selectedYear, selectedMonth, selectedDay);
-                    Calendar currentCalendar = Calendar.getInstance();
-                    if (selectedCalendar.after(currentCalendar)) {
-                        Toast.makeText(Profile.this, "Birth date cannot be in the future.", Toast.LENGTH_SHORT).show();
+        DatePickerDialog dlg = new DatePickerDialog(this,
+                (DatePicker view, int Y, int M, int D) -> {
+                    Calendar sel = Calendar.getInstance();
+                    sel.set(Y, M, D);
+                    if (sel.after(Calendar.getInstance())) {
+                        Toast.makeText(this, "Birth date cannot be in the future.", Toast.LENGTH_SHORT).show();
                     } else {
-                        String formattedDate = String.format(Locale.getDefault(), "%02d/%02d/%04d",
-                                selectedDay, selectedMonth + 1, selectedYear);
-                        etDOB.setText(formattedDate);
+                        etDOB.setText(String.format(Locale.getDefault(), "%02d/%02d/%04d", D, M + 1, Y));
                     }
                 }, year, month, day);
 
-        datePickerDialog.getDatePicker().setMaxDate(System.currentTimeMillis());
-        datePickerDialog.show();
+        dlg.getDatePicker().setMaxDate(System.currentTimeMillis());
+        dlg.show();
     }
 
+    // ===== Networking: fetch & update profile =====
     private void fetchProfile() {
         progressDialog.show();
 
         String url = ApiConfig.endpoint("get_profile.php", "patient_id", String.valueOf(patientId));
-
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, url, null,
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
                     progressDialog.dismiss();
                     try {
                         if ("success".equals(response.optString("status"))) {
                             JSONObject data = response.optJSONObject("data");
                             if (data == null) {
-                                Toast.makeText(Profile.this, "Profile not found.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, "Profile not found.", Toast.LENGTH_SHORT).show();
                                 return;
                             }
-
-                            // Use clean() to avoid showing "null"/"undefined"
                             setTextNoNull(etFullName,           clean(data.optString("full_name", "")));
                             setTextNoNull(etDOB,                clean(data.optString("date_of_birth", "")));
                             setSpinnerSelection(spinnerGender,  clean(data.optString("gender", "")));
@@ -338,21 +329,21 @@ public class Profile extends AppCompatActivity {
                                 oldImageUrl = "";
                             }
                         } else {
-                            Toast.makeText(Profile.this, "Profile not found.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Profile not found.", Toast.LENGTH_SHORT).show();
                         }
                     } catch (Exception e) {
-                        Toast.makeText(Profile.this, "Could not load your profile. Please try again.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Could not load your profile. Please try again.", Toast.LENGTH_SHORT).show();
                     }
                 },
                 error -> {
                     progressDialog.dismiss();
-                    Toast.makeText(Profile.this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                 });
-        requestQueue.add(jsonObjectRequest);
+        requestQueue.add(req);
     }
 
     private void setSpinnerSelection(Spinner spinner, String value) {
-        if (TextUtils.isEmpty(value)) return; // leave default
+        if (TextUtils.isEmpty(value)) return;
         ArrayAdapter adapter = (ArrayAdapter) spinner.getAdapter();
         if (adapter != null) {
             for (int i = 0, count = adapter.getCount(); i < count; i++) {
@@ -373,25 +364,26 @@ public class Profile extends AppCompatActivity {
         progressDialog.show();
 
         if (selectedBitmap != null) {
-            VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(Request.Method.POST, UPDATE_PROFILE_URL,
+            VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(
+                    Request.Method.POST, UPDATE_PROFILE_URL,
                     response -> {
                         progressDialog.dismiss();
                         try {
                             JSONObject jsonResponse = new JSONObject(new String(response.data));
                             if ("success".equals(jsonResponse.optString("status"))) {
-                                Toast.makeText(Profile.this, "Your profile was updated successfully!", Toast.LENGTH_SHORT).show();
-                                startActivity(new Intent(Profile.this, MainActivity.class));
+                                Toast.makeText(this, "Your profile was updated successfully!", Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(this, MainActivity.class));
                                 finish();
                             } else {
-                                Toast.makeText(Profile.this, "Could not update your profile. Please try again.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, "Could not update your profile. Please try again.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (JSONException e) {
-                            Toast.makeText(Profile.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                         }
                     },
                     error -> {
                         progressDialog.dismiss();
-                        Toast.makeText(Profile.this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                     }) {
                 @Override
                 protected Map<String, String> getParams() {
@@ -414,24 +406,24 @@ public class Profile extends AppCompatActivity {
                         try {
                             JSONObject jsonResponse = new JSONObject(response);
                             if ("success".equals(jsonResponse.optString("status"))) {
-                                Toast.makeText(Profile.this, "Your profile was updated successfully!", Toast.LENGTH_SHORT).show();
-                                startActivity(new Intent(Profile.this, MainActivity.class));
+                                Toast.makeText(this, "Your profile was updated successfully!", Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(this, MainActivity.class));
                                 finish();
                             } else {
-                                Toast.makeText(Profile.this, "Could not update your profile. Please try again.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, "Could not update your profile. Please try again.", Toast.LENGTH_SHORT).show();
                             }
                         } catch (JSONException e) {
-                            Toast.makeText(Profile.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                         }
                     },
                     error -> {
                         progressDialog.dismiss();
-                        Toast.makeText(Profile.this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
                     }) {
                 @Override
                 protected Map<String, String> getParams() {
                     Map<String, String> p = buildCommonParams();
-                    p.put("profile_image", oldImageUrl); // keep old if no new bitmap
+                    p.put("profile_image", oldImageUrl); // keep existing if not replaced
                     return p;
                 }
             };
@@ -483,14 +475,13 @@ public class Profile extends AppCompatActivity {
     }
 
     public byte[] getFileDataFromDrawable(Bitmap bitmap) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, byteArrayOutputStream);
-        return byteArrayOutputStream.toByteArray();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, bos);
+        return bos.toByteArray();
     }
 
-    // --- Multipart helper classes (unchanged) ---
+    // ===== Multipart helper classes (unchanged pattern) =====
     public abstract class VolleyMultipartRequest extends com.android.volley.Request<NetworkResponse> {
-
         private final Response.Listener<NetworkResponse> mListener;
         private final Map<String, String> mParams;
         private final Map<String, DataPart> mByteData;
@@ -527,11 +518,12 @@ public class Profile extends AppCompatActivity {
             mListener.onResponse(response);
         }
 
-        private byte[] buildMultipartBody(Map<String, String> params, Map<String, DataPart> dataParts) throws AuthFailureError {
+        private byte[] buildMultipartBody(Map<String, String> params, Map<String, DataPart> dataParts) {
             try {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 String lineEnd = "\r\n";
                 String twoHyphens = "--";
+
                 for (Map.Entry<String, String> entry : params.entrySet()) {
                     bos.write((twoHyphens + boundary + lineEnd).getBytes());
                     bos.write(("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"" + lineEnd).getBytes());
@@ -540,15 +532,17 @@ public class Profile extends AppCompatActivity {
                     bos.write((entry.getValue() == null ? "" : entry.getValue()).getBytes());
                     bos.write(lineEnd.getBytes());
                 }
+
                 for (Map.Entry<String, DataPart> entry : dataParts.entrySet()) {
-                    DataPart dataPart = entry.getValue();
+                    DataPart dp = entry.getValue();
                     bos.write((twoHyphens + boundary + lineEnd).getBytes());
-                    bos.write(("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"; filename=\"" + dataPart.getFileName() + "\"" + lineEnd).getBytes());
-                    bos.write(("Content-Type: " + dataPart.getType() + lineEnd).getBytes());
+                    bos.write(("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"; filename=\"" + dp.getFileName() + "\"" + lineEnd).getBytes());
+                    bos.write(("Content-Type: " + dp.getType() + lineEnd).getBytes());
                     bos.write(lineEnd.getBytes());
-                    bos.write(dataPart.getContent());
+                    bos.write(dp.getContent());
                     bos.write(lineEnd.getBytes());
                 }
+
                 bos.write((twoHyphens + boundary + twoHyphens + lineEnd).getBytes());
                 return bos.toByteArray();
             } catch (IOException e) {

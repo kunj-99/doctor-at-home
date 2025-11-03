@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/white">
 
-    <!-- Your original content -->
+    <!-- Main scrollable content -->
     <ScrollView
         android:id="@+id/profile_scroll"
         android:layout_width="match_parent"
@@ -23,7 +23,8 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center_horizontal">
-            <!-- Profile Header Section -->
+
+            <!-- Header -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="280dp"
@@ -63,14 +64,14 @@
 
                         <ImageView
                             android:id="@+id/civ_profile"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:src="@drawable/pr_ic_profile_placeholder"
-                            android:scaleType="centerCrop"
+                            android:layout_width="117dp"
+                            android:layout_height="117dp"
                             android:background="@drawable/rounded_square_background"
-                            android:clipToOutline="true" />
+                            android:clipToOutline="true"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/pr_ic_profile_placeholder" />
 
-                        <!-- Edit profile picture overlay -->
+                        <!-- Edit overlay -->
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="28dp"
@@ -117,7 +118,7 @@
                 </LinearLayout>
             </RelativeLayout>
 
-            <!-- Personal Information Card -->
+            <!-- Personal Information -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -147,7 +148,6 @@
                         android:drawablePadding="10dp"
                         android:drawableStart="@drawable/ic_person_outline" />
 
-                    <!-- Full Name -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -173,7 +173,6 @@
                             android:paddingHorizontal="16dp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Date of Birth -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -201,7 +200,6 @@
                             android:drawablePadding="8dp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Gender & Blood Group -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -255,7 +253,6 @@
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
-                    <!-- Address -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -285,7 +282,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Contact Information Card -->
+            <!-- Contact Information -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -313,7 +310,6 @@
                         android:drawablePadding="10dp"
                         android:drawableStart="@drawable/ic_contact" />
 
-                    <!-- Mobile -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -341,7 +337,6 @@
                             android:drawablePadding="12dp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Email -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -370,7 +365,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Emergency Contact Card -->
+            <!-- Emergency Contact -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -398,7 +393,6 @@
                         android:drawablePadding="10dp"
                         android:drawableStart="@drawable/ic_emergency" />
 
-                    <!-- Name -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -424,7 +418,6 @@
                             android:paddingHorizontal="16dp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Number -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -452,7 +445,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Medical Information Card -->
+            <!-- Medical Information -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -480,7 +473,6 @@
                         android:drawablePadding="10dp"
                         android:drawableStart="@drawable/ic_medical" />
 
-                    <!-- History -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -508,7 +500,6 @@
                             android:paddingHorizontal="16dp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Allergies -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -536,7 +527,6 @@
                             android:paddingHorizontal="16dp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Current Medications -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -566,7 +556,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Update Profile Button -->
+            <!-- Update Profile -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_update_profile"
                 android:layout_width="match_parent"
@@ -584,4 +574,20 @@
                 android:layout_marginBottom="24dp" />
         </LinearLayout>
     </ScrollView>
+
+    <!-- TOP status bar black overlay (height set via insets in code) -->
+    <View
+        android:id="@+id/status_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="top"
+        android:background="@android:color/black" />
+
+    <!-- BOTTOM navigation bar black overlay (height set via insets in code) -->
+    <View
+        android:id="@+id/navigation_bar_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="bottom"
+        android:background="@android:color/black" />
 </FrameLayout>
