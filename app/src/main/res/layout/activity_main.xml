@@ -15,7 +15,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- TOP scrim: height is set from WindowInsets -->
+        <!-- TOP scrim: height set from WindowInsets -->
         <View
             android:id="@+id/status_bar_scrim"
             android:layout_width="match_parent"
@@ -60,7 +60,7 @@
             app:itemTextColor="@color/white"
             app:menu="@menu/bottom_nav_menu" />
 
-        <!-- BOTTOM scrim: height is set from WindowInsets -->
+        <!-- BOTTOM scrim: height set from WindowInsets -->
         <View
             android:id="@+id/navigation_bar_scrim"
             android:layout_width="match_parent"
@@ -75,12 +75,11 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@color/black"
-        android:fitsSystemWindows="true"
+        android:fitsSystemWindows="false"
         app:headerLayout="@layout/appbar_heder"
         app:itemIconTint="@color/white"
         app:itemTextAppearance="@style/CustomNavigationDrawerItemText"
         app:itemTextColor="@color/white"
         app:menu="@menu/app_bar" />
-
 
 </androidx.drawerlayout.widget.DrawerLayout>
