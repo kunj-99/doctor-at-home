@@ -4,11 +4,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <View
         android:id="@+id/status_bar_scrim"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/black" />
+
     <!-- Main Content -->
     <ScrollView
         android:layout_width="match_parent"
@@ -21,13 +23,29 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/iv_report_photo"
+            <!-- Centered Report Photo -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:adjustViewBounds="true"
-                android:scaleType="fitCenter"
-                android:visibility="gone"/>
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp">
+
+                <ImageView
+                    android:id="@+id/iv_report_photo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:scaleType="fitCenter"
+                    android:maxHeight="600dp"
+                    android:layout_marginTop="10dp"
+                    android:minHeight="200dp"
+                    android:background="@drawable/image_background_border"
+                    android:padding="8dp"
+                    android:contentDescription="Medical report document"
+                    android:visibility="gone"/>
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/content_container"
@@ -483,21 +501,22 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- Download Button -->
-                <Button
-                    android:id="@+id/btn_download"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Download"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:backgroundTint="@color/navy_blue"
-                    android:layout_marginTop="16dp"
-                    android:padding="16dp" />
-
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
+
+    <!-- Download Button Fixed at Bottom -->
+    <Button
+        android:id="@+id/btn_download"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Download"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="@color/navy_blue"
+        android:layout_gravity="bottom"
+        android:layout_margin="16dp"
+        android:padding="16dp" />
 
     <!-- Stylish Animated Loader Overlay using a GIF -->
     <LinearLayout
@@ -522,6 +541,7 @@
             android:textSize="20sp"
             android:layout_marginTop="16dp"/>
     </LinearLayout>
+
     <View
         android:id="@+id/navigation_bar_scrim"
         android:layout_width="match_parent"

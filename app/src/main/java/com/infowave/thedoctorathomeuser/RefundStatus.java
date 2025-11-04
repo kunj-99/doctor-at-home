@@ -1,17 +1,21 @@
 package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
@@ -30,28 +34,65 @@ public class RefundStatus extends AppCompatActivity {
     TextView tvCancelStatus, tvCancelReason;
     SeekBar seekBarRefundProgress;
 
+    private View statusBarScrim;
+    private View navBarScrim;
+    private View rootContainer;
+    private View main;
+
     int appointmentId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+        // Force edge-to-edge so we can control the insets precisely
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        // Paint real system bars black (guaranteed, even if overlays fail on odd OEMs)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            getWindow().setStatusBarColor(Color.BLACK);
+            getWindow().setNavigationBarColor(Color.BLACK);
+        }
+
         setContentView(R.layout.activity_refund_status);
 
-        View root = findViewById(R.id.main);
-        if (root != null) {
-            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-                return insets;
-            });
-        }
+        // Light icons OFF (so icons are light on black bars)
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
+
+        rootContainer   = findViewById(R.id.root_container);
+        main            = findViewById(R.id.main);
+        statusBarScrim  = findViewById(R.id.status_bar_scrim);
+        navBarScrim     = findViewById(R.id.navigation_bar_scrim);
+
+        // Apply real system bar insets:
+        // 1) Pad content so nothing hides under bars.
+        // 2) Size scrims to exactly match bar heights (so bars are perfectly black).
+        ViewCompat.setOnApplyWindowInsetsListener(rootContainer, (v, insets) -> {
+            Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            // content padding so header/scroll never sits under bars
+            main.setPadding(sys.left, sys.top, sys.right, sys.bottom);
+
+            // overlay heights precisely equal to bar sizes
+            setViewHeight(statusBarScrim, sys.top);
+            setViewHeight(navBarScrim, sys.bottom);
+
+            return insets;
+        });
 
         appointmentId = getIntent().getIntExtra("appointment_id", 0);
         initViews();
         fetchRefundDetails();
         seekBarRefundProgress.setEnabled(false);
+    }
 
+    private void setViewHeight(@NonNull View view, int heightPx) {
+        if (view.getLayoutParams() != null && view.getLayoutParams().height != heightPx) {
+            view.getLayoutParams().height = heightPx;
+            view.requestLayout();
+        }
     }
 
     private void initViews() {
@@ -72,10 +113,10 @@ public class RefundStatus extends AppCompatActivity {
     private void fetchRefundDetails() {
         String url = ApiConfig.endpoint("get_refund_status.php");
 
-
         loaderutil.showLoader(this);
 
-        @SuppressLint("SetTextI18n") StringRequest request = new StringRequest(Request.Method.POST, url,
+        @SuppressLint("SetTextI18n")
+        StringRequest request = new StringRequest(Request.Method.POST, url,
                 response -> {
                     loaderutil.hideLoader();
                     try {
@@ -103,7 +144,6 @@ public class RefundStatus extends AppCompatActivity {
                         }
                     } catch (Exception e) {
                         Toast.makeText(this, "Sorry, we could not show your refund status right now.", Toast.LENGTH_SHORT).show();
-                        // e.printStackTrace(); // Log/Debug in dev only
                     }
                 },
                 error -> {

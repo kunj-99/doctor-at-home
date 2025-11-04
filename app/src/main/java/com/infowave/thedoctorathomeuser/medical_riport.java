@@ -89,6 +89,13 @@ public class medical_riport extends AppCompatActivity {
 
         setContentView(R.layout.activity_medical_riport);
         setupSystemBarsBlackWithScrims();
+        initializeViews();
+        setupLoader();
+        setupClickListeners();
+        fetchMedicalReport();
+    }
+
+    private void initializeViews() {
         tvHospitalName = findViewById(R.id.tv_hospital_name);
         tvHospitalAddress = findViewById(R.id.tv_hospital_address);
         tvPatientName = findViewById(R.id.tv_patient_name);
@@ -111,17 +118,23 @@ public class medical_riport extends AppCompatActivity {
 
         loader = findViewById(R.id.loader);
         ivLoader = findViewById(R.id.iv_loader);
-        loader.setVisibility(View.VISIBLE);
-        try { Glide.with(this).asGif().load(R.drawable.loader).into(ivLoader); } catch (Throwable ignored) {}
 
-        btnBack.setOnClickListener(v -> finish());
-
+        // Set hospital info
         tvHospitalName.setText("VRAJ HOSPITAL");
         tvHospitalAddress.setText("150 Feet Ring Road, Rajkot - 360 004");
 
-        requestQueue = Volley.newRequestQueue(this);
-        fetchMedicalReport();
         btnDownload.setBackgroundColor(getResources().getColor(R.color.navy_blue));
+    }
+
+    private void setupLoader() {
+        loader.setVisibility(View.VISIBLE);
+        try {
+            Glide.with(this).asGif().load(R.drawable.loader).into(ivLoader);
+        } catch (Throwable ignored) {}
+    }
+
+    private void setupClickListeners() {
+        btnBack.setOnClickListener(v -> finish());
 
         btnDownload.setOnClickListener(v -> {
             if (ivReportPhoto.getVisibility() == View.VISIBLE && !reportPhotoUrl.isEmpty()) {
@@ -164,24 +177,12 @@ public class medical_riport extends AppCompatActivity {
                         Log.d(TAG, "report_photo: " + photoUrl);
 
                         if (!isEmpty(photoUrl)) {
-                            // IMAGE MODE — keep loader visible until Glide finishes
+                            // IMAGE MODE - Full screen image with professional layout
                             reportPhotoUrl = photoUrl;
-                            ivReportPhoto.setVisibility(View.VISIBLE);
-
-                            // Hide other content (except Download button)
-                            LinearLayout contentContainer = findViewById(R.id.content_container);
-                            for (int i = 0; i < contentContainer.getChildCount(); i++) {
-                                View child = contentContainer.getChildAt(i);
-                                if (child.getId() != R.id.btn_download && child.getId() != R.id.iv_report_photo) {
-                                    child.setVisibility(View.GONE);
-                                }
-                            }
-                            btnDownload.setVisibility(View.VISIBLE);
-
+                            setupFullScreenImageMode();
                             loadReportPhotoWithBlockingLoader(photoUrl);
-
                         } else {
-                            // TEXT MODE — fill all fields then hide loader immediately after binding
+                            // TEXT MODE - Regular form layout
                             bindTextReport(data);
                             hideLoader();
                         }
@@ -197,7 +198,43 @@ public class medical_riport extends AppCompatActivity {
                     hideLoader();
                 }
         );
+
+        if (requestQueue == null) {
+            requestQueue = Volley.newRequestQueue(this);
+        }
         requestQueue.add(request);
+    }
+
+    /**
+     * Setup full-screen image mode with professional styling
+     */
+    private void setupFullScreenImageMode() {
+        // Make image view visible and setup professional styling
+        ivReportPhoto.setVisibility(View.VISIBLE);
+
+        // Setup professional image view parameters
+        ViewGroup.LayoutParams params = ivReportPhoto.getLayoutParams();
+        params.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        params.height = ViewGroup.LayoutParams.MATCH_PARENT;
+        ivReportPhoto.setLayoutParams(params);
+
+        ivReportPhoto.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        ivReportPhoto.setAdjustViewBounds(true);
+        ivReportPhoto.setBackgroundColor(Color.WHITE);
+
+        // Hide all other content except download button
+        LinearLayout contentContainer = findViewById(R.id.content_container);
+        if (contentContainer != null) {
+            for (int i = 0; i < contentContainer.getChildCount(); i++) {
+                View child = contentContainer.getChildAt(i);
+                if (child.getId() != R.id.btn_download && child.getId() != R.id.iv_report_photo) {
+                    child.setVisibility(View.GONE);
+                }
+            }
+        }
+
+        // Ensure download button is visible
+        btnDownload.setVisibility(View.VISIBLE);
     }
 
     /**
@@ -222,7 +259,7 @@ public class medical_riport extends AppCompatActivity {
                 .load(url)
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
                 .dontAnimate()
-                .placeholder(R.drawable.plasholder)      // remains under loader
+                .placeholder(R.drawable.plasholder)
                 .error(R.drawable.error)
                 .listener(new RequestListener<Drawable>() {
                     @Override
@@ -412,30 +449,37 @@ public class medical_riport extends AppCompatActivity {
     }
 
     private void downloadImage(String url) {
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "medical_report.jpg");
-        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-        downloadManager.enqueue(request);
-        Toast.makeText(this, "Your report image is downloading...", Toast.LENGTH_SHORT).show();
+        try {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "medical_report_" + System.currentTimeMillis() + ".jpg");
+            DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            if (downloadManager != null) {
+                downloadManager.enqueue(request);
+                Toast.makeText(this, "Your report image is downloading...", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Download error", e);
+            Toast.makeText(this, "Download failed. Please try again.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void generatePdf() {
-        View content = findViewById(R.id.content_container);
-        btnDownload.setVisibility(View.GONE);
-        Bitmap bitmap = getBitmapFromView(content);
-        btnDownload.setVisibility(View.VISIBLE);
-
-        PdfDocument document = new PdfDocument();
-        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(bitmap.getWidth(), bitmap.getHeight(), 1).create();
-        PdfDocument.Page page = document.startPage(pageInfo);
-        Canvas canvas = page.getCanvas();
-        canvas.drawBitmap(bitmap, 0, 0, null);
-        document.finishPage(page);
-
-        String fileName = "medical_report.pdf";
-        File pdfFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
         try {
+            View content = findViewById(R.id.content_container);
+            btnDownload.setVisibility(View.GONE);
+            Bitmap bitmap = getBitmapFromView(content);
+            btnDownload.setVisibility(View.VISIBLE);
+
+            PdfDocument document = new PdfDocument();
+            PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(bitmap.getWidth(), bitmap.getHeight(), 1).create();
+            PdfDocument.Page page = document.startPage(pageInfo);
+            Canvas canvas = page.getCanvas();
+            canvas.drawBitmap(bitmap, 0, 0, null);
+            document.finishPage(page);
+
+            String fileName = "medical_report_" + System.currentTimeMillis() + ".pdf";
+            File pdfFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
             FileOutputStream fos = new FileOutputStream(pdfFile);
             document.writeTo(fos);
             document.close();
@@ -446,36 +490,31 @@ public class medical_riport extends AppCompatActivity {
             Toast.makeText(this, "Unable to generate PDF. Please try again.", Toast.LENGTH_SHORT).show();
         }
     }
+
     private void setupSystemBarsBlackWithScrims() {
-        // 1) Draw behind system bars so our scrim Views can occupy those areas
         Window window = getWindow();
         WindowCompat.setDecorFitsSystemWindows(window, false);
 
-        // 2) Make *real* bars black (hard guarantee) and keep light icons over black
         window.setStatusBarColor(Color.BLACK);
         window.setNavigationBarColor(Color.BLACK);
         WindowInsetsControllerCompat controller =
                 new WindowInsetsControllerCompat(window, window.getDecorView());
-        controller.setAppearanceLightStatusBars(false);      // light icons on dark bg
-        controller.setAppearanceLightNavigationBars(false);  // light icons on dark bg
+        controller.setAppearanceLightStatusBars(false);
+        controller.setAppearanceLightNavigationBars(false);
 
-        // 3) Find your scrim Views (must exist in the layout)
         final View statusScrim = findViewById(R.id.status_bar_scrim);
         final View navScrim    = findViewById(R.id.navigation_bar_scrim);
         if (statusScrim == null || navScrim == null) return;
 
-        // 4) Use the actual root view Android inflated for this content
         final ViewGroup content = findViewById(android.R.id.content);
         final View root = (content != null && content.getChildCount() > 0)
                 ? content.getChildAt(0)
                 : window.getDecorView();
 
-        // 5) Size scrims to EXACT system bar heights (works with notches & any nav mode)
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets statusBars = insets.getInsets(WindowInsetsCompat.Type.statusBars());
             Insets navBars    = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
 
-            // TOP scrim = status bar height
             ViewGroup.LayoutParams topLp = statusScrim.getLayoutParams();
             if (topLp.height != statusBars.top) {
                 topLp.height = statusBars.top;
@@ -484,7 +523,6 @@ public class medical_riport extends AppCompatActivity {
             statusScrim.setBackgroundColor(Color.BLACK);
             statusScrim.setVisibility(statusBars.top > 0 ? View.VISIBLE : View.GONE);
 
-            // BOTTOM scrim = nav bar height (0 on gesture nav without 3-button bar)
             ViewGroup.LayoutParams botLp = navScrim.getLayoutParams();
             if (botLp.height != navBars.bottom) {
                 botLp.height = navBars.bottom;
@@ -493,14 +531,11 @@ public class medical_riport extends AppCompatActivity {
             navScrim.setBackgroundColor(Color.BLACK);
             navScrim.setVisibility(navBars.bottom > 0 ? View.VISIBLE : View.GONE);
 
-            // We handled insets via scrims.
             return WindowInsetsCompat.CONSUMED;
         });
 
-        // 6) Trigger initial inset dispatch
         root.requestApplyInsets();
     }
-
 
     private Bitmap getBitmapFromView(View view) {
         Bitmap returnedBitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
