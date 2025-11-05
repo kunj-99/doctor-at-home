@@ -23,6 +23,10 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
@@ -47,9 +51,9 @@ import java.util.Set;
 
 /**
  * AnimalReportViewerActivity
- * - If photo exists → show ONLY the photo (full, not cropped) with small padding + Download button.
- *   Everything else is hidden (title/date/back/virtual sections all gone).
- * - If no photo → show the virtual report (NO created/updated anywhere).
+ * - If photo exists → photo-only mode (with Download).
+ * - If no photo → virtual report view.
+ * - Adds black status & navigation bars using View overlays (no theme changes).
  */
 public class AnimalReportViewerActivity extends AppCompatActivity {
 
@@ -100,6 +104,9 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_animal_report_viewer);
 
+        // ★ Make content draw edge-to-edge and size black scrims to system bars.
+        setupSystemBarScrims();
+
         bindViews();
 
         if (btnBack != null) btnBack.setOnClickListener(v -> onBackPressed());
@@ -121,6 +128,49 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         String url = ApiConfig.endpoint("get_vet_report.php", "appointment_id", appointmentId);
         Log.d(TAG, "Request URL = " + url);
         fetchReport(url);
+    }
+
+    /** Edge-to-edge + black top/bottom bars using views (no theme change). */
+    private void setupSystemBarScrims() {
+        // Allow drawing behind system bars
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        final View topScrim = findViewById(R.id.system_top_scrim);
+        final View bottomScrim = findViewById(R.id.system_bottom_scrim);
+        final View rootContent = findViewById(R.id.root_content);
+
+        // Apply insets to size scrims exactly and keep content clear of bars
+        final View rootView = getWindow().getDecorView().findViewById(android.R.id.content);
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            if (topScrim != null) {
+                ViewGroup.LayoutParams lp = topScrim.getLayoutParams();
+                lp.height = bars.top;                  // exact status bar height
+                topScrim.setLayoutParams(lp);
+                topScrim.setVisibility(bars.top > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            if (bottomScrim != null) {
+                ViewGroup.LayoutParams lp = bottomScrim.getLayoutParams();
+                lp.height = bars.bottom;               // exact nav bar height
+                bottomScrim.setLayoutParams(lp);
+                bottomScrim.setVisibility(bars.bottom > 0 ? View.VISIBLE : View.GONE);
+            }
+
+            // Push content away from bars so nothing is hidden
+            if (rootContent != null) {
+                rootContent.setPadding(
+                        rootContent.getPaddingLeft(),
+                        Math.max(rootContent.getPaddingTop(), bars.top),
+                        rootContent.getPaddingRight(),
+                        Math.max(rootContent.getPaddingBottom(), bars.bottom)
+                );
+            }
+
+            // We consumed insets visually; let children use zeroed insets.
+            return WindowInsetsCompat.CONSUMED;
+        });
     }
 
     /* -------------------- Bind Views -------------------- */
@@ -321,7 +371,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         // Doctor
         setAndLog(tvDoctorSignature, "Signature/Name: ", sanitize(r.optString("doctor_signature", null), "N/A"));
 
-        // Medications (combined → fallback to raw arrays)
+        // Medications
         JSONArray medsCombined = r.optJSONArray("medications");
         if (medsCombined != null && medsCombined.length() > 0) {
             inflateMedicationsFromCombined(medsCombined);
@@ -356,22 +406,18 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         View download = btnDownload;
         View loaderView = loader;
 
-        // Resolve root (actual activity root view)
         ViewGroup content = findViewById(android.R.id.content);
         View rootCandidate = (content != null && content.getChildCount() > 0) ? content.getChildAt(0) : content;
         ViewGroup root = (rootCandidate instanceof ViewGroup) ? (ViewGroup) rootCandidate : content;
 
-        // Collect kept views + their ancestors up to root
         Set<View> keepViews = new HashSet<>();
         addWithAncestors(photo, keepViews, root);
         addWithAncestors(download, keepViews, root);
         addWithAncestors(loaderView, keepViews, root);
 
-        // Hide everything else
         hideTreeExceptViews(root, keepViews);
 
-        // Ensure photo fills nicely with padding
-        int pad = (int) (getResources().getDisplayMetrics().density * 12); // ~12dp
+        int pad = (int) (getResources().getDisplayMetrics().density * 12);
         ivReportPhoto.setPadding(pad, pad, pad, pad);
         ivReportPhoto.setAdjustViewBounds(true);
         ivReportPhoto.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -453,9 +499,8 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                 .into(ivReportPhoto);
     }
 
-    /* -------------------- Medications helpers (virtual mode) -------------------- */
+    /* -------------------- Medications helpers -------------------- */
 
-    /** For combined structure: [{name, dosage}] */
     private void inflateMedicationsFromCombined(JSONArray meds) {
         if (tblMeds == null) return;
         clearMedicationRows();
@@ -470,7 +515,6 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         }
     }
 
-    /** Fallback: separate arrays for names and doses */
     private void inflateMedicationsFromRawArrays(JSONArray names, JSONArray doses) {
         if (tblMeds == null) return;
         clearMedicationRows();
@@ -502,7 +546,6 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         tblMeds.addView(row);
     }
 
-    /** Turn "Paracetamol, Azithromycin" -> "Paracetamol\nAzithromycin"; null-ish -> "N/A" */
     private String splitByCommaNewLines(String s) {
         if (isNullish(s)) return "N/A";
         if (!s.contains(",")) return sanitize(s, "N/A");
@@ -594,7 +637,6 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
                 }
             }
         } else {
-            // Share virtual summary only when no photo
             String share = buildShareSummary();
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");

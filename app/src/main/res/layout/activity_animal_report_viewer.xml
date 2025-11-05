@@ -9,7 +9,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/white"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:id="@+id/root_content"
@@ -484,8 +485,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- System Timestamps -->
-
             <!-- Download Button -->
             <Button
                 android:id="@+id/btn_download"
@@ -524,5 +523,20 @@
             android:textColor="@android:color/white"
             android:textSize="18sp" />
     </LinearLayout>
+
+    <!-- ★ Top & Bottom scrims (black bars) -->
+    <View
+        android:id="@+id/system_top_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="top"
+        android:background="#000000" />
+
+    <View
+        android:id="@+id/system_bottom_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="bottom"
+        android:background="#000000" />
 
 </FrameLayout>
