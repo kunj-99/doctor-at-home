@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
@@ -110,6 +111,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder h, int position) {
         if (h instanceof EmptyViewHolder) {

@@ -9,7 +9,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.DisplayMetrics;
-//import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -20,9 +19,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.GravityCompat;
-
-import com.bumptech.glide.Glide;
-import com.google.firebase.FirebaseApp;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -32,6 +28,9 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.viewpager.widget.ViewPager;
 
+import com.bumptech.glide.Glide;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.infowave.thedoctorathomeuser.view.*;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
@@ -112,7 +111,6 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-
         // Initialize UI components
         vp = findViewById(R.id.vp);
         btn = findViewById(R.id.bottem);
@@ -122,16 +120,12 @@ public class MainActivity extends AppCompatActivity {
         // Ensure drawer content respects system bars (status/nav)
         ViewCompat.setOnApplyWindowInsetsListener(navigationView, (view, insets) -> {
             Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-
-            // Only pad the NavigationView container so items start below status bar.
-            // DO NOT alter header padding here (let the header XML handle its own top padding).
             navigationView.setPadding(
                     navigationView.getPaddingLeft(),
                     sys.top,
                     navigationView.getPaddingRight(),
                     sys.bottom
             );
-
             return insets;
         });
 
@@ -263,6 +257,7 @@ public class MainActivity extends AppCompatActivity {
                 rateApp();
                 return true;
             } else if (item.getItemId() == R.id.logout) {
+                // Clear local prefs
                 SharedPreferences userPrefsLogout = getSharedPreferences("UserPrefs", MODE_PRIVATE);
                 SharedPreferences.Editor userEditor = userPrefsLogout.edit();
                 userEditor.clear();
@@ -273,9 +268,14 @@ public class MainActivity extends AppCompatActivity {
                 reviewEditor.clear();
                 reviewEditor.apply();
 
-                intent = new Intent(MainActivity.this, login.class);
-                startActivity(intent);
-                finish();
+                // Optional hygiene: stop this device from receiving old user’s pushes
+                FirebaseMessaging.getInstance().deleteToken()
+                        .addOnCompleteListener(t -> {
+                            // No UI needed; proceed to login
+                            Intent goLogin = new Intent(MainActivity.this, login.class);
+                            startActivity(goLogin);
+                            finish();
+                        });
                 return true;
             }
 
@@ -296,14 +296,25 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // Permissions first; then only sync if patient_id is present
         MyFirebaseMessagingService.requestNotificationPermissionIfNeeded(this);
-        FcmTokenHelper.ensureTokenSynced(this);
-
-
-
+        SharedPreferences spForToken = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String pidForToken = spForToken.getString("patient_id", "");
+        if (pidForToken != null && !pidForToken.isEmpty()) {
+            FcmTokenHelper.ensureTokenSynced(this);
+        }
     }
 
-
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // If login just happened and patient_id became available, sync token now
+        SharedPreferences sp = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String pid = sp.getString("patient_id", "");
+        if (pid != null && !pid.isEmpty()) {
+            FcmTokenHelper.ensureTokenSynced(this);
+        }
+    }
 
     private void rateApp() {
         String appPackageName = getPackageName();
@@ -344,7 +355,6 @@ public class MainActivity extends AppCompatActivity {
         // 3) Otherwise, default back behavior
         super.onBackPressed();
     }
-
 
     private void adjustNavigationDrawerWidth() {
         DisplayMetrics metrics = new DisplayMetrics();
