@@ -8,13 +8,13 @@
     android:orientation="vertical"
     android:background="@color/white"
     app:ignore="NamespaceTypo">
+
     <View
         android:id="@+id/status_bar_scrim"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/black" />
 
-    <!-- Title Bar -->
     <TextView
         android:id="@+id/title"
         android:layout_width="match_parent"
@@ -39,18 +39,17 @@
             android:orientation="vertical"
             android:paddingVertical="8dp">
 
-            <!-- Error Message TextView -->
             <TextView
                 android:id="@+id/tvErrorMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColor="@color/error"
-            android:textSize="14sp"
-            android:padding="8dp"
-            android:visibility="visible"
-            android:text="" />
+                android:textSize="14sp"
+                android:padding="8dp"
+                android:visibility="visible"
+                android:text="" />
 
-            <!-- Doctor Header -->
+            <!-- Doctor Header (sample) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -65,7 +64,7 @@
                     android:background="@drawable/circle_background"
                     android:contentDescription="Doctor avatar"
                     android:padding="12dp"
-                    app:tint="@color/navy_blue" />
+                    map:tint="@color/navy_blue" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -93,61 +92,12 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Details Section -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardElevation="1dp"
-                app:shapeAppearance="@style/ShapeAppearance.Material3.SmallComponent"
-                android:layout_marginVertical="8dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <!-- Patient Details -->
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Your Details"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                        android:textColor="@color/onSurface"
-                        android:layout_marginBottom="12dp" />
-
-                    <GridLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:columnCount="2"
-                        android:rowCount="3">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Full Name:"
-                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                            android:textColor="@color/onSurfaceVariant" />
-
-                        <TextView
-                            android:id="@+id/patientName1"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                            android:textColor="@color/onSurface"
-                            android:layout_marginStart="16dp" />
-
-                        <!-- Add Age, Gender, Contact as needed -->
-                    </GridLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- Appointment Details Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardElevation="1dp"
-                app:shapeAppearance="@style/ShapeAppearance.Material3.SmallComponent"
+                map:cardElevation="1dp"
+                map:shapeAppearance="@style/ShapeAppearance.Material3.SmallComponent"
                 android:layout_marginVertical="8dp">
 
                 <LinearLayout
@@ -168,7 +118,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:columnCount="2"
-                        android:rowCount="3">
+                        android:rowCount="2">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -185,36 +135,32 @@
                             android:textColor="@color/onSurface"
                             android:layout_marginStart="16dp" />
 
-                        <!-- Add Time, Clinic, Address as needed -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Patient:"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                            android:textColor="@color/onSurfaceVariant" />
+
+                        <TextView
+                            android:id="@+id/patientName1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                            android:textColor="@color/onSurface"
+                            android:layout_marginStart="16dp" />
                     </GridLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-            <!-- UPI ID Input Field -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginVertical="8dp"
-                app:shapeAppearance="@style/ShapeAppearance.Material3.SmallComponent"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/upi_id_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Enter UPI ID"
-                    android:inputType="text"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
-            </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Cancellation Reason -->
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginVertical="8dp"
-                app:counterEnabled="true"
-                app:counterMaxLength="250"
-                app:shapeAppearance="@style/ShapeAppearance.Material3.SmallComponent"
+                map:counterEnabled="true"
+                map:counterMaxLength="250"
+                map:shapeAppearance="@style/ShapeAppearance.Material3.SmallComponent"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -228,13 +174,13 @@
                     android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Warning Section -->
+            <!-- Warning + Confirm -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/errorContainer"
-                app:strokeColor="@color/error"
-                app:shapeAppearance="@style/ShapeAppearance.Material3.SmallComponent"
+                map:cardBackgroundColor="@color/errorContainer"
+                map:strokeColor="@color/error"
+                map:shapeAppearance="@style/ShapeAppearance.Material3.SmallComponent"
                 android:layout_marginVertical="8dp">
 
                 <LinearLayout
@@ -275,12 +221,7 @@
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Back"
-                    app:iconPadding="4dp"
-                    app:iconTint="@color/primary"
-                    app:strokeColor="@color/outline"
-                    android:textColor="@color/primary"
-                    android:layout_marginEnd="8dp" />
+                    android:text="Back" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_confirm"
@@ -288,19 +229,17 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Confirm Cancellation"
-                    app:iconPadding="4dp"
-                    app:iconTint="@color/onError"
+                    android:layout_marginStart="12dp"
+                    map:iconPadding="4dp"
                     android:backgroundTint="@color/error"
                     android:textColor="@color/onError" />
             </LinearLayout>
-
         </LinearLayout>
     </ScrollView>
+
     <View
         android:id="@+id/navigation_bar_scrim"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/black" />
-
-
 </LinearLayout>

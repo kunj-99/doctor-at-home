@@ -6,22 +6,23 @@ import android.text.TextUtils;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
+
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-// Imports
+// System bar scrims
 import android.graphics.Color;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,11 +37,10 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 public class cancle_appintment extends AppCompatActivity {
 
-    private TextInputEditText reasonInput, upiIdInput;
+    private TextInputEditText reasonInput;
     private MaterialCheckBox confirmationCheckbox;
     private MaterialButton btnBack, btnConfirm;
     private TextView doctorName, doctorQualification, patientName, appointmentDate;
-    // TextView to display error messages in UI
     private TextView tvErrorMessage;
 
     private String appointmentId = "";
@@ -52,7 +52,7 @@ public class cancle_appintment extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cancle_appintment);
         setupSystemBarScrims();
-        // Retrieve Appointment ID safely
+
         if (getIntent().hasExtra("appointment_id")) {
             appointmentId = String.valueOf(getIntent().getIntExtra("appointment_id", -1));
             if (appointmentId.equals("-1")) {
@@ -66,84 +66,58 @@ public class cancle_appintment extends AppCompatActivity {
             return;
         }
 
-        // Initialize Views
-        doctorName = findViewById(R.id.doctoName1);
+        doctorName          = findViewById(R.id.doctoName1);
         doctorQualification = findViewById(R.id.doctorQualification1);
-        patientName = findViewById(R.id.patientName1);
-        appointmentDate = findViewById(R.id.appointment_date1);
-        reasonInput = findViewById(R.id.reasonInput);
-        upiIdInput = findViewById(R.id.upi_id_input);
-        confirmationCheckbox = findViewById(R.id.confirmationCheckbox);
-        btnBack = findViewById(R.id.btn_back);
-        btnConfirm = findViewById(R.id.btn_confirm);
-        tvErrorMessage = findViewById(R.id.tvErrorMessage);
+        patientName         = findViewById(R.id.patientName1);
+        appointmentDate     = findViewById(R.id.appointment_date1);
+        reasonInput         = findViewById(R.id.reasonInput);
+        confirmationCheckbox= findViewById(R.id.confirmationCheckbox);
+        btnBack             = findViewById(R.id.btn_back);
+        btnConfirm          = findViewById(R.id.btn_confirm);
+        tvErrorMessage      = findViewById(R.id.tvErrorMessage);
 
-        // Fetch appointment details
         fetchAppointmentDetails();
 
-        // Back Button
         btnBack.setOnClickListener(v -> finish());
 
-        // Confirm Button - validate EditText inputs first, then check checkbox
         btnConfirm.setOnClickListener(v -> {
-            // Clear previous error message
             tvErrorMessage.setText("");
             StringBuilder errorBuilder = new StringBuilder();
 
-            // Validate cancellation reason
             String reason = Objects.requireNonNull(reasonInput.getText()).toString().trim();
             if (TextUtils.isEmpty(reason)) {
                 reasonInput.setError("Please enter a reason for cancellation.");
                 errorBuilder.append("Please enter a reason for cancellation.\n");
             }
 
-            // Validate UPI ID
-            String upi = upiIdInput.getText().toString().trim();
-            if (TextUtils.isEmpty(upi)) {
-                upiIdInput.setError("Please enter your UPI ID.");
-                errorBuilder.append("Please enter your UPI ID.\n");
-            } else if (!isValidUpi(upi)) {
-                upiIdInput.setError("Please enter a valid UPI ID.");
-                errorBuilder.append("Please enter a valid UPI ID.\n");
-            }
-
-            // If any errors exist in the EditText fields, display them and stop processing
             if (errorBuilder.length() > 0) {
                 tvErrorMessage.setText(errorBuilder.toString());
                 return;
             }
 
-            // Now, check the confirmation checkbox
             if (!confirmationCheckbox.isChecked()) {
                 Toast.makeText(cancle_appintment.this, "Please check the box to confirm cancellation.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // All validations passed, update UPI and cancel the appointment
-            updateUpi(upi, () -> cancelAppointment(reason));
+            cancelAppointment(reason);
         });
     }
 
-    // Validate UPI ID using regex (format: username@bank)
-    private boolean isValidUpi(String upi) {
-        return upi.matches("^[a-zA-Z0-9._-]+@[a-zA-Z]{2,}$");
-    }
-
-    // Fetch appointment details
     private void fetchAppointmentDetails() {
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL,
+        StringRequest req = new StringRequest(Request.Method.POST, API_URL,
                 response -> {
                     try {
-                        JSONObject jsonObject = new JSONObject(response);
-                        if (!jsonObject.getBoolean("success")) {
+                        JSONObject o = new JSONObject(response);
+                        if (!o.getBoolean("success")) {
                             tvError("Could not load appointment details. Please try again.");
                             return;
                         }
-                        JSONObject appointment = jsonObject.getJSONObject("appointment");
-                        if (doctorName != null) doctorName.setText(appointment.getString("doctor_name"));
-                        if (doctorQualification != null) doctorQualification.setText(appointment.getString("qualification"));
-                        if (patientName != null) patientName.setText(appointment.getString("patient_name"));
-                        if (appointmentDate != null) appointmentDate.setText(appointment.getString("appointment_date"));
+                        JSONObject a = o.getJSONObject("appointment");
+                        if (doctorName != null)          doctorName.setText(a.optString("patient_name","")); // or doctor_name if you expose it
+                        if (doctorQualification != null) doctorQualification.setText(a.optString("appointment_mode",""));
+                        if (patientName != null)         patientName.setText(a.optString("patient_name",""));
+                        if (appointmentDate != null)     appointmentDate.setText(a.optString("appointment_date",""));
                     } catch (JSONException e) {
                         tvError("Sorry, we could not load your appointment details right now.");
                     }
@@ -151,43 +125,71 @@ public class cancle_appintment extends AppCompatActivity {
                 error -> tvError("No internet connection. Please check and try again.")) {
             @Override
             protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("appointment_id", appointmentId);
-                params.put("action", "fetch");
-                return params;
+                Map<String, String> p = new HashMap<>();
+                p.put("appointment_id", appointmentId);
+                p.put("action", "fetch");
+                return p;
             }
         };
-
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
-        requestQueue.add(stringRequest);
+        Volley.newRequestQueue(this).add(req);
     }
+
+    private void cancelAppointment(String reason) {
+        StringRequest req = new StringRequest(Request.Method.POST, API_URL,
+                response -> {
+                    try {
+                        JSONObject o = new JSONObject(response);
+                        if (o.getBoolean("success")) {
+                            tvError("Your appointment has been cancelled successfully.");
+                            finish();
+                        } else {
+                            tvError(o.optString("error", "Could not cancel the appointment. Please try again."));
+                        }
+                    } catch (JSONException e) {
+                        tvError("Something went wrong. Please try again.");
+                    }
+                },
+                error -> tvError("No internet connection. Please check and try again.")) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> p = new HashMap<>();
+                p.put("appointment_id", appointmentId);
+                p.put("action", "cancel");
+                p.put("reason", reason);
+                return p;
+            }
+        };
+        Volley.newRequestQueue(this).add(req);
+    }
+
+    private void tvError(String message) {
+        if (tvErrorMessage != null) {
+            tvErrorMessage.setText(message);
+        }
+    }
+
+    /* ----- System bar scrims ----- */
     private void setupSystemBarScrims() {
         Window window = getWindow();
-
-        // Draw behind system bars so our scrims can cover them
         WindowCompat.setDecorFitsSystemWindows(window, false);
         window.setStatusBarColor(Color.TRANSPARENT);
         window.setNavigationBarColor(Color.TRANSPARENT);
 
-        // We want LIGHT icons on a dark (black) background
         WindowInsetsControllerCompat controller =
                 new WindowInsetsControllerCompat(window, window.getDecorView());
         controller.setAppearanceLightStatusBars(false);
         controller.setAppearanceLightNavigationBars(false);
 
-        // Get the content root (FrameLayout) and your actual screen root (the first child)
         FrameLayout content = findViewById(android.R.id.content);
         if (content == null) return;
         View root = (content.getChildCount() > 0) ? content.getChildAt(0) : null;
         if (root == null) return;
 
-        // Create scrim views (no XML/ID changes)
         View statusScrim = new View(this);
         View navScrim = new View(this);
         statusScrim.setBackgroundColor(Color.BLACK);
         navScrim.setBackgroundColor(Color.BLACK);
 
-        // Add scrims to the FrameLayout overlay space (top/bottom), without affecting your layout
         FrameLayout.LayoutParams lpTop = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, Gravity.TOP);
         FrameLayout.LayoutParams lpBottom = new FrameLayout.LayoutParams(
@@ -196,12 +198,10 @@ public class cancle_appintment extends AppCompatActivity {
         content.addView(statusScrim, lpTop);
         content.addView(navScrim, lpBottom);
 
-        // Handle insets: set scrim heights and pad your content so the title bar isn't under status bar
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets status = insets.getInsets(WindowInsetsCompat.Type.statusBars());
             Insets nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
 
-            // 1) Size scrims to exact bar sizes (works for cutouts & gesture nav)
             ViewGroup.LayoutParams stLp = statusScrim.getLayoutParams();
             if (stLp.height != status.top) {
                 stLp.height = status.top;
@@ -216,88 +216,10 @@ public class cancle_appintment extends AppCompatActivity {
             }
             navScrim.setVisibility(nav.bottom > 0 ? View.VISIBLE : View.GONE);
 
-            // 2) Prevent overlap: pad your screen root (keeps your 75dp title fully visible)
-            v.setPadding(
-                    v.getPaddingLeft(),
-                    status.top,
-                    v.getPaddingRight(),
-                    nav.bottom
-            );
-
-            // We handled everything
+            v.setPadding(v.getPaddingLeft(), status.top, v.getPaddingRight(), nav.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
 
-        // Request initial insets pass
         root.requestApplyInsets();
-    }
-
-
-    // Update UPI ID for the appointment
-    private void updateUpi(String upi, final Runnable onSuccess) {
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL,
-                response -> {
-                    try {
-                        JSONObject jsonObject = new JSONObject(response);
-                        if (jsonObject.getBoolean("success")) {
-                            onSuccess.run();
-                        } else {
-                            tvError("Could not update UPI ID. Please check and try again.");
-                        }
-                    } catch (JSONException e) {
-                        tvError("Sorry, something went wrong while updating your UPI ID.");
-                    }
-                },
-                error -> tvError("Network error while updating UPI ID. Please check your connection.")) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("appointment_id", appointmentId);
-                params.put("action", "update_upi");
-                params.put("upi_id", upi);
-                return params;
-            }
-        };
-
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
-        requestQueue.add(stringRequest);
-    }
-
-    // Cancel appointment
-    private void cancelAppointment(String reason) {
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, API_URL,
-                response -> {
-                    try {
-                        JSONObject jsonObject = new JSONObject(response);
-                        if (jsonObject.getBoolean("success")) {
-                            tvError("Your appointment has been cancelled successfully.");
-                            finish();
-                        } else {
-                            tvError("Could not cancel the appointment. Please try again.");
-                        }
-                    } catch (JSONException e) {
-                        tvError("Something went wrong. Please try again.");
-                    }
-                },
-                error -> tvError("No internet connection. Please check and try again.")) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                params.put("appointment_id", appointmentId);
-                params.put("action", "cancel");
-                params.put("reason", reason);
-                return params;
-            }
-        };
-
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
-        requestQueue.add(stringRequest);
-    }
-
-    // Helper method to display error messages in UI
-    private void tvError(String message) {
-        if (tvErrorMessage != null) {
-            tvErrorMessage.setText(message);
-        }
     }
 }
