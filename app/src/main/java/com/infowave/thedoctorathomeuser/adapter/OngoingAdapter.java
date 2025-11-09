@@ -40,7 +40,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final List<String> statuses;
     private final List<String> durations;            // e.g., "6 Years"
     private final List<Integer> doctorIds;
-    private final List<Integer> experienceYears;     // numeric (kept for completeness)
+    private final List<Integer> experienceYears;     // numeric
     private final List<String> appointmentTimeDisplays; // e.g., "Thu, 09 Oct · 02:15 PM"
     private final List<Float> amounts;               // e.g., 650.0f
 
@@ -130,15 +130,16 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         String spec = safeStr(specialties, position);
         String hosp = safeStr(hospitals, position);
         float rating = clamp0to5(safeFloat(ratings, position));
-        String durationText = safeStr(durations, position);   // already "6 Years"
-        int years = safeInt(experienceYears, position);       // numeric (not displayed directly)
+        String durationText = safeStr(durations, position);
+        int years = safeInt(experienceYears, position);
         String timeDisp = safeStr(appointmentTimeDisplays, position);
         float amount = safeFloat(amounts, position);
 
         String picUrl = safeStr(profilePictures, position);
         int apptId = safeInt(appointmentIds, position);
         int docId = safeInt(doctorIds, position);
-        String status = safeStr(statuses, position).trim().toLowerCase();
+        String rawStatus = safeStr(statuses, position);
+        String status = rawStatus.trim().toLowerCase();
 
         // Bind top info
         v.name.setText(name);
@@ -176,34 +177,47 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         // Card click → details
         v.itemView.setOnClickListener(view -> {
             Intent i = new Intent(context, doctor_details.class);
-            i.putExtra("doctor_id", String.valueOf(docId)); // keep behavior consistent with details screen
+            i.putExtra("doctor_id", String.valueOf(docId));
             i.putExtra("doctor_image", picUrl);
             context.startActivity(i);
         });
 
-        // Buttons default state
+        // Default button styling
         v.track.setVisibility(View.VISIBLE);
-        v.track.setEnabled(true);
-        v.track.setText("Track");
-        v.track.setBackgroundTintList(
-                ContextCompat.getColorStateList(context, R.color.navy_blue));
-
         v.cancel.setVisibility(View.VISIBLE);
-        v.cancel.setEnabled(true);
-        v.cancel.setBackgroundTintList(
-                ContextCompat.getColorStateList(context, R.color.error));
 
-        if (status.contains("requested")) {
-            v.track.setText("Requested");
-            v.track.setEnabled(false);
+        // === TRACK ENABLE/DISABLE RULE ===
+        // Enable Track ONLY if status indicates a confirmed/active flow.
+        boolean canTrack =
+                status.contains("confirm")   || // confirmed
+                        status.contains("accept")    || // accepted by doctor
+                        status.contains("ongoing")   ||
+                        status.contains("on the way")||
+                        status.contains("ontheway")  ||
+                        status.contains("started")   ||
+                        status.contains("reached")   ||
+                        status.contains("active");
+
+        if (canTrack) {
+            v.track.setEnabled(true);
+            v.track.setText("Track");
             v.track.setBackgroundTintList(
-                    ContextCompat.getColorStateList(context, R.color.gray));
-        } else if (status.contains("pending")) {
-            v.track.setText("Pending");
+                    ContextCompat.getColorStateList(context, R.color.navy_blue));
+        } else {
+            // Not confirmed → disable Track and show readable state
             v.track.setEnabled(false);
+            String label = ("requested".equals(status) || status.contains("request"))
+                    ? "Requested"
+                    : (status.contains("pending") ? "Pending" : (rawStatus.isEmpty() ? "Waiting" : rawStatus));
+            v.track.setText(capitalize(label));
             v.track.setBackgroundTintList(
                     ContextCompat.getColorStateList(context, R.color.gray));
         }
+
+        // Cancel button
+        v.cancel.setEnabled(true);
+        v.cancel.setBackgroundTintList(
+                ContextCompat.getColorStateList(context, R.color.error));
 
         v.cancel.setOnClickListener(view -> {
             Intent i = new Intent(context, cancle_appintment.class);
@@ -211,7 +225,7 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             context.startActivity(i);
         });
 
-        // ✅ TRACK INTENT — send all essentials consistently as String extras
+        // TRACK INTENT — guard by enabled state
         v.track.setOnClickListener(view -> {
             if (!v.track.isEnabled()) return;
             Intent i = new Intent(context, track_doctor.class);
@@ -220,9 +234,6 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             i.putExtra("doctor_name", name);
             i.putExtra("specialty", spec);
             i.putExtra("doctor_image", picUrl);
-            // If `track_doctor` expects anything else (e.g., hospital or time), uncomment:
-            // i.putExtra("hospital", hosp);
-            // i.putExtra("appointment_time_display", timeDisp);
             context.startActivity(i);
         });
     }
@@ -282,6 +293,12 @@ public class OngoingAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             s = s.replaceAll("0+$", "").replaceAll("\\.$", "");
         }
         return s.isEmpty() ? "0" : s;
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.isEmpty()) return "";
+        if (s.length() == 1) return s.toUpperCase();
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
     /* ============== ViewHolders ============== */

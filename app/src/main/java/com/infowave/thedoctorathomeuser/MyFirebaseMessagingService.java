@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -85,7 +86,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static String getAndroidIdFallback(Context ctx) {
         try {
-            String id = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.ANDROID_ID);
+            @SuppressLint("HardwareIds") String id = Settings.Secure.getString(ctx.getContentResolver(), Settings.Secure.ANDROID_ID);
             return (id != null && !id.isEmpty()) ? id : "unknown";
         } catch (Exception e) {
             return "unknown";

@@ -578,8 +578,10 @@ public class pending_bill extends AppCompatActivity {
                 Map<String, String> p = new HashMap<>();
                 p.put("patient_id", patientId);
                 // IMPORTANT: amount in paise
-                long paise = Math.round(finalCost * 100.0); // or finalPayRupees * 100L
+                // Keep display rounding and gateway amount perfectly aligned
+                long paise = finalPayRupees * 100L;
                 p.put("amount", String.valueOf(paise));
+
                 p.put("purpose", "APPOINTMENT");
                 p.put("_ts", String.valueOf(System.currentTimeMillis())); // cache buster
                 return p;
@@ -630,8 +632,11 @@ public class pending_bill extends AppCompatActivity {
                                     fetchWalletBalance();
 
                                     Toast.makeText(pending_bill.this, "Payment successful.", Toast.LENGTH_SHORT).show();
+// Keep a reference for the row we're about to insert
+                                    Log.d(TAG, "PhonePe COMPLETED, merchantOrderId=" + ppMerchantOrderId);
                                     loaderutil.hideLoader();
                                     saveBookingData(googleMapsLink);
+
 
                                 } else if ("FAILED".equalsIgnoreCase(state)) {
                                     loaderutil.hideLoader();
@@ -997,7 +1002,7 @@ public class pending_bill extends AppCompatActivity {
             protected Map<String, String> getParams() {
                 Map<String, String> p = new HashMap<>();
                 p.put("patient_id", String.valueOf(patientId));
-                p.put("amount", String.format(Locale.getDefault(), "%.2f", amount));
+                p.put("amount", String.valueOf(finalPayRupees));  // store charged rupees exactly
                 p.put("type", type);
                 p.put("reason", reason);
                 return p;
@@ -1115,8 +1120,17 @@ public class pending_bill extends AppCompatActivity {
                 p.put("total_payment", String.format(Locale.getDefault(), "%.2f", APPOINTMENT_CHARGE));
                 p.put("admin_commission", "0.00");
                 p.put("doctor_earning", "0.00");
-                p.put("payment_status", "Pending");
+                // If we reached here via PhonePe COMPLETED, mark Completed; otherwise keep Pending.
+                String resolvedPaymentStatus =
+                        ("Online".equalsIgnoreCase(selectedPaymentMethod)) ? "Completed" : "Pending";
+                p.put("payment_status", resolvedPaymentStatus);
                 p.put("refund_status", "None");
+
+// Optional but useful for reconciliation:
+                if (ppMerchantOrderId != null) {
+                    p.put("payment_reference", ppMerchantOrderId); // PhonePe merchantOrderId for traceability
+                }
+
                 if (isVetCase == 1 && vaccinationPrice > 0.0) {
                     p.put("notes", "Vaccine: " + vaccinationName + " | Price: ₹" + (int) Math.round(vaccinationPrice));
                 } else {

@@ -1,5 +1,6 @@
 package com.infowave.thedoctorathomeuser.adapter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
@@ -9,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -52,6 +54,7 @@ public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.Ve
         return new VetVH(v);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(@NonNull VetVH h, int position) {
         VetAppointment a = items.get(position);
@@ -64,14 +67,14 @@ public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.Ve
         h.tvStatus.setText(s(a.getStatus()));
 
         // --- Doctor image URL: normalize + fallback, then load with Glide ---
-        String rawUrl = a.getImageUrl(); // profile_picture from API
+        String rawUrl = a.getImageUrl();
         String imgUrl = cleanUrlOrDefault(rawUrl);
 
         if (!TextUtils.isEmpty(imgUrl)) {
             Glide.with(appContext)
                     .load(imgUrl)
                     .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-                    .signature(new ObjectKey(imgUrl))   // cache refresh when URL changes
+                    .signature(new ObjectKey(imgUrl))
                     .thumbnail(0.25f)
                     .circleCrop()
                     .dontAnimate()
@@ -90,27 +93,69 @@ public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.Ve
             if (listener != null) listener.onClick(a, position);
         });
 
-        // Track Doctor button → open Track activity with doctor_id & appointment_id
-        if (h.btnTrackDoctor != null) {
-            h.btnTrackDoctor.setOnClickListener(v -> {
-                String doctorIdStr = s(a.getDoctorId());      // requires VetAppointment#getDoctorId()
-                String apptIdStr   = s(a.getAppointmentId()); // requires VetAppointment#getAppointmentId()
+        // ====== TRACK BUTTON: enable only when confirmed/active ======
+        String status = (a.getStatus() == null ? "" : a.getStatus()).trim().toLowerCase();
 
+        boolean canTrack =
+                status.contains("confirm")   ||
+                        status.contains("accept")    ||
+                        status.contains("ongoing")   ||
+                        status.contains("on the way")||
+                        status.contains("ontheway")  ||
+                        status.contains("started")   ||
+                        status.contains("reached")   ||
+                        status.contains("active");
+
+        // Treat common waiting states as disabled
+        boolean isRequested = status.contains("request") || "requested".equals(status);
+        boolean isPending   = status.contains("pending") || "scheduled".equals(status);
+
+        if (h.btnTrackDoctor != null) {
+            // Set label text safely (Button or TextView)
+            if (h.btnTrackDoctor instanceof TextView) {
+                TextView tv = (TextView) h.btnTrackDoctor;
+                if (canTrack) {
+                    tv.setText("Track");
+                } else if (isRequested) {
+                    tv.setText("Requested");
+                } else if (isPending) {
+                    tv.setText("Pending");
+                } else {
+                    tv.setText(status.isEmpty() ? "Waiting" : capitalize(status));
+                }
+            }
+            h.btnTrackDoctor.setEnabled(canTrack);
+
+            // Tint
+            if (canTrack) {
+                // navy blue
+                h.btnTrackDoctor.setBackgroundTintList(
+                        ContextCompat.getColorStateList(appContext, R.color.navy_blue));
+            } else {
+                // grey
+                h.btnTrackDoctor.setBackgroundTintList(
+                        ContextCompat.getColorStateList(appContext, R.color.gray));
+            }
+
+            h.btnTrackDoctor.setOnClickListener(v -> {
+                if (!h.btnTrackDoctor.isEnabled()) return;
+                String doctorIdStr = s(a.getDoctorId());
+                String apptIdStr   = s(a.getAppointmentId());
                 if (!TextUtils.isEmpty(doctorIdStr) && !TextUtils.isEmpty(apptIdStr)) {
                     Intent i = new Intent(appContext, com.infowave.thedoctorathomeuser.track_doctor.class);
-                    i.putExtra("doctor_id", doctorIdStr);          // track_doctor reads String safely
-                    i.putExtra("appointment_id", apptIdStr);       // track_doctor reads String safely
+                    i.putExtra("doctor_id", doctorIdStr);
+                    i.putExtra("appointment_id", apptIdStr);
                     i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     appContext.startActivity(i);
                 }
             });
         }
 
-        // Cancel button → launch cancle_appintment with integer appointment_id
+        // ====== CANCEL BUTTON ======
         if (h.btnCancelAppointment != null) {
             h.btnCancelAppointment.setOnClickListener(v -> {
-                String apptIdStr = s(a.getAppointmentId()); // String in model
-                int apptId = parseIntSafe(apptIdStr, -1);    // activity expects int extra
+                String apptIdStr = s(a.getAppointmentId());
+                int apptId = parseIntSafe(apptIdStr, -1);
                 if (apptId > 0) {
                     Intent i = new Intent(appContext, com.infowave.thedoctorathomeuser.cancle_appintment.class);
                     i.putExtra("appointment_id", apptId);
@@ -217,13 +262,19 @@ public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.Ve
         return DEFAULT_DOCTOR_IMAGE_URL;
     }
 
+    private String capitalize(String s) {
+        if (s == null || s.isEmpty()) return "";
+        if (s.length() == 1) return s.toUpperCase();
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
     /* ---------- view holder ---------- */
 
     static class VetVH extends RecyclerView.ViewHolder {
         ImageView imgPet;
         TextView tvPetTitle, tvReason, tvWhen, tvVet, tvAmount, tvStatus;
-        View btnTrackDoctor;        // existing: @id/Track_button
-        View btnCancelAppointment;  // new:   @id/btnCancelAppointment
+        View btnTrackDoctor;        // @id/Track_button (usually a Button)
+        View btnCancelAppointment;  // @id/Cancel_button
 
         VetVH(@NonNull View itemView) {
             super(itemView);
@@ -234,8 +285,8 @@ public class VetOngoingAdapter extends RecyclerView.Adapter<VetOngoingAdapter.Ve
             tvVet                = itemView.findViewById(R.id.tvVet);
             tvAmount             = itemView.findViewById(R.id.tvAmount);
             tvStatus             = itemView.findViewById(R.id.tvStatus);
-            btnTrackDoctor       = itemView.findViewById(R.id.Track_button);          // must exist
-            btnCancelAppointment = itemView.findViewById(R.id.Cancel_button);  // add in XML
+            btnTrackDoctor       = itemView.findViewById(R.id.Track_button);
+            btnCancelAppointment = itemView.findViewById(R.id.Cancel_button);
         }
     }
 }
