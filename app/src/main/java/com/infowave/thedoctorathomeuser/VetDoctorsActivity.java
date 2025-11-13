@@ -63,7 +63,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
     // === Inputs from Intent ===
     private int vetCategoryId = -1;         // from doctor_categories
-    private int animalCategoryId = -1;      // from animal_categories
+    private int animalCategoryId = -1;      // from animal_categories (selected animal)
     private String animalName = "";
     private String doctorType = "";         // from intent
 
@@ -74,8 +74,10 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
     // === SharedPreferences ===
     private static final String PREFS       = "UserPrefs";
     private static final String KEY_USER_ID = "user_id";
-    // We will NOT read a saved pincode on startup anymore (there is none).
     private static final String KEY_PINCODE = "pincode"; // still used to persist after user edits
+
+    // === Toast management (avoid spam) ===
+    private Toast currentToast;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -102,7 +104,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                 + ", doctor_type=" + doctorType);
 
         if (vetCategoryId <= 0 || animalCategoryId <= 0 || doctorType == null || doctorType.isEmpty()) {
-            Toast.makeText(this, "Invalid category selection", Toast.LENGTH_LONG).show();
+            showToastSafe("Invalid category selection");
             Log.e(TAG, "Invalid IDs or missing doctorType → vetCategoryId=" + vetCategoryId
                     + ", animalCategoryId=" + animalCategoryId
                     + ", doctorType=" + doctorType);
@@ -123,7 +125,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
             resolvePincodeFromServer(userId);
         } else {
             // No user id → we cannot resolve pincode; show "no pincode" state
-            showNoPincodeState(); // no network call
+            resetListForNoPincode(); // no network call
         }
     }
 
@@ -179,8 +181,8 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                 // Strict: refresh only that pincode
                 fetchVets(pin, /*allowFallback=*/false);
             } else {
-                // No/invalid pincode → show message, no network call
-                showNoPincodeState();
+                // No/invalid pincode → just reset list, no network call
+                resetListForNoPincode();
                 setRefreshing(false);
             }
         });
@@ -206,7 +208,8 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                     setRefreshing(true);
                     fetchVets(activePincode, /*allowFallback=*/false);
                 } else if (pin.length() < 6) {
-                    showNoPincodeState();
+                    // Incomplete pincode → just clear list, no toast spam
+                    resetListForNoPincode();
                 }
             }
             return false;
@@ -235,9 +238,9 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                     return;
                 }
 
-                // If cleared or 1–5 digits: show "no pincode" state and stop any spinner
+                // If cleared or 1–5 digits: show empty state but DO NOT toast
                 if (pin.length() < 6) {
-                    showNoPincodeState();
+                    resetListForNoPincode();
                     setRefreshing(false);
                 }
             }
@@ -249,7 +252,6 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
     }
 
     private void persistPincode(String pin) {
-        // Not used on startup anymore; only keep if user edits pincode later
         getSharedPreferences(PREFS, MODE_PRIVATE)
                 .edit().putString(KEY_PINCODE, pin).apply();
     }
@@ -258,6 +260,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         String url = ApiConfig.endpoint("user_pincode.php", "user_id", userId);
         Log.d(TAG, "GET " + url);
         setRefreshing(true);
+        loaderutil.showLoader(this);   // <<< SHOW LOADER
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
                     String pin = resp.optString("pincode", "");
@@ -272,15 +275,17 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                         // First render fetch (strict, no fallback)
                         fetchVets(defaultPincode, /*allowFallback=*/false);
                     } else {
-                        // Server has no valid pincode for user → show empty, wait for user input
-                        showNoPincodeState();
+                        resetListForNoPincode();
                         setRefreshing(false);
+                        loaderutil.hideLoader();
                     }
                 },
                 err -> {
                     Log.e(TAG, "user_pincode error", err);
-                    showNoPincodeState();
+                    resetListForNoPincode();
                     setRefreshing(false);
+                    loaderutil.hideLoader();
+                    showToastSafe("Unable to fetch your area. Please enter pincode manually.");
                 }
         );
         if (queue == null) queue = Volley.newRequestQueue(this);
@@ -289,17 +294,17 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
     private void fetchVets(String pin, boolean allowFallback) {
         if (vetCategoryId <= 0 || animalCategoryId <= 0 || doctorType == null || doctorType.isEmpty()) {
-            Toast.makeText(this, "Invalid category selection", Toast.LENGTH_SHORT).show();
             Log.w(TAG, "fetchVets aborted: vetCategoryId=" + vetCategoryId
                     + ", animalCategoryId=" + animalCategoryId
                     + ", doctorType=" + doctorType);
             setRefreshing(false);
+            showToastSafe("Invalid category selection");
             return;
         }
 
         // Strict behavior: if pincode provided but invalid (<6), treat as "no pincode"
         if (pin != null && !pin.isEmpty() && pin.length() < 6) {
-            showNoPincodeState();
+            resetListForNoPincode();
             setRefreshing(false);
             return;
         }
@@ -313,6 +318,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         );
 
         Log.d(TAG, "GET " + url + " (allowFallback=" + allowFallback + ")");
+        loaderutil.showLoader(this);   // <<< SHOW LOADER
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
@@ -325,18 +331,20 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                         applyResult(null);
                     } else if (arr == null || arr.length() == 0) {
                         Log.w(TAG, "No results for pin=" + (pin == null ? "" : pin));
-                        // Strict: no fallback when calling with pincode
                         applyResult(new JSONArray());
                     } else {
                         Log.d(TAG, "Doctors found → count=" + arr.length());
                         applyResult(arr);
                     }
                     setRefreshing(false);
+                    loaderutil.hideLoader();   // <<< HIDE LOADER
                 },
                 err -> {
                     Log.e(TAG, "fetchVets error: " + (err.getMessage() == null ? "unknown" : err.getMessage()));
                     applyResult(null); // show empty
                     setRefreshing(false);
+                    loaderutil.hideLoader();   // <<< HIDE LOADER
+                    showToastSafe("Failed to load vets. Please try again.");
                 }
         );
 
@@ -350,8 +358,11 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         }
     }
 
-    private void showNoPincodeState() {
-        // Clear list & show empty block with count=0
+    /**
+     * Reset list & UI when there is no valid pincode (or field cleared).
+     * No toast here – this is called very frequently while typing.
+     */
+    private void resetListForNoPincode() {
         doctors.clear();
         filteredDoctors.clear();
         if (adapter != null) adapter.notifyDataSetChanged();
@@ -360,8 +371,6 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         if (llEmptyState != null) llEmptyState.setVisibility(View.VISIBLE);
         if (recyclerView != null) recyclerView.setVisibility(View.GONE);
 
-        // Gentle hint
-        Toast.makeText(this, "Enter a 6-digit pincode to see vets", Toast.LENGTH_SHORT).show();
         Log.d(TAG, "No pincode: showing empty state (no network call).");
     }
 
@@ -374,12 +383,21 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
             for (int i = 0; i < arr.length(); i++) {
                 JSONObject o = arr.optJSONObject(i);
                 if (o != null) {
+
+                    // === NEW: normalize multiple animal IDs (CSV) for logging ===
+                    String animalIdsCsv = o.optString("animal_category_ids", null);
+                    if (animalIdsCsv == null || animalIdsCsv.isEmpty()) {
+                        int single = o.optInt("animal_category_id", -1);
+                        animalIdsCsv = (single > 0) ? String.valueOf(single) : "";
+                    }
+
                     Log.d(TAG, "Parsed Doctor: " + o.optString("full_name", "NULL")
                             + ", id=" + o.optInt("doctor_id", 0)
-                            + ", animal_category_id=" + o.optInt("animal_category_id", -1)
+                            + ", animal_category_ids=" + animalIdsCsv
                             + ", category_id=" + o.optInt("category_id", -1)
                             + ", doctor_type=" + o.optString("doctor_type", "")
                             + ", pincodes=" + o.optString("pincodes", ""));
+
                     doctors.add(o);
                 }
             }
@@ -403,10 +421,34 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                     ? (" in " + activePincode)
                     : "";
             Log.d(TAG, "No doctors found" + pinMsg);
-            Toast.makeText(this,
-                    "No vets available" + pinMsg,
-                    Toast.LENGTH_SHORT).show();
+            showToastSafe("No vets available" + pinMsg);
         }
     }
 
+    /**
+     * Use a single Toast instance so Android never queues multiple toasts.
+     */
+    private void showToastSafe(String message) {
+        if (currentToast != null) {
+            currentToast.cancel();
+        }
+        currentToast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        currentToast.show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        loaderutil.hideLoader();
+        if (currentToast != null) {
+            currentToast.cancel();
+            currentToast = null;
+        }
+    }
+
+    @Override
+    public void onDoctorClick(JSONObject doctorJson) {
+        // Your existing implementation (if any)
+        // Handle click on vet doctor item.
+    }
 }

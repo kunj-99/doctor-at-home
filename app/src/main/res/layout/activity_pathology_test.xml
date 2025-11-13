@@ -8,12 +8,13 @@
     android:layout_height="match_parent"
     tools:context=".payments">
 
+
     <!-- Icon ImageView -->
     <ImageView
         android:id="@+id/ivIcon"
         android:layout_width="327dp"
         android:layout_height="302dp"
-        android:src="@drawable/error"
+        android:src="@drawable/coming_soon"
         app:layout_constraintBottom_toTopOf="@+id/tvComingSoon"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

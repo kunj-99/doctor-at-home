@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.TextUtils;
-import android.text.method.DigitsKeyListener;
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -41,7 +41,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import android.graphics.Color;
-import android.view.View;
+
 import android.view.ViewGroup;
 import android.view.Window;
 import androidx.core.graphics.Insets;
@@ -247,7 +247,7 @@ public class pending_bill extends AppCompatActivity {
         tvVaccinationPriceValue= findViewById(R.id.tv_vaccination_price_value);
 
         depositRow = tvDeposit != null ? (View) tvDeposit.getParent() : null;
-        int labelId = getResources().getIdentifier("tv_deposit_label", "id", getPackageName());
+        @SuppressLint("DiscouragedApi") int labelId = getResources().getIdentifier("tv_deposit_label", "id", getPackageName());
         depositLabelView = (labelId != 0) ? findViewById(labelId) : null;
         hideDepositRow();
 
@@ -938,7 +938,7 @@ public class pending_bill extends AppCompatActivity {
 
     private void fetchWalletBalance() {
         String url = ApiConfig.endpoint("get_wallet_balance.php");
-        StringRequest req = new StringRequest(Request.Method.POST, url,
+        @SuppressLint("SetTextI18n") StringRequest req = new StringRequest(Request.Method.POST, url,
                 resp -> {
                     try {
                         JSONObject obj = new JSONObject(resp);
@@ -964,6 +964,7 @@ public class pending_bill extends AppCompatActivity {
         Volley.newRequestQueue(this).add(req);
     }
 
+    @SuppressLint("SetTextI18n")
     private void deductWalletCharge(double charge, String reason) {
         walletBalance -= charge;
         if (walletBalance < 0) walletBalance = 0;

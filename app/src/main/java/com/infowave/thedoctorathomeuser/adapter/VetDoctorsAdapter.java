@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,12 +38,14 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         default void onBookNowClick(JSONObject doctor) {}
     }
 
+    private static final String TAG = "VET_FLOW_ADAPTER";
+
     private static final long REFRESH_INTERVAL_MS = 2000L; // 2s polling
     private static final int  MAX_REQUESTS        = 2;     // Human flow parity
 
     private final Context context;
     private final List<JSONObject> doctors;
-    private final int animalCategoryId;
+    private final int animalCategoryId; // selected animal category (from previous screen)
     private final OnDoctorClickListener listener;
 
     public VetDoctorsAdapter(@NonNull Context context,
@@ -76,6 +79,42 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         JSONObject d = doctors.get(position);
         Context ctx = h.itemView.getContext();
 
+        if (d == null) return;
+
+        // ----- NEW: handle multiple animal category IDs (CSV) safely -----
+        // API may send:
+        //   "animal_category_ids": "1,3,5"
+        // or legacy:
+        //   "animal_category_id": 2
+        String animalIdsCsv = d.optString("animal_category_ids", null);
+        if (animalIdsCsv == null || animalIdsCsv.isEmpty()) {
+            int single = d.optInt("animal_category_id", -1);
+            animalIdsCsv = (single > 0) ? String.valueOf(single) : "";
+        }
+
+        boolean supportsSelectedAnimal = false;
+        if (animalCategoryId > 0 && animalIdsCsv != null && !animalIdsCsv.isEmpty()) {
+            String[] parts = animalIdsCsv.split(",");
+            for (String part : parts) {
+                try {
+                    int parsed = Integer.parseInt(part.trim());
+                    if (parsed == animalCategoryId) {
+                        supportsSelectedAnimal = true;
+                        break;
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        int id = d.optInt("doctor_id", -1);
+
+        Log.d(TAG, "Bind doctor_id=" + id
+                + ", full_name=" + d.optString("full_name", "Doctor")
+                + ", animal_category_ids=" + animalIdsCsv
+                + ", selected_animal=" + animalCategoryId
+                + ", supportsSelected=" + supportsSelectedAnimal);
+
         String name  = d.optString("full_name", "Doctor");
         String spec  = d.optString("specialization", "Veterinarian");
         double rate  = d.optDouble("rating", 0.0);
@@ -85,7 +124,6 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         double fee   = d.optDouble("consultation_fee", 0.0);
         String img   = d.optString("profile_picture", null);
         String auto  = d.optString("auto_status", "Inactive");
-        int    id    = d.optInt("doctor_id", -1);
 
         // IMPORTANT: initialize lastHasActive from the card JSON if provided
         h.lastHasActive = d.optBoolean("has_active_appointment", false);
@@ -139,9 +177,14 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
             Intent intent = new Intent(context, VetAppointmentActivity.class);
             intent.putExtra("doctor_id", id);
             intent.putExtra("doctor_name", name);
+
+            // VERY IMPORTANT:
+            // We still pass the SINGLE selected animal category coming from previous screen.
+            // Backend already ensured this doctor supports that animal via FIND_IN_SET.
             intent.putExtra("animal_category_id", animalCategoryId);
+
             intent.putExtra("auto_status", auto);
-            intent.putExtra("appointment_status", cta); // <<< IMPORTANT
+            intent.putExtra("appointment_status", cta);
 
             if (!(context instanceof android.app.Activity)) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

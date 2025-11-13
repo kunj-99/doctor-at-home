@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.available_doctor;
 import com.infowave.thedoctorathomeuser.diseases;
 
 import java.util.List;
@@ -64,7 +65,7 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
             String categoryId = categoryIds.get(position);
             String categoryName = categoryNames.get(position);
 
-            Intent intent = new Intent(context, diseases.class);
+            Intent intent = new Intent(context, available_doctor.class);
             intent.putExtra("category_id", categoryId);
             intent.putExtra("category_name", categoryName);
             context.startActivity(intent);
