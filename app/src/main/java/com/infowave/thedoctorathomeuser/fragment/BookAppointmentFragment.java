@@ -18,8 +18,8 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.ApiConfig;
-import com.infowave.thedoctorathomeuser.adapter.book_AppointmentAdapter;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.adapter.book_AppointmentAdapter;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -61,13 +61,17 @@ public class BookAppointmentFragment extends Fragment {
     private void fetchDoctorCategories() {
         RequestQueue queue = Volley.newRequestQueue(requireContext());
 
-        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, API_URL, null,
-                response -> {
-                    parseDoctorCategories(response);
-                },
-                error -> {
-                    Toast.makeText(getContext(), "Unable to load available categories. Please check your connection.", Toast.LENGTH_LONG).show();
-                });
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
+                Request.Method.GET,
+                API_URL,
+                null,
+                this::parseDoctorCategories,
+                error -> Toast.makeText(
+                        getContext(),
+                        "Unable to load available categories. Please check your connection.",
+                        Toast.LENGTH_LONG
+                ).show()
+        );
 
         queue.add(jsonArrayRequest);
     }
@@ -82,14 +86,38 @@ public class BookAppointmentFragment extends Fragment {
         try {
             for (int i = 0; i < response.length(); i++) {
                 JSONObject obj = response.getJSONObject(i);
-                categoryIds.add(obj.getString("id"));
-                categoryNames.add(obj.getString("category_name"));
-                prices.add("₹" + obj.getString("price") + "/-");
-                categoryImages.add(obj.optString("category_image", "")); // Add image URL/path if present
+
+                String id           = obj.getString("id");
+                String name         = obj.getString("category_name");
+                String price        = obj.getString("price");
+                String categoryImg  = obj.optString("category_image", "");
+
+                // NEW: slot_type from backend ("day" / "night") to show before price
+                String slotTypeRaw  = obj.optString("slot_type", "");
+                String slotLabel;
+
+                if ("night".equalsIgnoreCase(slotTypeRaw)) {
+                    slotLabel = "Night ";
+                } else if ("day".equalsIgnoreCase(slotTypeRaw)) {
+                    slotLabel = "Day ";
+                } else {
+                    // If older API without slot_type, don’t break UI
+                    slotLabel = "";
+                }
+
+                categoryIds.add(id);
+                categoryNames.add(name);
+                // Example: "Day ₹300/-" or "Night ₹400/-"
+                prices.add(slotLabel + "₹" + price + "/-");
+                categoryImages.add(categoryImg);
             }
             adapter.notifyDataSetChanged();
         } catch (Exception e) {
-            Toast.makeText(getContext(), "Sorry, something went wrong. Please try again later.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(
+                    getContext(),
+                    "Sorry, something went wrong. Please try again later.",
+                    Toast.LENGTH_SHORT
+            ).show();
         }
     }
 }

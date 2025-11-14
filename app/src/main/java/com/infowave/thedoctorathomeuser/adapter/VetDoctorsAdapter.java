@@ -30,6 +30,7 @@ import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 import org.json.JSONObject;
 
 import java.util.List;
+import java.util.Locale;
 
 public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.ViewHolder> {
 
@@ -122,6 +123,10 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         String loc   = d.optString("doctor_location", "");
         String edu   = d.optString("qualification", d.optString("experience_duration", ""));
         double fee   = d.optDouble("consultation_fee", 0.0);
+
+        // NEW: slot_type from API → "day" / "night"
+        String slotType = d.optString("slot_type", "day");
+
         String img   = d.optString("profile_picture", null);
         String auto  = d.optString("auto_status", "Inactive");
 
@@ -135,9 +140,29 @@ public class VetDoctorsAdapter extends RecyclerView.Adapter<VetDoctorsAdapter.Vi
         h.tvExperience.setText(expYr > 0 ? (expYr + " years") : "—");
         h.tvLocation.setText(loc);
         h.tvEducation.setText(edu);
-        h.tvConsultationFee.setText(
-                fee > 0 ? "₹" + ((fee % 1 == 0) ? ((int) fee) : String.format("%.2f", fee)) : "₹0"
-        );
+
+        // ==== NEW: Show "Day ₹X/-" or "Night ₹Y/-" based on slot_type ====
+        String prefix;
+        if ("night".equalsIgnoreCase(slotType)) {
+            prefix = "Night ";
+        } else {
+            prefix = "Day ";
+        }
+
+        String feeFormatted;
+        if (fee > 0) {
+            if (fee % 1 == 0) {
+                feeFormatted = String.valueOf((int) fee);
+            } else {
+                feeFormatted = String.format(Locale.getDefault(), "%.2f", fee);
+            }
+        } else {
+            feeFormatted = "0";
+        }
+
+        String feeLabel = prefix + "₹" + feeFormatted + "/-";
+        h.tvConsultationFee.setText(feeLabel);
+        // ==== END NEW FEE LABEL ====
 
         if (img != null && !img.trim().isEmpty()) {
             Glide.with(ctx)
