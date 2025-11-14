@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.infowave.thedoctorathomeuser.HealthTip;
 import com.infowave.thedoctorathomeuser.R;
 
@@ -37,8 +38,20 @@ public class HealthTipAdapter extends RecyclerView.Adapter<HealthTipAdapter.TipV
         HealthTip tip = tips.get(position);
         holder.tvTitle.setText(tip.getTitle());
         holder.tvDesc.setText(tip.getDescription());
-        // Here we use a static image resource that was passed from the API.
-        holder.image.setImageResource(tip.getImageResId());
+
+        // If URL present → load with Glide
+        if (tip.hasImageUrl()) {
+            Glide.with(context)
+                    .load(tip.getImageUrl())
+                    .placeholder(R.drawable.food)
+                    .error(R.drawable.food)
+                    .into(holder.image);
+        } else if (tip.getImageResId() != 0) {
+            // Fallback to local drawable
+            holder.image.setImageResource(tip.getImageResId());
+        } else {
+            holder.image.setImageResource(R.drawable.food);
+        }
     }
 
     @Override

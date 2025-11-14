@@ -106,9 +106,9 @@ public class aboutus extends AppCompatActivity {
         if (teamRecycler == null) return;
 
         List<TeamMember> team = new ArrayList<>();
-        team.add(new TeamMember("Alice Smith", "Lead Developer", R.drawable.doctor_avatar));
-        team.add(new TeamMember("Bob Johnson", "UI Designer", R.drawable.doctor_avatar));
-        team.add(new TeamMember("Charlie Brown", "QA Engineer", R.drawable.doctor_avatar));
+        team.add(new TeamMember("Alice Smith", "Lead Surgeon ", R.drawable.doctor_avatar));
+        team.add(new TeamMember("Bob Johnson", "Expert in Medicines", R.drawable.doctor_avatar));
+        team.add(new TeamMember("Charlie Brown", "general Doctor", R.drawable.doctor_avatar));
 
         TeamAdapter adapter = new TeamAdapter(team);
         teamRecycler.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
@@ -135,8 +135,8 @@ public class aboutus extends AppCompatActivity {
     private void setupContactInfo() {
         TextView email = findViewById(R.id.contactEmail);
         TextView contact = findViewById(R.id.contact);
-        if (email != null) email.setText("support@company.com");
-        if (contact != null) contact.setText("+91 9876543210");
+        if (email != null) email.setText("thedoctorathome2025@gmail.com");
+        if (contact != null) contact.setText("+91 6354355617");
     }
 
     public void openFacebook(View view) { openUrl("https://facebook.com/yourpage"); }

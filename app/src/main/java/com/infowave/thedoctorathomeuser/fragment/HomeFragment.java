@@ -170,44 +170,40 @@ public class HomeFragment extends Fragment {
         RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
         String url = ApiConfig.endpoint("healthtip.php");
 
-
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
                 Request.Method.GET,
                 url,
                 null,
-                new Response.Listener<JSONArray>() {
-                    @Override
-                    public void onResponse(JSONArray response) {
-                        List<HealthTip> tipList = new ArrayList<>();
-                        try {
-                            for (int i = 0; i < response.length(); i++) {
-                                JSONObject jsonObject = response.getJSONObject(i);
-                                String title = jsonObject.getString("title");
-                                String description = jsonObject.getString("description");
-                                int imageResId = R.drawable.food;
-                                tipList.add(new HealthTip(title, description, imageResId));
-                            }
-                        } catch (JSONException e) {
-                            // e.printStackTrace();
-                            Toast.makeText(getContext(), "Unable to load health tips.", Toast.LENGTH_SHORT).show();
+                response -> {
+                    List<HealthTip> tipList = new ArrayList<>();
+                    try {
+                        for (int i = 0; i < response.length(); i++) {
+                            JSONObject jsonObject = response.getJSONObject(i);
+                            String title = jsonObject.getString("title");
+                            String description = jsonObject.getString("description");
+                            String imageUrl = jsonObject.optString("image", "");
+
+                            // Use URL from API
+                            tipList.add(new HealthTip(title, description, imageUrl));
                         }
-                        HealthTipAdapter tipAdapter = new HealthTipAdapter(getContext(), tipList);
-                        tipRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-                        tipRecyclerView.setAdapter(tipAdapter);
-                        decrementAndDismissLoader();
+                    } catch (JSONException e) {
+                        Toast.makeText(getContext(), "Unable to load health tips.", Toast.LENGTH_SHORT).show();
                     }
+                    HealthTipAdapter tipAdapter = new HealthTipAdapter(getContext(), tipList);
+                    tipRecyclerView.setLayoutManager(
+                            new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false)
+                    );
+                    tipRecyclerView.setAdapter(tipAdapter);
+                    decrementAndDismissLoader();
                 },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        // error.printStackTrace();
-                        Toast.makeText(getContext(), "Unable to load health tips. Please try again.", Toast.LENGTH_SHORT).show();
-                        decrementAndDismissLoader();
-                    }
+                error -> {
+                    Toast.makeText(getContext(), "Unable to load health tips. Please try again.", Toast.LENGTH_SHORT).show();
+                    decrementAndDismissLoader();
                 }
         );
         requestQueue.add(jsonArrayRequest);
     }
+
 
     private void setupAppointmentStats() {
         pendingRequestCount++;
