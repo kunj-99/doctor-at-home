@@ -118,6 +118,7 @@ public class pending_bill extends AppCompatActivity {
     private double walletBalance = 0.0;
     private final Handler walletHandler = new Handler();
     private Runnable walletRunnable;
+    private TextView tvPricePerKm;
 
     private enum DepositMode { NONE, WALLET, BILL }
     private DepositMode lastConfirmedDepositMode = DepositMode.NONE;
@@ -224,6 +225,8 @@ public class pending_bill extends AppCompatActivity {
         tvConsultingFeeValue  = findViewById(R.id.tv_consultation_fee);
         tvDistanceKmValue     = findViewById(R.id.tv_distance_km_value);
         tvDistanceChargeValue = findViewById(R.id.tv_distance_charge_value);
+        tvPricePerKm = findViewById(R.id.price_km);
+
         tvGstValue            = findViewById(R.id.tv_gst_value);
         tvTotalPaidValue      = findViewById(R.id.tv_total_paid_value);
         btnOnlinePayment      = findViewById(R.id.btn_online_payment);
@@ -680,7 +683,7 @@ public class pending_bill extends AppCompatActivity {
 
     private void fetchAppConfig() {
         String url = ApiConfig.endpoint("get_app_config.php") + "?ts=" + System.currentTimeMillis();
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
+        @SuppressLint("DefaultLocale") JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
                     if (!resp.optBoolean("success")) {
                         String err = resp.optString("error", "CONFIG_FAILED");
@@ -694,6 +697,8 @@ public class pending_bill extends AppCompatActivity {
                     DEPOSIT          = resp.optDouble("platform_charge");
                     GST_PERCENT      = resp.optDouble("gst_percent");
                     cfgLoaded = true;
+
+                    tvPricePerKm.setText(String.format("₹ %.2f per kilometer", PER_KM_CHARGE)); // Dynamically display the fetched value
                     fetchAppointmentCharge(doctorId);
                 },
                 err -> {

@@ -167,12 +167,12 @@ public class payments extends AppCompatActivity {
         btnRecharge50.setOnClickListener(v -> {
             btnRecharge50.setEnabled(false);
             btnRecharge100.setEnabled(false);
-            startRecharge(String.valueOf(1 * 100));   // <- change to 50*100 for ₹50
+            startRecharge(String.valueOf(50 * 100));   // <- change to 50*100 for ₹50
         });
         btnRecharge100.setOnClickListener(v -> {
             btnRecharge50.setEnabled(false);
             btnRecharge100.setEnabled(false);
-            startRecharge(String.valueOf(2 * 100));   // <- change to 100*100 for ₹100
+            startRecharge(String.valueOf(100 * 100));   // <- change to 100*100 for ₹100
         });
 
         // Segmented partition behavior

@@ -16,10 +16,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.FragmentManager;
 
@@ -42,7 +40,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
     private static final int REQUEST_CHECK_SETTINGS = 2001;
 
-    // UI
+    // UI components
     private TextView headerBook;
     private Spinner daySpinner, monthSpinner, yearSpinner, pincodeSpinner;
     private RadioGroup genderGroup;
@@ -52,7 +50,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     private View overlayContainer;
     private View btnCancelMap, btnSelectMap;
 
-    // Intent
+    // Intent data
     private String doctorId, doctorName, appointmentStatus;
 
     // Maps
@@ -76,60 +74,45 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_book_form);
 
-        // Edge-to-edge + black bars
+        // Full screen + black bars setup
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(android.graphics.Color.BLACK);
         getWindow().setNavigationBarColor(android.graphics.Color.BLACK);
-        WindowInsetsControllerCompat wic =
-                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        WindowInsetsControllerCompat wic = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
         wic.setAppearanceLightStatusBars(false);
         wic.setAppearanceLightNavigationBars(false);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) getWindow().setNavigationBarContrastEnforced(false);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) getWindow().setNavigationBarDividerColor(android.graphics.Color.BLACK);
 
-        final View statusScrim = findViewById(R.id.status_bar_scrim);
-        final View navScrim = findViewById(R.id.navigation_bar_scrim);
-        View root = findViewById(android.R.id.content);
-        if (root != null) {
-            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-                Insets sys = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                statusScrim.getLayoutParams().height = sys.top; statusScrim.requestLayout();
-                statusScrim.setVisibility(sys.top > 0 ? View.VISIBLE : View.GONE);
-                navScrim.getLayoutParams().height = sys.bottom; navScrim.requestLayout();
-                navScrim.setVisibility(sys.bottom > 0 ? View.VISIBLE : View.GONE);
-                return insets;
-            });
-        }
-
-        // bind
-        headerBook     = findViewById(R.id.header_book);
-        daySpinner     = findViewById(R.id.day_spinner);
-        monthSpinner   = findViewById(R.id.month_spinner);
-        yearSpinner    = findViewById(R.id.year_spinner);
+        // Binding UI elements
+        headerBook = findViewById(R.id.header_book);
+        daySpinner = findViewById(R.id.day_spinner);
+        monthSpinner = findViewById(R.id.month_spinner);
+        yearSpinner = findViewById(R.id.year_spinner);
         pincodeSpinner = findViewById(R.id.spinner_pincode);
-        genderGroup    = findViewById(R.id.gender_group);
-        bookButton     = findViewById(R.id.book_button);
-        btnUseCurrent  = findViewById(R.id.btn_use_current_location);
-        dobInput       = findViewById(R.id.dob_input);
-        etName         = findViewById(R.id.patient_name);
-        etAddress      = findViewById(R.id.address);
-        etProblem      = findViewById(R.id.problem);
+        genderGroup = findViewById(R.id.gender_group);
+        bookButton = findViewById(R.id.book_button);
+        btnUseCurrent = findViewById(R.id.btn_use_current_location);
+        dobInput = findViewById(R.id.dob_input);
+        etName = findViewById(R.id.patient_name);
+        etAddress = findViewById(R.id.address);
+        etProblem = findViewById(R.id.problem);
         mapClickCatcher = findViewById(R.id.map_click_catcher);
 
         overlayContainer = findViewById(R.id.fullscreen_map_overlay);
-        btnCancelMap     = findViewById(R.id.btn_cancel_map);
-        btnSelectMap     = findViewById(R.id.btn_select_map);
+        btnCancelMap = findViewById(R.id.btn_cancel_map);
+        btnSelectMap = findViewById(R.id.btn_select_map);
 
+        // Intent Data
         Intent intent = getIntent();
-        doctorId          = intent.getStringExtra("doctor_id");
-        doctorName        = intent.getStringExtra("doctorName");
+        doctorId = intent.getStringExtra("doctor_id");
+        doctorName = intent.getStringExtra("doctorName");
         appointmentStatus = intent.getStringExtra("appointment_status");
         headerBook.setText(doctorName != null ? doctorName : "Book Appointment");
         bookButton.setText(appointmentStatus != null ? appointmentStatus : "Book Appointment");
 
+        // Initialize Location Client
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
-        // pincode list (only selection; no geo)
+        // Setup pincode spinner
         List<String> placeholder = new ArrayList<>();
         placeholder.add("Select pincode");
         ArrayAdapter<String> initAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, placeholder);
@@ -138,13 +121,14 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         pincodeSpinner.setEnabled(false);
         fetchPincodesForDoctor(doctorId);
 
-        // embedded map via callback
+        // Setup Map Fragment
         embeddedMapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map_fragment);
         if (embeddedMapFragment != null) {
             loaderutil.showLoader(this);
             embeddedMapFragment.getMapAsync(this);
         }
 
+        // Setup Button Listeners
         dobInput.setOnClickListener(v -> openDatePicker());
         btnUseCurrent.setOnClickListener(v -> {
             startLocating();
@@ -153,7 +137,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         mapClickCatcher.setOnClickListener(v -> openMapOverlay());
         btnCancelMap.setOnClickListener(v -> closeMapOverlay(false));
         btnSelectMap.setOnClickListener(v -> closeMapOverlay(true));
-
         bookButton.setOnClickListener(v -> onClickBook());
     }
 
@@ -165,18 +148,26 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         setCurrentLocation();
     }
 
-    // ---------------- Booking ----------------
+    // ---------------- Booking Logic ----------------
     private void onClickBook() {
-        String name    = etName.getText().toString().trim();
+        String name = etName.getText().toString().trim();
         String address = etAddress.getText().toString().trim();
         String problem = etProblem.getText().toString().trim();
-        String pin     = pincodeSpinner.getSelectedItem() != null ? pincodeSpinner.getSelectedItem().toString() : "";
+        String pin = pincodeSpinner.getSelectedItem() != null ? pincodeSpinner.getSelectedItem().toString() : "";
 
         boolean valid = true;
-        if (name.isEmpty())   { etName.setError("Please enter the patient's name."); valid = false; }
-        if (address.isEmpty()){ etAddress.setError("Please enter the address.");     valid = false; }
-        if (problem.isEmpty()){ etProblem.setError("Please describe the problem.");  valid = false; }
-
+        if (name.isEmpty()) {
+            etName.setError("Please enter the patient's name.");
+            valid = false;
+        }
+        if (address.isEmpty()) {
+            etAddress.setError("Please enter the address.");
+            valid = false;
+        }
+        if (problem.isEmpty()) {
+            etProblem.setError("Please describe the problem.");
+            valid = false;
+        }
         if (pin.isEmpty() || "Select pincode".equals(pin)) {
             Toast.makeText(this, "Please select a pincode to continue.", Toast.LENGTH_SHORT).show();
             valid = false;
@@ -189,11 +180,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
             Toast.makeText(this, "Please select your Date of Birth.", Toast.LENGTH_SHORT).show();
             valid = false;
         } else {
-            int ageCheck = calculateAge(selectedDob.get(Calendar.YEAR),
-                    selectedDob.get(Calendar.MONTH) + 1,
-                    selectedDob.get(Calendar.DAY_OF_MONTH));
-
-            // --- AGE VALIDATION (Minimum 1 year) ---
+            int ageCheck = calculateAge(selectedDob.get(Calendar.YEAR), selectedDob.get(Calendar.MONTH) + 1, selectedDob.get(Calendar.DAY_OF_MONTH));
             if (ageCheck < 4) {
                 Toast.makeText(this, "Minimum age is 1 year.", Toast.LENGTH_SHORT).show();
                 valid = false;
@@ -204,19 +191,20 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         }
 
         int genderId = genderGroup.getCheckedRadioButtonId();
-        String gender = (genderId != -1) ? ((RadioButton)findViewById(genderId)).getText().toString() : "";
-        if (gender.isEmpty()) { Toast.makeText(this, "Please select a gender.", Toast.LENGTH_SHORT).show(); valid = false; }
+        String gender = (genderId != -1) ? ((RadioButton) findViewById(genderId)).getText().toString() : "";
+        if (gender.isEmpty()) {
+            Toast.makeText(this, "Please select a gender.", Toast.LENGTH_SHORT).show();
+            valid = false;
+        }
 
-        if (selectedLocation == null) { Toast.makeText(this, "Please select your location on the map.", Toast.LENGTH_SHORT).show(); valid = false; }
+        if (selectedLocation == null) {
+            Toast.makeText(this, "Please select your location on the map.", Toast.LENGTH_SHORT).show();
+            valid = false;
+        }
         if (!valid) return;
 
-        int age = calculateAge(
-                selectedDob.get(Calendar.YEAR),
-                selectedDob.get(Calendar.MONTH) + 1,
-                selectedDob.get(Calendar.DAY_OF_MONTH)
-        );
+        int age = calculateAge(selectedDob.get(Calendar.YEAR), selectedDob.get(Calendar.MONTH) + 1, selectedDob.get(Calendar.DAY_OF_MONTH));
 
-        // Logging all extras being sent
         Log.d("BOOK_FORM_INTENT", "Passing intent to pending_bill with:");
         Log.d("BOOK_FORM_INTENT", "patient_name=" + name);
         Log.d("BOOK_FORM_INTENT", "age=" + age);
@@ -245,7 +233,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         startActivity(next);
     }
 
-    // ---------------- Pincode list (no geo) ----------------
+    // ---------------- Pincode List ----------------
     private void fetchPincodesForDoctor(String doctorId) {
         loaderutil.showLoader(this);
         String url = ApiConfig.endpoint("get_pincode.php", "doctor_id", doctorId);
@@ -260,19 +248,12 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                             String pin = resp.getString(i);
                             if (!TextUtils.isEmpty(pin)) pins.add(pin);
                         }
-                    } catch (Exception ignored) { }
+                    } catch (Exception ignored) {}
 
                     ArrayAdapter<String> ad = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, pins);
                     ad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                     pincodeSpinner.setAdapter(ad);
                     pincodeSpinner.setEnabled(true);
-
-                    pincodeSpinner.setOnItemSelectedListener(new SimpleItemSelectedListener() {
-                        @Override public void onItemSelected(int position) {
-                            // Only selection; no geo action.
-                        }
-                    });
-
                     loaderutil.hideLoader();
                 },
                 err -> {
@@ -282,7 +263,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         q.add(r);
     }
 
-    // ---------------- Overlay (popup) ----------------
+    // ---------------- Map Overlay ----------------
     private void openMapOverlay() {
         overlayContainer.setVisibility(View.VISIBLE);
 
@@ -319,7 +300,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         }
     }
 
-    // ---------------- Map common setup ----------------
+    // ---------------- Map Setup ----------------
     private void setupMapCommon(GoogleMap map, boolean isOverlay) {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -360,17 +341,16 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         else embeddedMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f));
     }
 
-    // ---------------- Permission & settings ----------------
+    // ---------------- Permission Handling ----------------
     private void showLocationPermissionDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Location Permission Required")
                 .setMessage("Location is needed to detect your position automatically.")
-                .setPositiveButton("OK", (d, w) ->
-                        ActivityCompat.requestPermissions(
-                                book_form.this,
-                                new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION },
-                                LOCATION_PERMISSION_REQUEST_CODE
-                        ))
+                .setPositiveButton("OK", (d, w) -> ActivityCompat.requestPermissions(
+                        book_form.this,
+                        new String[]{ Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION },
+                        LOCATION_PERMISSION_REQUEST_CODE
+                ))
                 .setNegativeButton("Cancel", null)
                 .show();
     }
@@ -451,7 +431,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         placeEmbeddedMarker(here, true); // RED pin
     }
 
-    // ---------------- DatePicker & age ----------------
+    // ---------------- DatePicker & Age Calculation ----------------
     private void openDatePicker() {
         final Calendar now = Calendar.getInstance();
         int y = now.get(Calendar.YEAR), m = now.get(Calendar.MONTH), d = now.get(Calendar.DAY_OF_MONTH);
