@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
-
 import android.os.Bundle;
 import android.os.Looper;
 import android.text.TextUtils;
@@ -39,6 +38,9 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
     private static final int REQUEST_CHECK_SETTINGS = 2001;
+
+    // Remember DOB across rotations / picker openings
+    private static final String STATE_DOB_MILLIS = "STATE_DOB_MILLIS";
 
     // UI components
     private TextView headerBook;
@@ -101,6 +103,16 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         btnCancelMap = findViewById(R.id.btn_cancel_map);
         btnSelectMap = findViewById(R.id.btn_select_map);
 
+        // Restore previously selected DOB if any (e.g., after rotation)
+        if (savedInstanceState != null) {
+            long dobMillis = savedInstanceState.getLong(STATE_DOB_MILLIS, -1L);
+            if (dobMillis > 0L) {
+                selectedDob = Calendar.getInstance();
+                selectedDob.setTimeInMillis(dobMillis);
+                applyDobToField();
+            }
+        }
+
         // Intent Data
         Intent intent = getIntent();
         doctorId = intent.getStringExtra("doctor_id");
@@ -138,6 +150,14 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         btnCancelMap.setOnClickListener(v -> closeMapOverlay(false));
         btnSelectMap.setOnClickListener(v -> closeMapOverlay(true));
         bookButton.setOnClickListener(v -> onClickBook());
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (selectedDob != null) {
+            outState.putLong(STATE_DOB_MILLIS, selectedDob.getTimeInMillis());
+        }
     }
 
     @Override
@@ -434,14 +454,18 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     // ---------------- DatePicker & Age Calculation ----------------
     private void openDatePicker() {
         final Calendar now = Calendar.getInstance();
-        int y = now.get(Calendar.YEAR), m = now.get(Calendar.MONTH), d = now.get(Calendar.DAY_OF_MONTH);
+        final Calendar init = (selectedDob != null) ? (Calendar) selectedDob.clone() : now;
+
+        int y = init.get(Calendar.YEAR);
+        int m = init.get(Calendar.MONTH);
+        int d = init.get(Calendar.DAY_OF_MONTH);
+
         android.app.DatePickerDialog dlg = new android.app.DatePickerDialog(
                 this,
                 (view, year, month, dayOfMonth) -> {
                     selectedDob = Calendar.getInstance();
                     selectedDob.set(year, month, dayOfMonth);
-                    @SuppressLint("SimpleDateFormat") DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
-                    dobInput.setText(df.format(selectedDob.getTime()));
+                    applyDobToField();
                 },
                 y, m, d
         );
@@ -449,6 +473,14 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         dlg.getDatePicker().setMinDate(min.getTimeInMillis());
         dlg.getDatePicker().setMaxDate(now.getTimeInMillis());
         dlg.show();
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    private void applyDobToField() {
+        if (selectedDob != null) {
+            DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+            dobInput.setText(df.format(selectedDob.getTime()));
+        }
     }
 
     private int calculateAge(int year, int month, int day) {
