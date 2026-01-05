@@ -1,18 +1,32 @@
 package com.infowave.thedoctorathomeuser;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
+
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
+import com.infowave.thedoctorathomeuser.loaderutil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,20 +34,6 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-// System bar scrims
-import android.graphics.Color;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
-import android.widget.FrameLayout;
-
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.core.view.WindowInsetsControllerCompat;
 
 public class cancle_appintment extends AppCompatActivity {
 
@@ -43,8 +43,10 @@ public class cancle_appintment extends AppCompatActivity {
     private TextView doctorName, doctorQualification, patientName, appointmentDate;
     private TextView tvErrorMessage;
 
-    private String appointmentId = "";
+    private int appointmentId = 0;
     private static final String API_URL = ApiConfig.endpoint("cancel_appointment.php");
+
+    private boolean inFlight = false;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -53,19 +55,15 @@ public class cancle_appintment extends AppCompatActivity {
         setContentView(R.layout.activity_cancle_appintment);
         setupSystemBarScrims();
 
-        if (getIntent().hasExtra("appointment_id")) {
-            appointmentId = String.valueOf(getIntent().getIntExtra("appointment_id", -1));
-            if (appointmentId.equals("-1")) {
-                tvError("Something went wrong. Please try again.");
-                finish();
-                return;
-            }
-        } else {
+        // ---- Read intent safely ----
+        appointmentId = getIntent().getIntExtra("appointment_id", 0);
+        if (appointmentId <= 0) {
             tvError("Could not find your appointment. Please try again.");
             finish();
             return;
         }
 
+        // ---- Bind views ----
         doctorName          = findViewById(R.id.doctoName1);
         doctorQualification = findViewById(R.id.doctorQualification1);
         patientName         = findViewById(R.id.patientName1);
@@ -81,22 +79,17 @@ public class cancle_appintment extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
 
         btnConfirm.setOnClickListener(v -> {
+            if (inFlight) return;
             tvErrorMessage.setText("");
-            StringBuilder errorBuilder = new StringBuilder();
 
             String reason = Objects.requireNonNull(reasonInput.getText()).toString().trim();
             if (TextUtils.isEmpty(reason)) {
                 reasonInput.setError("Please enter a reason for cancellation.");
-                errorBuilder.append("Please enter a reason for cancellation.\n");
-            }
-
-            if (errorBuilder.length() > 0) {
-                tvErrorMessage.setText(errorBuilder.toString());
+                tvErrorMessage.setText("Please enter a reason for cancellation.");
                 return;
             }
-
             if (!confirmationCheckbox.isChecked()) {
-                Toast.makeText(cancle_appintment.this, "Please check the box to confirm cancellation.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please check the box to confirm cancellation.", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -105,42 +98,68 @@ public class cancle_appintment extends AppCompatActivity {
     }
 
     private void fetchAppointmentDetails() {
-        StringRequest req = new StringRequest(Request.Method.POST, API_URL,
+        loaderutil.showLoader(this);
+        StringRequest req = new StringRequest(
+                Request.Method.POST,
+                API_URL,
                 response -> {
+                    loaderutil.hideLoader();
                     try {
                         JSONObject o = new JSONObject(response);
-                        if (!o.getBoolean("success")) {
-                            tvError("Could not load appointment details. Please try again.");
+                        if (!o.optBoolean("success", false)) {
+                            tvError(o.optString("error", "Could not load appointment details. Please try again."));
                             return;
                         }
                         JSONObject a = o.getJSONObject("appointment");
-                        if (doctorName != null)          doctorName.setText(a.optString("patient_name","")); // or doctor_name if you expose it
-                        if (doctorQualification != null) doctorQualification.setText(a.optString("appointment_mode",""));
-                        if (patientName != null)         patientName.setText(a.optString("patient_name",""));
-                        if (appointmentDate != null)     appointmentDate.setText(a.optString("appointment_date",""));
+                        // Backend returns: appointment_id, patient_id, doctor_id, status, appointment_date, time_slot, patient_name, appointment_mode
+                        if (doctorName != null)          doctorName.setText(a.optString("patient_name", "")); // or doctor_name if exposed later
+                        if (doctorQualification != null) doctorQualification.setText(a.optString("appointment_mode", ""));
+                        if (patientName != null)         patientName.setText(a.optString("patient_name", ""));
+                        if (appointmentDate != null)     appointmentDate.setText(a.optString("appointment_date", ""));
                     } catch (JSONException e) {
                         tvError("Sorry, we could not load your appointment details right now.");
                     }
                 },
-                error -> tvError("No internet connection. Please check and try again.")) {
+                error -> {
+                    loaderutil.hideLoader();
+                    tvError("No internet connection. Please check and try again.");
+                }
+        ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> p = new HashMap<>();
-                p.put("appointment_id", appointmentId);
+                p.put("appointment_id", String.valueOf(appointmentId));
                 p.put("action", "fetch");
                 return p;
             }
         };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(
+                10000,
+                1,
+                1.0f
+        ));
         Volley.newRequestQueue(this).add(req);
     }
 
     private void cancelAppointment(String reason) {
-        StringRequest req = new StringRequest(Request.Method.POST, API_URL,
+        inFlight = true;
+        btnConfirm.setEnabled(false);
+        loaderutil.showLoader(this);
+
+        StringRequest req = new StringRequest(
+                Request.Method.POST,
+                API_URL,
                 response -> {
+                    loaderutil.hideLoader();
+                    inFlight = false;
+                    btnConfirm.setEnabled(true);
                     try {
                         JSONObject o = new JSONObject(response);
-                        if (o.getBoolean("success")) {
-                            tvError("Your appointment has been cancelled successfully.");
+                        if (o.optBoolean("success", false)) {
+                            String msg = o.optString("message", "Your appointment has been cancelled successfully.");
+                            tvError(msg);
+                            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
                             finish();
                         } else {
                             tvError(o.optString("error", "Could not cancel the appointment. Please try again."));
@@ -149,26 +168,36 @@ public class cancle_appintment extends AppCompatActivity {
                         tvError("Something went wrong. Please try again.");
                     }
                 },
-                error -> tvError("No internet connection. Please check and try again.")) {
+                error -> {
+                    loaderutil.hideLoader();
+                    inFlight = false;
+                    btnConfirm.setEnabled(true);
+                    tvError("No internet connection. Please check and try again.");
+                }
+        ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> p = new HashMap<>();
-                p.put("appointment_id", appointmentId);
+                p.put("appointment_id", String.valueOf(appointmentId));
                 p.put("action", "cancel");
                 p.put("reason", reason);
                 return p;
             }
         };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(
+                15000,
+                1,
+                1.0f
+        ));
         Volley.newRequestQueue(this).add(req);
     }
 
     private void tvError(String message) {
-        if (tvErrorMessage != null) {
-            tvErrorMessage.setText(message);
-        }
+        if (tvErrorMessage != null) tvErrorMessage.setText(message);
     }
 
-    /* ----- System bar scrims ----- */
+    /* ----- System bar scrims (solid black top/bottom) ----- */
     private void setupSystemBarScrims() {
         Window window = getWindow();
         WindowCompat.setDecorFitsSystemWindows(window, false);
@@ -220,6 +249,6 @@ public class cancle_appintment extends AppCompatActivity {
             return WindowInsetsCompat.CONSUMED;
         });
 
-        root.requestApplyInsets();
+        root.post(root::requestApplyInsets);
     }
 }
