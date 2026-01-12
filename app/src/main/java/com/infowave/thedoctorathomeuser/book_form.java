@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Looper;
@@ -11,12 +12,14 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.*;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.fragment.app.FragmentManager;
 
@@ -52,6 +55,12 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     private View overlayContainer;
     private View btnCancelMap, btnSelectMap;
 
+    // NEW: status/nav scrims (for perfect black bars)
+    private View statusBarScrim;
+    private View navigationBarScrim;
+    private View rootContainer;
+    private View mainContent;
+
     // Intent data
     private String doctorId, doctorName, appointmentStatus;
 
@@ -78,9 +87,11 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
         // Full screen + black bars setup
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
-        getWindow().setStatusBarColor(android.graphics.Color.BLACK);
-        getWindow().setNavigationBarColor(android.graphics.Color.BLACK);
-        WindowInsetsControllerCompat wic = new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
+        getWindow().setStatusBarColor(Color.BLACK);
+        getWindow().setNavigationBarColor(Color.BLACK);
+
+        WindowInsetsControllerCompat wic =
+                new WindowInsetsControllerCompat(getWindow(), getWindow().getDecorView());
         wic.setAppearanceLightStatusBars(false);
         wic.setAppearanceLightNavigationBars(false);
 
@@ -102,6 +113,15 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         overlayContainer = findViewById(R.id.fullscreen_map_overlay);
         btnCancelMap = findViewById(R.id.btn_cancel_map);
         btnSelectMap = findViewById(R.id.btn_select_map);
+
+        // NEW: scrims + containers (IDs are already in your XML)
+        statusBarScrim = findViewById(R.id.status_bar_scrim);
+        navigationBarScrim = findViewById(R.id.navigation_bar_scrim);
+        rootContainer = findViewById(R.id.root_container);
+        mainContent = findViewById(R.id.main_content);
+
+        // Apply perfect insets for black status + nav bars (no overlap)
+        applySystemBarsInsets();
 
         // Restore previously selected DOB if any (e.g., after rotation)
         if (savedInstanceState != null) {
@@ -152,6 +172,58 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         bookButton.setOnClickListener(v -> onClickBook());
     }
 
+    /**
+     * This makes your two Views behave like perfect black status bar + navigation bar.
+     * - status_bar_scrim height = real status bar inset
+     * - navigation_bar_scrim height = real navigation bar inset (gesture or 3-button)
+     * - main content gets NO extra padding (because scrims consume the insets visually)
+     */
+    private void applySystemBarsInsets() {
+        // Ensure scrims are black (in case theme overrides)
+        if (statusBarScrim != null) statusBarScrim.setBackgroundColor(Color.BLACK);
+        if (navigationBarScrim != null) navigationBarScrim.setBackgroundColor(Color.BLACK);
+
+        View target = (rootContainer != null) ? rootContainer : getWindow().getDecorView();
+
+        ViewCompat.setOnApplyWindowInsetsListener(target, (v, insets) -> {
+            int type = WindowInsetsCompat.Type.systemBars();
+            final int top = insets.getInsets(type).top;
+            final int bottom = insets.getInsets(type).bottom;
+
+            // Set scrim heights exactly to system inset sizes
+            if (statusBarScrim != null) {
+                setHeight(statusBarScrim, top);
+            }
+            if (navigationBarScrim != null) {
+                setHeight(navigationBarScrim, bottom);
+            }
+
+            // Important: keep main content flush (no extra padding), because scrims are visible bars
+            if (mainContent != null) {
+                mainContent.setPadding(
+                        mainContent.getPaddingLeft(),
+                        0,
+                        mainContent.getPaddingRight(),
+                        0
+                );
+            }
+
+            // We consume insets so they don't auto-pad other views unexpectedly
+            return WindowInsetsCompat.CONSUMED;
+        });
+
+        // Trigger first insets dispatch
+        ViewCompat.requestApplyInsets(target);
+    }
+
+    private void setHeight(@NonNull View view, int heightPx) {
+        if (heightPx < 0) heightPx = 0;
+        if (view.getLayoutParams() == null) return;
+        if (view.getLayoutParams().height == heightPx) return;
+        view.getLayoutParams().height = heightPx;
+        view.requestLayout();
+    }
+
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -200,8 +272,12 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
             Toast.makeText(this, "Please select your Date of Birth.", Toast.LENGTH_SHORT).show();
             valid = false;
         } else {
-            int ageCheck = calculateAge(selectedDob.get(Calendar.YEAR), selectedDob.get(Calendar.MONTH) + 1, selectedDob.get(Calendar.DAY_OF_MONTH));
-            if (ageCheck < 4) {
+            int ageCheck = calculateAge(
+                    selectedDob.get(Calendar.YEAR),
+                    selectedDob.get(Calendar.MONTH) + 1,
+                    selectedDob.get(Calendar.DAY_OF_MONTH)
+            );
+            if (ageCheck < 4) { // keeping your logic unchanged
                 Toast.makeText(this, "Minimum age is 1 year.", Toast.LENGTH_SHORT).show();
                 valid = false;
             } else if (ageCheck > 150) {
@@ -223,7 +299,11 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         }
         if (!valid) return;
 
-        int age = calculateAge(selectedDob.get(Calendar.YEAR), selectedDob.get(Calendar.MONTH) + 1, selectedDob.get(Calendar.DAY_OF_MONTH));
+        int age = calculateAge(
+                selectedDob.get(Calendar.YEAR),
+                selectedDob.get(Calendar.MONTH) + 1,
+                selectedDob.get(Calendar.DAY_OF_MONTH)
+        );
 
         Log.d("BOOK_FORM_INTENT", "Passing intent to pending_bill with:");
         Log.d("BOOK_FORM_INTENT", "patient_name=" + name);
@@ -329,11 +409,14 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         map.getUiSettings().setZoomControlsEnabled(true);
         map.getUiSettings().setCompassEnabled(true);
         map.getUiSettings().setMyLocationButtonEnabled(true);
+
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             map.setMyLocationEnabled(true);
         }
+
         if (selectedLocation != null) map.moveCamera(CameraUpdateFactory.newLatLngZoom(selectedLocation, 15f));
+
         map.setOnMapClickListener(latLng -> {
             if (isOverlay) {
                 tempOverlayLocation = latLng;
@@ -357,6 +440,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 .position(latLng)
                 .title("Selected Location")
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
+
         if (animate) embeddedMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f));
         else embeddedMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f));
     }
@@ -424,7 +508,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                         onNewLocation(loc);
                         stopLocating();
                     } else {
-                        // request fresh update
                         LocationRequest req = LocationRequest.create()
                                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                                 .setInterval(5000)
@@ -469,7 +552,9 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 },
                 y, m, d
         );
-        Calendar min = Calendar.getInstance(); min.add(Calendar.YEAR, -150);
+
+        Calendar min = Calendar.getInstance();
+        min.add(Calendar.YEAR, -150);
         dlg.getDatePicker().setMinDate(min.getTimeInMillis());
         dlg.getDatePicker().setMaxDate(now.getTimeInMillis());
         dlg.show();
@@ -484,9 +569,12 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     }
 
     private int calculateAge(int year, int month, int day) {
-        Calendar dob = Calendar.getInstance(); dob.set(year, month - 1, day);
+        Calendar dob = Calendar.getInstance();
+        dob.set(year, month - 1, day);
+
         Calendar today = Calendar.getInstance();
         int age = today.get(Calendar.YEAR) - dob.get(Calendar.YEAR);
+
         if (today.get(Calendar.MONTH) < dob.get(Calendar.MONTH) ||
                 (today.get(Calendar.MONTH) == dob.get(Calendar.MONTH) &&
                         today.get(Calendar.DAY_OF_MONTH) < dob.get(Calendar.DAY_OF_MONTH))) {

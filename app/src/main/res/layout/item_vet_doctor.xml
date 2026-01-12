@@ -269,7 +269,7 @@
                 android:id="@+id/btnBookNow"
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
-                android:backgroundTint="@color/primary_blue"
+                android:backgroundTint="@color/navy_blue"
                 android:paddingHorizontal="32dp"
                 android:text="Book Appointment"
                 android:textAllCaps="false"
