@@ -127,7 +127,15 @@
 
     <string name="cancellation_policy">By proceeding, you agree to our cancellation policy:\n• Cancellations within 24 hours may incur charges\n• No refunds for same-day cancellations\n• Rescheduling subject to availability</string>
     <string name="view_medicine_medical_report"><![CDATA[View medicine & Medical Report]]></string>
-    <string name="google_maps_key" translatable="false">AIzaSyDgbzIYTb6ydLaVxoSAh8eu1JTfCcH-jDk</string>
+    <!--
+        google_maps_key:
+        - Used by Android Maps SDK (map tile rendering only). Required in Manifest.
+        - NOT used as primary key for Directions/Distance — that is handled server-side
+          by API/get_route_distance.php which reads google_directions_api_key from app_settings.
+        - This key is a FALLBACK ONLY if the backend route endpoint fails.
+        - To set the server-side Directions key, run TEMP_google_maps_key_setup.sql.
+    -->
+    <string name="google_maps_key" translatable="false">AIzaSyCOtR4T2ouOtK78v0ps41qY_GPAzL7-Ghs</string>
 
 
     <!-- App Information -->

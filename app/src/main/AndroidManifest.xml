@@ -44,7 +44,8 @@
             android:exported="false" />
         <activity
             android:name=".news"
-            android:exported="false" /> <!-- Added this line to enable OnBackInvokedCallback -->
+            android:exported="false"
+            tools:ignore="MissingClass" /> <!-- Added this line to enable OnBackInvokedCallback -->
         <!-- Activities -->
         <activity
             android:name=".VetAnimalsActivity"

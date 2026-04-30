@@ -5,6 +5,9 @@ public class ApiConfig {
     // 🌐 Base URL (change only here)
     public static final String BASE_URL = "https://thedoctorathome.in/";
 
+    // Server-side route calculation endpoint. Google Directions API key stays on backend.
+    public static final String ROUTE_DISTANCE = BASE_URL + "get_route_distance.php";
+
     // 👉 Simple endpoint (no params)
     // Example: ApiConfig.endpoint("login.php")
     public static String endpoint(String path) {

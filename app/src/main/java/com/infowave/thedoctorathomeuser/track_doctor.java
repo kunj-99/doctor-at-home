@@ -53,7 +53,6 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final String MAPVIEW_BUNDLE_KEY = "MapViewBundleKey";
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
-    private static final String API_KEY = "AIzaSyCkUxQSJ1jNt0q_CcugieFl5vezsNAUxe0";
     private static final String DEFAULT_DOCTOR_IMAGE_URL =
             "https://thedoctorathome.in/doctor_images/default.png";
 
@@ -323,11 +322,15 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void calculateDistanceAndDuration(LatLng origin, LatLng destination) {
-        String str_origin = "origin=" + origin.latitude + "," + origin.longitude;
-        String str_dest   = "destination=" + destination.latitude + "," + destination.longitude;
-        String mode       = "mode=driving";
-        String parameters = str_origin + "&" + str_dest + "&" + mode + "&key=" + API_KEY;
-        String url        = "https://maps.googleapis.com/maps/api/directions/json?" + parameters;
+        // PRIMARY: Backend route endpoint — API key stays on server.
+        String url = ApiConfig.endpoint(
+                "get_route_distance.php",
+                "origin_lat", String.valueOf(origin.latitude),
+                "origin_lng", String.valueOf(origin.longitude),
+                "destination_lat", String.valueOf(destination.latitude),
+                "destination_lng", String.valueOf(destination.longitude),
+                "mode", "driving"
+        ) + "&ts=" + System.currentTimeMillis();
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
@@ -335,35 +338,84 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                 null,
                 response -> {
                     try {
-                        JSONArray routes = response.getJSONArray("routes");
-                        if (routes.length() > 0) {
-                            JSONObject firstRoute = routes.getJSONObject(0);
-                            JSONArray legs = firstRoute.getJSONArray("legs");
-                            if (legs.length() > 0) {
-                                JSONObject firstLeg = legs.getJSONObject(0);
-                                String distanceText = firstLeg.getJSONObject("distance").getString("text");
-                                String durationText = firstLeg.getJSONObject("duration").getString("text");
-                                tvDistance.setText("Distance: " + distanceText);
-                                tvDuration.setText("Duration: " + durationText);
-                            }
-                            JSONObject overviewPolyline = firstRoute.getJSONObject("overview_polyline");
-                            String polylinePoints = overviewPolyline.getString("points");
-                            List<LatLng> polylineList = decodePoly(polylinePoints);
+                        if (!response.optBoolean("success", false)) {
+                            // Backend returned failure — try Android key fallback
+                            calculateDistanceAndDurationFallback(origin, destination);
+                            return;
+                        }
 
-                            if (currentPolyline != null) currentPolyline.remove();
-                            PolylineOptions polylineOptions = new PolylineOptions()
-                                    .addAll(polylineList)
-                                    .width(10f)
-                                    .color(Color.BLUE);
-                            if (googleMap != null) {
-                                currentPolyline = googleMap.addPolyline(polylineOptions);
+                        String distanceText = response.optString("distance_text", "");
+                        String durationText = response.optString("duration_text", "");
+                        String polylinePoints = response.optString("encoded_polyline", "");
+
+                        if (!distanceText.isEmpty()) {
+                            tvDistance.setText("Distance: " + distanceText);
+                        }
+                        if (!durationText.isEmpty()) {
+                            tvDuration.setText("Duration: " + durationText);
+                        }
+
+                        if (!polylinePoints.isEmpty()) {
+                            List<LatLng> polylineList = decodePoly(polylinePoints);
+                            if (!polylineList.isEmpty()) {
+                                if (currentPolyline != null) currentPolyline.remove();
+                                PolylineOptions polylineOptions = new PolylineOptions()
+                                        .addAll(polylineList)
+                                        .width(10f)
+                                        .color(Color.BLUE);
+                                if (googleMap != null) {
+                                    currentPolyline = googleMap.addPolyline(polylineOptions);
+                                }
                             }
                         }
                     } catch (Exception ignored) { }
                 },
-                error -> { /* silent */ }
+                error -> {
+                    // Backend unreachable — try Android key fallback
+                    calculateDistanceAndDurationFallback(origin, destination);
+                }
         );
+        request.setShouldCache(false);
         requestQueue.add(request);
+    }
+
+    /**
+     * FALLBACK ONLY — called only when backend get_route_distance.php is unreachable or fails.
+     * Uses getString(R.string.google_maps_key) from Android resources as fallback.
+     * Does not draw polyline in fallback mode to keep tracking screen stable.
+     */
+    private void calculateDistanceAndDurationFallback(LatLng origin, LatLng destination) {
+        try {
+            String androidKey = getString(R.string.google_maps_key);
+            if (androidKey == null || androidKey.isEmpty() || androidKey.startsWith("PASTE_")) {
+                return; // No fallback key available
+            }
+            String fallbackUrl = "https://maps.googleapis.com/maps/api/directions/json?"
+                    + "origin=" + origin.latitude + "," + origin.longitude
+                    + "&destination=" + destination.latitude + "," + destination.longitude
+                    + "&mode=driving"
+                    + "&key=" + androidKey;
+            // Do NOT log fallbackUrl (would expose key in logcat)
+
+            JsonObjectRequest fallback = new JsonObjectRequest(
+                    Request.Method.GET, fallbackUrl, null,
+                    resp -> {
+                        try {
+                            if (!"OK".equals(resp.optString("status"))) return;
+                            JSONObject leg = resp
+                                    .getJSONArray("routes").getJSONObject(0)
+                                    .getJSONArray("legs").getJSONObject(0);
+                            String distText = leg.getJSONObject("distance").optString("text", "");
+                            String durText  = leg.getJSONObject("duration").optString("text", "");
+                            if (!distText.isEmpty()) tvDistance.setText("Distance: " + distText);
+                            if (!durText.isEmpty())  tvDuration.setText("Duration: " + durText);
+                        } catch (Exception ignored) { }
+                    },
+                    err -> { /* silent: keep tracking screen stable */ }
+            );
+            fallback.setShouldCache(false);
+            requestQueue.add(fallback);
+        } catch (Exception ignored) { /* silent: keep tracking screen stable */ }
     }
 
     private List<LatLng> decodePoly(String encoded) {
