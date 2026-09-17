@@ -1,0 +1,61 @@
+[29-Oct-2025 17:38:41 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:38:41 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:38:46 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:38:51 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:38:56 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:39:01 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:39:06 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:39:11 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:39:16 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:39:21 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'id' in 'WHERE' in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php:63
+Stack trace:
+#0 /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php(63): mysqli->prepare()
+#1 {main}
+  thrown in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 63
+[29-Oct-2025 17:39:24 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:39:26 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:39:31 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:39:36 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:39:41 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:39:46 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:39:51 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:39:56 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:40:01 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:40:06 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68
+[29-Oct-2025 17:40:11 UTC] PHP Warning:  Undefined array key "name" in /home/u357694546/domains/thedoctorathome.in/public_html/Doctors/getRequestappointment.php on line 68

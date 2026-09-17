@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy – THE Doctor At Home – Doctors</title>
+  <style>
+    :root{--ink:#0b2740;--muted:#4b6475;--bg:#f8fafc;--card:#ffffff;--accent:#0ea5a4}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+    .wrap{max-width:920px;margin:32px auto;padding:0 16px}
+    header{background:var(--card);border:1px solid #e8eef5;border-radius:12px;padding:20px 20px 16px;margin-bottom:20px}
+    h1{margin:0 0 6px;font-size:28px}
+    .sub{color:var(--muted);font-size:14px}
+    section{background:var(--card);border:1px solid #e8eef5;border-radius:12px;padding:18px 20px;margin:14px 0}
+    h2{margin:0 0 8px;font-size:20px}
+    h3{margin:18px 0 6px;font-size:16px}
+    ul{margin:6px 0 8px 18px}
+    li{margin:6px 0}
+    code{background:#f1f5f9;padding:1px 6px;border-radius:6px}
+    a{color:var(--accent);text-decoration:none}
+    .note{font-size:13px;color:var(--muted)}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    footer{color:var(--muted);font-size:13px;text-align:center;margin:20px 0 40px}
+    table{width:100%;border-collapse:collapse;margin:8px 0 2px}
+    th,td{border:1px solid #e7eef5;padding:10px;vertical-align:top}
+    th{background:#f6fafb;text-align:left}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#ecfeff;color:#0b5858;font-size:12px;border:1px solid #bbf7f7}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Privacy Policy</h1>
+      <div class="sub">
+        App: <strong>THE Doctor At Home – Doctors</strong><br>
+        Publisher: <strong>The Doctor At Home</strong><br>
+        Effective date: <strong>2025-09-14</strong> &nbsp;•&nbsp; Last updated: <strong>2025-09-14</strong>
+      </div>
+    </header>
+
+    <section>
+      <h2>1) Scope</h2>
+      <p>This Privacy Policy applies to our doctor-facing Android app “THE Doctor At Home – Doctors” and its connected backend services. The app helps doctors manage patient home visits/consultations, appointments, payment settlements, and support. It is not intended for emergency use.</p>
+    </section>
+
+    <section>
+      <h2>2) What data we collect & why</h2>
+      <table>
+        <tr><th>Category</th><th>Examples</th><th>Purpose</th><th>Retention</th></tr>
+        <tr>
+          <td>Account & Profile</td>
+          <td>Name, phone, email, profile photo, specialty, clinic info</td>
+          <td>Account creation, verification, in-app identification, receipts</td>
+          <td>Active account life; legal/audit duties as needed</td>
+        </tr>
+        <tr>
+          <td>Consultation & Scheduling</td>
+          <td>Appointments, visit slots, basic case notes you enter</td>
+          <td>Scheduling, record-keeping for continuity of care you provide</td>
+          <td>As required for operations/legal compliance; deletion requests where legally allowed</td>
+        </tr>
+        <tr>
+          <td>Payments</td>
+          <td>UPI/wallet intent ref, transaction IDs, status (we do not store card data)</td>
+          <td>Collections, refunds, settlements, invoices</td>
+          <td>As required by tax/audit laws</td>
+        </tr>
+        <tr>
+          <td>Device & App Diagnostics</td>
+          <td>Device model, OS/app version, crash logs, performance events</td>
+          <td>Reliability, debugging, security</td>
+          <td>Short-term operational windows</td>
+        </tr>
+        <tr>
+          <td>Location <span class="pill">optional</span></td>
+          <td>Approximate/precise location if you allow</td>
+          <td>Route/ETA for home visits; service area checks</td>
+          <td>Real-time use; not stored continuously</td>
+        </tr>
+        <tr>
+          <td>Support Communications</td>
+          <td>In-app messages, tickets, call metadata, push token</td>
+          <td>Customer support, notifications</td>
+          <td>Life of ticket/need; per law</td>
+        </tr>
+      </table>
+    </section>
+
+    <section>
+      <h2>3) Android permissions & usage</h2>
+      <ul>
+        <li><code>ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION</code> (optional): nearby match & on-the-way updates for visits.</li>
+        <li><code>POST_NOTIFICATIONS</code>: appointment reminders, payment/settlement alerts.</li>
+        <li><code>CAMERA / READ_MEDIA_IMAGES</code>: capture/upload prescriptions, reports, profile photos (only when you choose).</li>
+        <li><code>READ/WRITE EXTERNAL STORAGE</code> (if applicable on your OS version): create/download invoices you request.</li>
+        <li><code>CALL_PHONE</code> (optional): click-to-call patient/helpline (no call logs accessed).</li>
+      </ul>
+      <p class="note">You can change or revoke these permissions anytime in Android Settings. Some features may be limited if disabled.</p>
+    </section>
+
+    <section>
+      <h2>4) How we use your data</h2>
+      <ul>
+        <li>Provide core features: bookings, home visits, consult records, payouts.</li>
+        <li>Send transactional updates (appointments, payments, account/security).</li>
+        <li>Prevent fraud/abuse; comply with law and platform policies.</li>
+        <li>Diagnostics & analytics to improve stability and user experience.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>5) Sharing & disclosure</h2>
+      <ul>
+        <li>We do <strong>not</strong> sell personal data.</li>
+        <li>We share with: (a) patients connected to your profile as required for care; (b) service providers (hosting, analytics/crash, maps/location, payments) under contracts; (c) competent authorities when legally required; (d) in case of business reorganization with safeguards.</li>
+      </ul>
+      <h3>Sub-processors / services (examples)</h3>
+      <ul>
+        <li>Google Firebase (Analytics & Crashlytics)</li>
+        <li>Google Maps/Location Services</li>
+        <li>Payment gateway / UPI PSP (for intents & settlement metadata)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>6) Your choices & rights</h2>
+      <ul>
+        <li>Access/update profile & clinic details in the app.</li>
+        <li>Download invoices/records where available, or request via support.</li>
+        <li>Delete account: <span class="kbd">App &gt; Profile &gt; Account &gt; Delete Account</span> (or request via support). We may retain some records required by law (e.g., tax/audit).</li>
+        <li>Control notifications & permissions in Android Settings.</li>
+        <li>Additional rights under applicable laws (e.g., GDPR/UK, California) – access, rectification, objection, portability, etc. We honor them as per law.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>7) Security</h2>
+      <p>We use transport-level encryption, access controls, and data minimization principles. No method is 100% secure, but we continuously improve security measures.</p>
+    </section>
+
+    <section>
+      <h2>8) Children</h2>
+      <p>This app is intended for licensed adult doctors. It is not for individuals under 18 years of age.</p>
+    </section>
+
+    <section>
+      <h2>9) International transfers</h2>
+      <p>Data may be processed on servers located inside or outside your country. Where required, we implement appropriate safeguards (e.g., standard contractual clauses).</p>
+    </section>
+
+    <section>
+      <h2>10) Data retention & deletion</h2>
+      <ul>
+        <li>We retain data only as long as needed for services and legal purposes.</li>
+        <li>Upon a verified deletion request, we will erase or anonymize data except records legally required to be retained (e.g., tax, audit, disputes).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>11) Changes</h2>
+      <p>We may update this Policy from time to time. Important changes will be notified in-app, via email, or on our website. Continued use of the service after updates means acceptance of the new Policy.</p>
+    </section>
+
+    <section>
+      <h2>12) Contact</h2>
+      <p>
+        Controller/Publisher: <strong>The Doctor At Home</strong><br>
+        Address: {{ Street, City, State, ZIP, Country }}<br>
+        Email: <a href="mailto:thedoctorathome2@gmail.com">thedoctorathome2@gmail.com</a><br>
+        Phone: +91 6354355617<br>
+        Website: <a href="https://thedoctorathome.in">https://thedoctorathome.in</a>
+      </p>
+    </section>
+
+    <footer>
+      © 2025 The Doctor At Home. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>

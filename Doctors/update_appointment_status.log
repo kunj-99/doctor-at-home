@@ -1,0 +1,412 @@
+[2025-11-07 17:12:54 0.531] ==== REQUEST START ==== | {"ip":"103.249.233.50","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-07 17:12:54 0.531] FCM config | {"project":"doctor-at-home-bf9f0","json":"\/home\/u357694546\/fcm-doctorathome-user.json","channel":null}
+[2025-11-07 17:12:54 0.531] RAW INPUT | {"appointment_id":"47","status":"Pending","eta":60,"eta_unit":"minutes"}
+[2025-11-07 17:12:54 0.531] STATUS RESOLVED | {"appointment_id":47,"new_status":"Pending"}
+[2025-11-07 17:12:54 0.541] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-07 17:12:54 0.541] GUARD Pending | {"pending_count":0}
+[2025-11-07 17:12:54 0.541] ETA | {"value":60,"unit":"minutes"}
+[2025-11-07 17:12:54 0.542] APPT UPDATED | {"appointment_id":47,"status":"Pending","eta":"60 minutes"}
+[2025-11-07 17:12:54 0.542] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 60 minutes."}
+[2025-11-07 17:12:54 0.542] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2025-11-07 17:12:54 0.543] PATIENT TOKENS | {"patient_id":4,"count":1}
+[2025-11-07 17:12:54 0.543] FCM ACCESS TOKEN ERROR | Service key not readable at: /home/u357694546/fcm-doctorathome-user.json
+[2025-11-07 17:12:54 0.543] ==== REQUEST END ====
+
+
+[2025-11-07 17:14:00 0.267] ==== REQUEST START ==== | {"ip":"103.249.233.50","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-07 17:14:00 0.267] FCM config | {"project":"doctor-at-home-bf9f0","json":"\/home\/u357694546\/fcm-doctorathome-user.json","channel":null}
+[2025-11-07 17:14:00 0.267] RAW INPUT | {"appointment_id":"47","status":"Pending","eta":10,"eta_unit":"minutes"}
+[2025-11-07 17:14:00 0.267] STATUS RESOLVED | {"appointment_id":47,"new_status":"Pending"}
+[2025-11-07 17:14:00 0.268] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-07 17:14:00 0.268] GUARD Pending | {"pending_count":0}
+[2025-11-07 17:14:00 0.268] ETA | {"value":10,"unit":"minutes"}
+[2025-11-07 17:14:00 0.269] APPT UPDATED | {"appointment_id":47,"status":"Pending","eta":"10 minutes"}
+[2025-11-07 17:14:00 0.269] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 10 minutes."}
+[2025-11-07 17:14:00 0.269] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2025-11-07 17:14:00 0.270] PATIENT TOKENS | {"patient_id":4,"count":1}
+[2025-11-07 17:14:00 0.270] FCM ACCESS TOKEN ERROR | Service key not readable at: /home/u357694546/fcm-doctorathome-user.json
+[2025-11-07 17:14:00 0.270] ==== REQUEST END ====
+.
+
+
+
+[2025-11-07 17:28:04 0.921] ==== REQUEST START ==== | {"ip":"103.249.233.50","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-07 17:28:04 0.921] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json":"\/home\/u357694546\/fcm-doctorathome-user.json","channel":null}
+[2025-11-07 17:28:04 0.921] RAW INPUT | {"appointment_id":"47","status":"Pending","eta":10,"eta_unit":"minutes"}
+[2025-11-07 17:28:04 0.922] STATUS RESOLVED | {"appointment_id":47,"new_status":"Pending"}
+[2025-11-07 17:28:04 0.922] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-07 17:28:04 0.922] GUARD Pending | {"pending_count":0}
+[2025-11-07 17:28:04 0.922] ETA | {"value":10,"unit":"minutes"}
+[2025-11-07 17:28:04 0.923] APPT UPDATED | {"appointment_id":47,"status":"Pending","eta":"10 minutes"}
+[2025-11-07 17:28:04 0.923] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 10 minutes."}
+[2025-11-07 17:28:04 0.923] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2025-11-07 17:28:04 0.924] PATIENT TOKENS | {"patient_id":4,"count":1}
+[2025-11-07 17:28:04 0.924] FCM ACCESS TOKEN ERROR | Service key not readable at: /home/u357694546/fcm-doctorathome-user.json
+[2025-11-07 17:28:04 0.924] ==== REQUEST END ====
+
+
+
+
+
+
+
+
+[2025-11-07 17:42:33 0.193] ==== REQUEST START ==== | {"ip":"103.249.233.50","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-07 17:42:33 0.194] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-07 17:42:33 0.194] RAW INPUT | {"appointment_id":"47","status":"Pending","eta":40,"eta_unit":"minutes"}
+[2025-11-07 17:42:33 0.194] STATUS RESOLVED | {"appointment_id":47,"new_status":"Pending"}
+[2025-11-07 17:42:33 0.194] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-07 17:42:33 0.195] GUARD Pending | {"pending_count":0}
+[2025-11-07 17:42:33 0.195] ETA | {"value":40,"unit":"minutes"}
+[2025-11-07 17:42:33 0.195] APPT UPDATED | {"appointment_id":47,"status":"Pending","eta":"40 minutes"}
+[2025-11-07 17:42:33 0.195] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 40 minutes."}
+[2025-11-07 17:42:33 0.195] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2025-11-07 17:42:33 0.197] PATIENT TOKENS | {"patient_id":4,"count":1}
+[2025-11-07 17:42:33 0.394] FCM SEND TRY | {"token_len":142}
+[2025-11-07 17:42:33 0.520] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762537374385717%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-07 17:42:33 0.521] FCM SUMMARY | {"sent":1,"fail":0}
+[2025-11-07 17:42:33 0.521] ==== REQUEST END ====
+[2025-11-08 13:21:23 0.681] ==== REQUEST START ==== | {"ip":"2402:a00:401:18c9:a4eb:ffb3:3c41:6c19","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-08 13:21:23 0.682] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-08 13:21:23 0.682] RAW INPUT | {"appointment_id":"14","action":"complete"}
+[2025-11-08 13:21:23 0.682] STATUS RESOLVED | {"appointment_id":14,"new_status":"Completed"}
+[2025-11-08 13:21:23 0.682] APPT FETCH | {"doctor_id":3,"patient_id":1,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-08 13:21:23 0.682] ETA | {"value":0,"unit":"minutes"}
+[2025-11-08 13:21:23 0.683] APPT UPDATED | {"appointment_id":14,"status":"Completed","eta":"0 minutes"}
+[2025-11-08 13:21:23 0.683] PAYMENT_HISTORY UPDATED (Offline->Completed) | {"updated":false}
+[2025-11-08 13:21:23 0.683] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2025-11-08 13:21:23 0.683] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2025-11-08 13:21:23 0.684] PATIENT TOKENS | {"patient_id":1,"count":1}
+[2025-11-08 13:21:23 0.894] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:21:24 0.064] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762608105085556%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:21:24 0.064] FCM SUMMARY | {"sent":1,"fail":0}
+[2025-11-08 13:21:24 0.064] ==== REQUEST END ====
+[2025-11-08 13:24:14 0.777] ==== REQUEST START ==== | {"ip":"2402:a00:401:18c9:a4eb:ffb3:3c41:6c19","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-08 13:24:14 0.778] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-08 13:24:14 0.778] RAW INPUT | {"appointment_id":"49","status":"Pending","eta":10,"eta_unit":"minutes"}
+[2025-11-08 13:24:14 0.778] STATUS RESOLVED | {"appointment_id":49,"new_status":"Pending"}
+[2025-11-08 13:24:14 0.778] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-08 13:24:14 0.779] GUARD Pending | {"pending_count":0}
+[2025-11-08 13:24:14 0.779] ETA | {"value":10,"unit":"minutes"}
+[2025-11-08 13:24:14 0.779] APPT UPDATED | {"appointment_id":49,"status":"Pending","eta":"10 minutes"}
+[2025-11-08 13:24:14 0.779] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 10 minutes."}
+[2025-11-08 13:24:14 0.779] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2025-11-08 13:24:14 0.780] PATIENT TOKENS | {"patient_id":4,"count":2}
+[2025-11-08 13:24:14 0.983] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:24:15 0.164] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762608276187151%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:24:15 0.165] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:24:15 0.285] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762608276335986%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:24:15 0.285] FCM SUMMARY | {"sent":2,"fail":0}
+[2025-11-08 13:24:15 0.285] ==== REQUEST END ====
+[2025-11-08 13:24:24 0.168] ==== REQUEST START ==== | {"ip":"2402:a00:401:18c9:a4eb:ffb3:3c41:6c19","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-08 13:24:24 0.169] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-08 13:24:24 0.169] RAW INPUT | {"appointment_id":"49","status":"Confirmed"}
+[2025-11-08 13:24:24 0.169] STATUS RESOLVED | {"appointment_id":49,"new_status":"Confirmed"}
+[2025-11-08 13:24:24 0.169] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-08 13:24:24 0.169] GUARD Confirmed | {"confirmed_count":1}
+[2025-11-08 13:24:24 0.170] BLOCK Confirmed
+[2025-11-08 13:24:58 0.531] ==== REQUEST START ==== | {"ip":"2402:a00:401:18c9:a4eb:ffb3:3c41:6c19","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-08 13:24:58 0.531] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-08 13:24:58 0.531] RAW INPUT | {"appointment_id":"15","action":"complete"}
+[2025-11-08 13:24:58 0.531] STATUS RESOLVED | {"appointment_id":15,"new_status":"Completed"}
+[2025-11-08 13:24:58 0.532] APPT FETCH | {"doctor_id":3,"patient_id":1,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-08 13:24:58 0.532] ETA | {"value":0,"unit":"minutes"}
+[2025-11-08 13:24:58 0.532] APPT UPDATED | {"appointment_id":15,"status":"Completed","eta":"0 minutes"}
+[2025-11-08 13:24:58 0.532] PAYMENT_HISTORY UPDATED (Offline->Completed) | {"updated":false}
+[2025-11-08 13:24:58 0.532] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2025-11-08 13:24:58 0.533] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2025-11-08 13:24:58 0.533] PATIENT TOKENS | {"patient_id":1,"count":1}
+[2025-11-08 13:24:58 0.750] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:24:58 0.931] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762608319939029%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:24:58 0.931] FCM SUMMARY | {"sent":1,"fail":0}
+[2025-11-08 13:24:58 0.931] ==== REQUEST END ====
+[2025-11-08 13:25:08 0.213] ==== REQUEST START ==== | {"ip":"2402:a00:401:18c9:a4eb:ffb3:3c41:6c19","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-08 13:25:08 0.213] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-08 13:25:08 0.213] RAW INPUT | {"appointment_id":"49","status":"Confirmed"}
+[2025-11-08 13:25:08 0.213] STATUS RESOLVED | {"appointment_id":49,"new_status":"Confirmed"}
+[2025-11-08 13:25:08 0.214] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-08 13:25:08 0.214] GUARD Confirmed | {"confirmed_count":0}
+[2025-11-08 13:25:08 0.214] ETA | {"value":0,"unit":"minutes"}
+[2025-11-08 13:25:08 0.215] APPT UPDATED | {"appointment_id":49,"status":"Confirmed","eta":"0 minutes"}
+[2025-11-08 13:25:08 0.215] TX COMMIT OK | {"message":"Appointment updated to 'Confirmed' with ETA 0 minutes."}
+[2025-11-08 13:25:08 0.215] FCM MESSAGE | {"title":"Appointment Confirmed","body":"Your Online appointment is confirmed."}
+[2025-11-08 13:25:08 0.216] PATIENT TOKENS | {"patient_id":4,"count":2}
+[2025-11-08 13:25:08 0.410] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:25:08 0.602] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762608329622384%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:25:08 0.602] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:25:08 0.733] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762608329776520%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:25:08 0.733] FCM SUMMARY | {"sent":2,"fail":0}
+[2025-11-08 13:25:08 0.733] ==== REQUEST END ====
+[2025-11-08 13:26:00 0.512] ==== REQUEST START ==== | {"ip":"2402:a00:401:18c9:a4eb:ffb3:3c41:6c19","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-08 13:26:00 0.512] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-08 13:26:00 0.512] RAW INPUT | {"appointment_id":"49","action":"complete"}
+[2025-11-08 13:26:00 0.513] STATUS RESOLVED | {"appointment_id":49,"new_status":"Completed"}
+[2025-11-08 13:26:00 0.513] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-08 13:26:00 0.513] ETA | {"value":0,"unit":"minutes"}
+[2025-11-08 13:26:00 0.513] APPT UPDATED | {"appointment_id":49,"status":"Completed","eta":"0 minutes"}
+[2025-11-08 13:26:00 0.514] PAYMENT_HISTORY UPDATED (Offline->Completed) | {"updated":true}
+[2025-11-08 13:26:00 0.514] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2025-11-08 13:26:00 0.514] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2025-11-08 13:26:00 0.515] PATIENT TOKENS | {"patient_id":4,"count":2}
+[2025-11-08 13:26:00 0.726] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:26:00 0.924] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762608381925178%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:26:00 0.925] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:26:01 0.115] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762608382134578%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:26:01 0.115] FCM SUMMARY | {"sent":2,"fail":0}
+[2025-11-08 13:26:01 0.115] ==== REQUEST END ====
+[2025-11-08 13:53:12 0.567] ==== REQUEST START ==== | {"ip":"47.11.98.163","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-08 13:53:12 0.567] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-08 13:53:12 0.567] RAW INPUT | {"appointment_id":"50","action":"complete"}
+[2025-11-08 13:53:12 0.568] STATUS RESOLVED | {"appointment_id":50,"new_status":"Completed"}
+[2025-11-08 13:53:12 0.568] APPT FETCH | {"doctor_id":1,"patient_id":1,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-08 13:53:12 0.568] ETA | {"value":0,"unit":"minutes"}
+[2025-11-08 13:53:12 0.568] APPT UPDATED | {"appointment_id":50,"status":"Completed","eta":"0 minutes"}
+[2025-11-08 13:53:12 0.569] PAYMENT_HISTORY UPDATED (Offline->Completed) | {"updated":true}
+[2025-11-08 13:53:12 0.569] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2025-11-08 13:53:12 0.569] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2025-11-08 13:53:12 0.570] PATIENT TOKENS | {"patient_id":1,"count":1}
+[2025-11-08 13:53:12 0.772] FCM SEND TRY | {"token_len":142}
+[2025-11-08 13:53:12 0.901] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762610013947908%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-08 13:53:12 0.902] FCM SUMMARY | {"sent":1,"fail":0}
+[2025-11-08 13:53:12 0.902] ==== REQUEST END ====
+[2025-11-09 04:59:30 0.577] ==== REQUEST START ==== | {"ip":"2409:4080:9d4c:aa68::9708:790c","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-09 04:59:30 0.578] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-09 04:59:30 0.578] RAW INPUT | {"appointment_id":"54","action":"complete"}
+[2025-11-09 04:59:30 0.578] STATUS RESOLVED | {"appointment_id":54,"new_status":"Completed"}
+[2025-11-09 04:59:30 0.579] APPT FETCH | {"doctor_id":3,"patient_id":3,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-09 04:59:30 0.579] ETA | {"value":0,"unit":"minutes"}
+[2025-11-09 04:59:30 0.579] APPT UPDATED | {"appointment_id":54,"status":"Completed","eta":"0 minutes"}
+[2025-11-09 04:59:30 0.580] PAYMENT_HISTORY UPDATED (Offline->Completed) | {"updated":true}
+[2025-11-09 04:59:30 0.580] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2025-11-09 04:59:30 0.580] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2025-11-09 04:59:30 0.581] PATIENT TOKENS | {"patient_id":3,"count":1}
+[2025-11-09 04:59:30 0.785] FCM SEND TRY | {"token_len":142}
+[2025-11-09 04:59:30 0.956] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664392126301%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 04:59:30 0.957] FCM SUMMARY | {"sent":1,"fail":0}
+[2025-11-09 04:59:30 0.957] ==== REQUEST END ====
+[2025-11-09 04:59:46 0.165] ==== REQUEST START ==== | {"ip":"2409:4080:9d4c:aa68::9708:790c","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-09 04:59:46 0.165] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-09 04:59:46 0.165] RAW INPUT | {"appointment_id":"55","status":"Pending","eta":16,"eta_unit":"minutes"}
+[2025-11-09 04:59:46 0.165] STATUS RESOLVED | {"appointment_id":55,"new_status":"Pending"}
+[2025-11-09 04:59:46 0.166] APPT FETCH | {"doctor_id":3,"patient_id":3,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2025-11-09 04:59:46 0.166] GUARD Pending | {"pending_count":0}
+[2025-11-09 04:59:46 0.166] ETA | {"value":16,"unit":"minutes"}
+[2025-11-09 04:59:46 0.166] APPT UPDATED | {"appointment_id":55,"status":"Pending","eta":"16 minutes"}
+[2025-11-09 04:59:46 0.167] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 16 minutes."}
+[2025-11-09 04:59:46 0.167] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2025-11-09 04:59:46 0.167] PATIENT TOKENS | {"patient_id":3,"count":1}
+[2025-11-09 04:59:46 0.365] FCM SEND TRY | {"token_len":142}
+[2025-11-09 04:59:46 0.519] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664407703038%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 04:59:46 0.519] FCM SUMMARY | {"sent":1,"fail":0}
+[2025-11-09 04:59:46 0.520] ==== REQUEST END ====
+[2025-11-09 04:59:49 0.604] ==== REQUEST START ==== | {"ip":"2409:4080:9d4c:aa68::9708:790c","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-09 04:59:49 0.605] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-09 04:59:49 0.605] RAW INPUT | {"appointment_id":"55","status":"Confirmed"}
+[2025-11-09 04:59:49 0.605] STATUS RESOLVED | {"appointment_id":55,"new_status":"Confirmed"}
+[2025-11-09 04:59:49 0.605] APPT FETCH | {"doctor_id":3,"patient_id":3,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2025-11-09 04:59:49 0.605] GUARD Confirmed | {"confirmed_count":0}
+[2025-11-09 04:59:49 0.605] ETA | {"value":0,"unit":"minutes"}
+[2025-11-09 04:59:49 0.606] APPT UPDATED | {"appointment_id":55,"status":"Confirmed","eta":"0 minutes"}
+[2025-11-09 04:59:49 0.606] TX COMMIT OK | {"message":"Appointment updated to 'Confirmed' with ETA 0 minutes."}
+[2025-11-09 04:59:49 0.606] FCM MESSAGE | {"title":"Appointment Confirmed","body":"Your Online appointment is confirmed."}
+[2025-11-09 04:59:49 0.607] PATIENT TOKENS | {"patient_id":3,"count":1}
+[2025-11-09 04:59:49 0.808] FCM SEND TRY | {"token_len":142}
+[2025-11-09 04:59:49 0.982] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664411146574%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 04:59:49 0.982] FCM SUMMARY | {"sent":1,"fail":0}
+[2025-11-09 04:59:49 0.982] ==== REQUEST END ====
+[2025-11-09 05:01:45 0.846] ==== REQUEST START ==== | {"ip":"2409:4080:9d4c:aa68::9708:790c","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-09 05:01:45 0.847] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-09 05:01:45 0.847] RAW INPUT | {"appointment_id":"55","action":"complete"}
+[2025-11-09 05:01:45 0.847] STATUS RESOLVED | {"appointment_id":55,"new_status":"Completed"}
+[2025-11-09 05:01:45 0.847] APPT FETCH | {"doctor_id":3,"patient_id":3,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2025-11-09 05:01:45 0.847] ETA | {"value":0,"unit":"minutes"}
+[2025-11-09 05:01:45 0.848] APPT UPDATED | {"appointment_id":55,"status":"Completed","eta":"0 minutes"}
+[2025-11-09 05:01:45 0.848] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2025-11-09 05:01:45 0.848] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2025-11-09 05:01:45 0.849] PATIENT TOKENS | {"patient_id":3,"count":1}
+[2025-11-09 05:01:46 0.048] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:01:46 0.241] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664527438707%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:01:46 0.241] FCM SUMMARY | {"sent":1,"fail":0}
+[2025-11-09 05:01:46 0.241] ==== REQUEST END ====
+[2025-11-09 05:07:52 0.580] ==== REQUEST START ==== | {"ip":"2409:40c1:4b:f322:8000::","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-09 05:07:52 0.580] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-09 05:07:52 0.580] RAW INPUT | {"appointment_id":"52","action":"complete"}
+[2025-11-09 05:07:52 0.580] STATUS RESOLVED | {"appointment_id":52,"new_status":"Completed"}
+[2025-11-09 05:07:52 0.581] APPT FETCH | {"doctor_id":5,"patient_id":4,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2025-11-09 05:07:52 0.581] ETA | {"value":0,"unit":"minutes"}
+[2025-11-09 05:07:52 0.581] APPT UPDATED | {"appointment_id":52,"status":"Completed","eta":"0 minutes"}
+[2025-11-09 05:07:52 0.581] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2025-11-09 05:07:52 0.581] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2025-11-09 05:07:52 0.619] PATIENT TOKENS | {"patient_id":4,"count":2}
+[2025-11-09 05:07:52 0.818] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:07:53 0.016] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664894171313%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:07:53 0.016] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:07:53 0.202] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664894359614%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:07:53 0.202] FCM SUMMARY | {"sent":2,"fail":0}
+[2025-11-09 05:07:53 0.202] ==== REQUEST END ====
+[2025-11-09 05:08:38 0.032] ==== REQUEST START ==== | {"ip":"2409:40c1:4b:f322:8000::","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-09 05:08:38 0.032] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-09 05:08:38 0.032] RAW INPUT | {"appointment_id":"53","status":"Pending","eta":50,"eta_unit":"minutes"}
+[2025-11-09 05:08:38 0.032] STATUS RESOLVED | {"appointment_id":53,"new_status":"Pending"}
+[2025-11-09 05:08:38 0.033] APPT FETCH | {"doctor_id":5,"patient_id":4,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2025-11-09 05:08:38 0.033] GUARD Pending | {"pending_count":0}
+[2025-11-09 05:08:38 0.033] ETA | {"value":50,"unit":"minutes"}
+[2025-11-09 05:08:38 0.034] APPT UPDATED | {"appointment_id":53,"status":"Pending","eta":"50 minutes"}
+[2025-11-09 05:08:38 0.034] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 50 minutes."}
+[2025-11-09 05:08:38 0.034] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2025-11-09 05:08:38 0.035] PATIENT TOKENS | {"patient_id":4,"count":2}
+[2025-11-09 05:08:38 0.241] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:08:38 0.422] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664939595679%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:08:38 0.422] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:08:38 0.542] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664939741602%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:08:38 0.542] FCM SUMMARY | {"sent":2,"fail":0}
+[2025-11-09 05:08:38 0.543] ==== REQUEST END ====
+[2025-11-09 05:08:56 0.286] ==== REQUEST START ==== | {"ip":"2409:40c1:4b:f322:8000::","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-09 05:08:56 0.286] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-09 05:08:56 0.286] RAW INPUT | {"appointment_id":"53","status":"Confirmed"}
+[2025-11-09 05:08:56 0.286] STATUS RESOLVED | {"appointment_id":53,"new_status":"Confirmed"}
+[2025-11-09 05:08:56 0.287] APPT FETCH | {"doctor_id":5,"patient_id":4,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2025-11-09 05:08:56 0.287] GUARD Confirmed | {"confirmed_count":0}
+[2025-11-09 05:08:56 0.287] ETA | {"value":0,"unit":"minutes"}
+[2025-11-09 05:08:56 0.287] APPT UPDATED | {"appointment_id":53,"status":"Confirmed","eta":"0 minutes"}
+[2025-11-09 05:08:56 0.288] TX COMMIT OK | {"message":"Appointment updated to 'Confirmed' with ETA 0 minutes."}
+[2025-11-09 05:08:56 0.288] FCM MESSAGE | {"title":"Appointment Confirmed","body":"Your Online appointment is confirmed."}
+[2025-11-09 05:08:56 0.289] PATIENT TOKENS | {"patient_id":4,"count":2}
+[2025-11-09 05:08:56 0.488] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:08:56 0.662] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664957826908%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:08:56 0.662] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:08:56 0.774] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762664957977239%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:08:56 0.774] FCM SUMMARY | {"sent":2,"fail":0}
+[2025-11-09 05:08:56 0.774] ==== REQUEST END ====
+[2025-11-09 05:19:43 0.458] ==== REQUEST START ==== | {"ip":"2409:40c1:4b:f322:8000::","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-09 05:19:43 0.458] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-09 05:19:43 0.458] RAW INPUT | {"appointment_id":"53","action":"complete"}
+[2025-11-09 05:19:43 0.459] STATUS RESOLVED | {"appointment_id":53,"new_status":"Completed"}
+[2025-11-09 05:19:43 0.459] APPT FETCH | {"doctor_id":5,"patient_id":4,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2025-11-09 05:19:43 0.459] ETA | {"value":0,"unit":"minutes"}
+[2025-11-09 05:19:43 0.459] APPT UPDATED | {"appointment_id":53,"status":"Completed","eta":"0 minutes"}
+[2025-11-09 05:19:43 0.460] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2025-11-09 05:19:43 0.460] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2025-11-09 05:19:43 0.461] PATIENT TOKENS | {"patient_id":4,"count":2}
+[2025-11-09 05:19:43 0.656] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:19:43 0.782] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762665604979812%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:19:43 0.783] FCM SEND TRY | {"token_len":142}
+[2025-11-09 05:19:43 0.954] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1762665605126374%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-09 05:19:43 0.955] FCM SUMMARY | {"sent":2,"fail":0}
+[2025-11-09 05:19:43 0.955] ==== REQUEST END ====
+[2025-11-16 05:03:35 0.240] ==== REQUEST START ==== | {"ip":"2409:40c1:10b6:be2e:1094:68ff:febc:606d","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-16 05:03:35 0.241] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-16 05:03:35 0.241] RAW INPUT | {"appointment_id":"51","status":"Pending","eta":50,"eta_unit":"minutes"}
+[2025-11-16 05:03:35 0.241] STATUS RESOLVED | {"appointment_id":51,"new_status":"Pending"}
+[2025-11-16 05:03:35 0.242] APPT FETCH | {"doctor_id":1,"patient_id":1,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-16 05:03:35 0.242] GUARD Pending | {"pending_count":0}
+[2025-11-16 05:03:35 0.242] ETA | {"value":50,"unit":"minutes"}
+[2025-11-16 05:03:35 0.243] APPT UPDATED | {"appointment_id":51,"status":"Pending","eta":"50 minutes"}
+[2025-11-16 05:03:35 0.244] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 50 minutes."}
+[2025-11-16 05:03:35 0.244] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2025-11-16 05:03:35 0.245] PATIENT TOKENS | {"patient_id":1,"count":2}
+[2025-11-16 05:03:35 0.455] FCM SEND TRY | {"token_len":142}
+[2025-11-16 05:03:35 0.644] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1763269438350733%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-16 05:03:35 0.644] FCM SEND TRY | {"token_len":142}
+[2025-11-16 05:03:35 0.969] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2025-11-16 05:03:35 0.969] FCM SUMMARY | {"sent":1,"fail":1}
+[2025-11-16 05:03:35 0.969] ==== REQUEST END ====
+[2025-11-16 05:03:41 0.958] ==== REQUEST START ==== | {"ip":"2409:40c1:10b6:be2e:1094:68ff:febc:606d","uri":"\/Doctors\/update_appointment_status.php"}
+[2025-11-16 05:03:41 0.958] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2025-11-16 05:03:41 0.958] RAW INPUT | {"appointment_id":"51","status":"Confirmed"}
+[2025-11-16 05:03:41 0.958] STATUS RESOLVED | {"appointment_id":51,"new_status":"Confirmed"}
+[2025-11-16 05:03:41 0.959] APPT FETCH | {"doctor_id":1,"patient_id":1,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2025-11-16 05:03:41 0.959] GUARD Confirmed | {"confirmed_count":0}
+[2025-11-16 05:03:41 0.959] ETA | {"value":0,"unit":"minutes"}
+[2025-11-16 05:03:41 0.959] APPT UPDATED | {"appointment_id":51,"status":"Confirmed","eta":"0 minutes"}
+[2025-11-16 05:03:41 0.959] TX COMMIT OK | {"message":"Appointment updated to 'Confirmed' with ETA 0 minutes."}
+[2025-11-16 05:03:41 0.959] FCM MESSAGE | {"title":"Appointment Confirmed","body":"Your Online appointment is confirmed."}
+[2025-11-16 05:03:41 0.960] PATIENT TOKENS | {"patient_id":1,"count":2}
+[2025-11-16 05:03:42 0.160] FCM SEND TRY | {"token_len":142}
+[2025-11-16 05:03:42 0.285] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1763269445028484%64ae7cb364ae7cb3\"\n}\n"}
+[2025-11-16 05:03:42 0.286] FCM SEND TRY | {"token_len":142}
+[2025-11-16 05:03:42 0.609] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2025-11-16 05:03:42 0.609] FCM SUMMARY | {"sent":1,"fail":1}
+[2025-11-16 05:03:42 0.609] ==== REQUEST END ====
+[2026-01-05 07:09:52 0.135] ==== REQUEST START ==== | {"ip":"157.32.46.209","uri":"\/Doctors\/update_appointment_status.php"}
+[2026-01-05 07:09:52 0.135] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2026-01-05 07:09:52 0.136] RAW INPUT | {"appointment_id":"57","action":"complete"}
+[2026-01-05 07:09:52 0.136] STATUS RESOLVED | {"appointment_id":57,"new_status":"Completed"}
+[2026-01-05 07:09:52 0.592] APPT FETCH | {"doctor_id":3,"patient_id":3,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2026-01-05 07:09:52 0.592] ETA | {"value":0,"unit":"minutes"}
+[2026-01-05 07:09:52 0.593] APPT UPDATED | {"appointment_id":57,"status":"Completed","eta":"0 minutes"}
+[2026-01-05 07:09:52 0.594] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2026-01-05 07:09:52 0.594] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2026-01-05 07:09:52 0.595] PATIENT TOKENS | {"patient_id":3,"count":4}
+[2026-01-05 07:09:52 0.806] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:09:53 0.592] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1767597027756447%64ae7cb364ae7cb3\"\n}\n"}
+[2026-01-05 07:09:53 0.592] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:09:53 0.905] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-05 07:09:53 0.905] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:09:54 0.219] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-05 07:09:54 0.220] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:09:54 0.542] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-05 07:09:54 0.542] FCM SUMMARY | {"sent":1,"fail":3}
+[2026-01-05 07:09:54 0.542] ==== REQUEST END ====
+[2026-01-05 07:09:54 0.863] ==== REQUEST START ==== | {"ip":"157.32.46.209","uri":"\/Doctors\/update_appointment_status.php"}
+[2026-01-05 07:09:54 0.864] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2026-01-05 07:09:54 0.864] RAW INPUT | {"appointment_id":"57","action":"complete"}
+[2026-01-05 07:09:54 0.864] STATUS RESOLVED | {"appointment_id":57,"new_status":"Completed"}
+[2026-01-05 07:09:54 0.864] APPT FETCH | {"doctor_id":3,"patient_id":3,"payment_method_from_appt":"Online","appointment_mode":"Online"}
+[2026-01-05 07:09:54 0.864] ETA | {"value":0,"unit":"minutes"}
+[2026-01-05 07:09:54 0.865] APPT UPDATED | {"appointment_id":57,"status":"Completed","eta":"0 minutes"}
+[2026-01-05 07:09:54 0.865] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2026-01-05 07:09:54 0.865] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2026-01-05 07:09:54 0.866] PATIENT TOKENS | {"patient_id":3,"count":4}
+[2026-01-05 07:09:55 0.074] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:09:55 0.238] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1767597029385816%64ae7cb364ae7cb3\"\n}\n"}
+[2026-01-05 07:09:55 0.239] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:09:55 0.543] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-05 07:09:55 0.543] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:09:55 0.845] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-05 07:09:55 0.846] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:09:56 0.160] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-05 07:09:56 0.160] FCM SUMMARY | {"sent":1,"fail":3}
+[2026-01-05 07:09:56 0.160] ==== REQUEST END ====
+[2026-01-05 07:10:46 0.176] ==== REQUEST START ==== | {"ip":"157.32.46.209","uri":"\/Doctors\/update_appointment_status.php"}
+[2026-01-05 07:10:46 0.177] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2026-01-05 07:10:46 0.177] RAW INPUT | {"appointment_id":"60","status":"Pending","eta":30,"eta_unit":"minutes"}
+[2026-01-05 07:10:46 0.177] STATUS RESOLVED | {"appointment_id":60,"new_status":"Pending"}
+[2026-01-05 07:10:46 0.177] APPT FETCH | {"doctor_id":3,"patient_id":4,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2026-01-05 07:10:46 0.177] GUARD Pending | {"pending_count":0}
+[2026-01-05 07:10:46 0.177] ETA | {"value":30,"unit":"minutes"}
+[2026-01-05 07:10:46 0.178] APPT UPDATED | {"appointment_id":60,"status":"Pending","eta":"30 minutes"}
+[2026-01-05 07:10:46 0.178] TX COMMIT OK | {"message":"Appointment updated to 'Pending' with ETA 30 minutes."}
+[2026-01-05 07:10:46 0.178] FCM MESSAGE | {"title":"Appointment Updated","body":"Your appointment status changed to: Pending."}
+[2026-01-05 07:10:46 0.179] PATIENT TOKENS | {"patient_id":4,"count":2}
+[2026-01-05 07:10:46 0.386] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:10:46 0.547] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1767597080687867%64ae7cb364ae7cb3\"\n}\n"}
+[2026-01-05 07:10:46 0.547] FCM SEND TRY | {"token_len":142}
+[2026-01-05 07:10:46 0.831] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1767597080961576%64ae7cb364ae7cb3\"\n}\n"}
+[2026-01-05 07:10:46 0.831] FCM SUMMARY | {"sent":2,"fail":0}
+[2026-01-05 07:10:46 0.832] ==== REQUEST END ====
+[2026-01-11 19:38:26 0.561] ==== REQUEST START ==== | {"ip":"2409:40c1:2118:de38:8000::","uri":"\/Doctors\/update_appointment_status.php"}
+[2026-01-11 19:38:26 0.563] FCM CONFIG | {"project":"doctor-at-home-bf9f0","json_candidates":["\/home\/u357694546\/fcm-doctorathome-user.json","\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json"],"using":"\/home\/u357694546\/domains\/thedoctorathome.in\/public_html\/Doctors\/secure_directory\/fcm-doctorathome-user.json","channel":null}
+[2026-01-11 19:38:26 0.563] RAW INPUT | {"appointment_id":"2","action":"complete"}
+[2026-01-11 19:38:26 0.563] STATUS RESOLVED | {"appointment_id":2,"new_status":"Completed"}
+[2026-01-11 19:38:26 0.563] APPT FETCH | {"doctor_id":4,"patient_id":3,"payment_method_from_appt":"Offline","appointment_mode":"Online"}
+[2026-01-11 19:38:26 0.563] ETA | {"value":0,"unit":"minutes"}
+[2026-01-11 19:38:26 0.564] APPT UPDATED | {"appointment_id":2,"status":"Completed","eta":"0 minutes"}
+[2026-01-11 19:38:26 0.564] PAYMENT_HISTORY UPDATED (Offline->Completed) | {"updated":true}
+[2026-01-11 19:38:26 0.564] TX COMMIT OK | {"message":"Appointment updated to 'Completed' with ETA 0 minutes."}
+[2026-01-11 19:38:26 0.564] FCM MESSAGE | {"title":"Appointment Completed","body":"Your appointment has been marked as completed. Thank you for using The Doctor At Home."}
+[2026-01-11 19:38:26 0.565] PATIENT TOKENS | {"patient_id":3,"count":6}
+[2026-01-11 19:38:26 0.770] FCM SEND TRY | {"token_len":142}
+[2026-01-11 19:38:27 0.073] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-11 19:38:27 0.073] FCM SEND TRY | {"token_len":142}
+[2026-01-11 19:38:27 0.378] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-11 19:38:27 0.379] FCM SEND TRY | {"token_len":142}
+[2026-01-11 19:38:27 0.525] FCM SEND OK | {"http":200,"resp_snippet":"{\n  \"name\": \"projects\/doctor-at-home-bf9f0\/messages\/0:1768160343263903%64ae7cb364ae7cb3\"\n}\n"}
+[2026-01-11 19:38:27 0.525] FCM SEND TRY | {"token_len":142}
+[2026-01-11 19:38:27 0.822] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-11 19:38:27 0.822] FCM SEND TRY | {"token_len":142}
+[2026-01-11 19:38:28 0.076] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-11 19:38:28 0.076] FCM SEND TRY | {"token_len":142}
+[2026-01-11 19:38:28 0.388] FCM SEND FAIL | {"http":404,"curl":null,"resp_snippet":"{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"Requested entity was not found.\",\n    \"status\": \"NOT_FOUND\",\n    \"details\": [\n      {\n        \"@type\": \"type.googleapis.com\/google.firebase.fcm.v1.FcmError\",\n        \"errorCode\": \"UNREGISTERED\"\n      }\n    ]\n  }\n}\n"}
+[2026-01-11 19:38:28 0.388] FCM SUMMARY | {"sent":1,"fail":5}
+[2026-01-11 19:38:28 0.388] ==== REQUEST END ====
