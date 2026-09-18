@@ -21,9 +21,9 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 import com.infowave.thedoctorathomeuser.VetAppointment;
 import com.infowave.thedoctorathomeuser.adapter.VetOngoingAdapter;
 
@@ -47,7 +47,7 @@ import java.util.Locale;
  */
 public class VetOngoingFragment extends Fragment {
 
-    private static final long POLL_INTERVAL_MS = 3000L; // 3s
+    private static final long POLL_INTERVAL_MS = 15_000L;
     private static final String REQ_TAG = "vet_ongoing_poll";
 
     // UI
@@ -68,6 +68,7 @@ public class VetOngoingFragment extends Fragment {
     private final Handler liveHandler = new Handler();
     private Runnable liveRunnable;
     private boolean isPolling = false;
+    private boolean requestInFlight = false;
 
     // Diff
     private String lastSig = "";
@@ -100,7 +101,7 @@ public class VetOngoingFragment extends Fragment {
             recyclerView.setItemAnimator(null);
         }
 
-        queue = Volley.newRequestQueue(requireContext());
+        queue = VolleySingleton.getInstance(requireContext()).getRequestQueue();
 
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
@@ -140,6 +141,8 @@ public class VetOngoingFragment extends Fragment {
             isPolling = false;
             liveHandler.removeCallbacks(liveRunnable);
         }
+        if (queue != null) queue.cancelAll(REQ_TAG);
+        requestInFlight = false;
     }
 
     @Override public void onDestroyView() {
@@ -154,10 +157,16 @@ public class VetOngoingFragment extends Fragment {
 
     @SuppressLint("NotifyDataSetChanged")
     private void fetch(boolean firstLoad) {
+        if (requestInFlight) {
+            setLoading(false);
+            return;
+        }
+        requestInFlight = true;
         StringRequest req = new StringRequest(
                 Request.Method.POST,
                 apiUrl,
                 resp -> {
+                    requestInFlight = false;
                     setLoading(false);
                     try {
                         JSONObject json = new JSONObject(resp);
@@ -230,7 +239,7 @@ public class VetOngoingFragment extends Fragment {
                         // silent
                     }
                 },
-                err -> setLoading(false)
+                err -> { requestInFlight = false; setLoading(false); }
         ) {
             @Override
             protected java.util.Map<String, String> getParams() {
@@ -241,6 +250,7 @@ public class VetOngoingFragment extends Fragment {
             @Override public Priority getPriority() { return Priority.LOW; }
         };
         req.setTag(REQ_TAG);
+        req.setShouldCache(false);
         queue.add(req);
     }
 

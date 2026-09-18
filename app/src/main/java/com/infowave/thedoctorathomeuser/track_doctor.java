@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.ViewGroup;
@@ -26,7 +27,6 @@ import androidx.core.view.WindowInsetsControllerCompat;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.signature.ObjectKey;
@@ -42,6 +42,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -64,6 +65,17 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
 
     private final Handler handler = new Handler();
     private Runnable updateRunnable;
+    private boolean liveLocationRequestInFlight = false;
+    private static final String LIVE_LOCATION_TAG = "live_location_poll";
+
+    // Route requests are more expensive than marker polling. Keep them bounded and server-only.
+    private static final String ROUTE_REQUEST_TAG = "route_distance_poll";
+    private static final long ROUTE_MIN_INTERVAL_MS = 15_000L;
+    private static final float ROUTE_MIN_MOVE_METERS = 40f;
+    private boolean routeRequestInFlight = false;
+    private long lastRouteRequestAt = 0L;
+    private LatLng lastRouteOrigin;
+    private LatLng lastRouteDestination;
 
     // Read as String to avoid ClassCastException (you passed String extras)
     private String doctorId = "";
@@ -149,7 +161,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
             mapView.getMapAsync(this);
         }
 
-        requestQueue = Volley.newRequestQueue(this);
+        requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
 
         Button buttonBill = findViewById(R.id.button_bill);
         Button buttonDone = findViewById(R.id.button_done);
@@ -192,7 +204,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
             public void run() {
                 fetchLiveLocation();
                 fetchUserLocation();
-                handler.postDelayed(this, 5000);
+                handler.postDelayed(this, 10_000L);
             }
         };
         handler.post(updateRunnable);
@@ -258,6 +270,8 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void fetchLiveLocation() {
+        if (liveLocationRequestInFlight) return;
+        liveLocationRequestInFlight = true;
         String url = ApiConfig.endpoint("get_live_location.php", "doctor_id", doctorId)
                 + "&appointment_id=" + appointmentId;
 
@@ -266,6 +280,7 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                 url,
                 null,
                 response -> {
+                    liveLocationRequestInFlight = false;
                     try {
                         if (response.has("live_latitude") && response.has("live_longitude")) {
                             double lat = response.getDouble("live_latitude");
@@ -274,8 +289,10 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                         }
                     } catch (Exception ignored) { }
                 },
-                error -> { /* silent */ }
+                error -> liveLocationRequestInFlight = false
         );
+        request.setTag(LIVE_LOCATION_TAG);
+        request.setShouldCache(false);
         requestQueue.add(request);
     }
 
@@ -322,7 +339,19 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void calculateDistanceAndDuration(LatLng origin, LatLng destination) {
-        // PRIMARY: Backend route endpoint — API key stays on server.
+        if (origin == null || destination == null || routeRequestInFlight) return;
+
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (lastRouteRequestAt > 0 && (now - lastRouteRequestAt) < ROUTE_MIN_INTERVAL_MS) {
+            return;
+        }
+        if (lastRouteOrigin != null && lastRouteDestination != null
+                && movedMeters(lastRouteOrigin, origin) < ROUTE_MIN_MOVE_METERS
+                && movedMeters(lastRouteDestination, destination) < ROUTE_MIN_MOVE_METERS) {
+            return;
+        }
+
+        // Server-only route calculation. Do not call Google Directions directly from the APK.
         String url = ApiConfig.endpoint(
                 "get_route_distance.php",
                 "origin_lat", String.valueOf(origin.latitude),
@@ -330,30 +359,31 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                 "destination_lat", String.valueOf(destination.latitude),
                 "destination_lng", String.valueOf(destination.longitude),
                 "mode", "driving"
-        ) + "&ts=" + System.currentTimeMillis();
+        );
+
+        routeRequestInFlight = true;
+        lastRouteRequestAt = now;
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET,
                 url,
                 null,
                 response -> {
+                    routeRequestInFlight = false;
                     try {
                         if (!response.optBoolean("success", false)) {
-                            // Backend returned failure — try Android key fallback
-                            calculateDistanceAndDurationFallback(origin, destination);
-                            return;
+                            return; // Keep the last known route; the same moved route can retry after the interval.
                         }
+
+                        lastRouteOrigin = origin;
+                        lastRouteDestination = destination;
 
                         String distanceText = response.optString("distance_text", "");
                         String durationText = response.optString("duration_text", "");
                         String polylinePoints = response.optString("encoded_polyline", "");
 
-                        if (!distanceText.isEmpty()) {
-                            tvDistance.setText("Distance: " + distanceText);
-                        }
-                        if (!durationText.isEmpty()) {
-                            tvDuration.setText("Duration: " + durationText);
-                        }
+                        if (!distanceText.isEmpty()) tvDistance.setText("Distance: " + distanceText);
+                        if (!durationText.isEmpty()) tvDuration.setText("Duration: " + durationText);
 
                         if (!polylinePoints.isEmpty()) {
                             List<LatLng> polylineList = decodePoly(polylinePoints);
@@ -363,59 +393,27 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
                                         .addAll(polylineList)
                                         .width(10f)
                                         .color(Color.BLUE);
-                                if (googleMap != null) {
-                                    currentPolyline = googleMap.addPolyline(polylineOptions);
-                                }
+                                if (googleMap != null) currentPolyline = googleMap.addPolyline(polylineOptions);
                             }
                         }
                     } catch (Exception ignored) { }
                 },
                 error -> {
-                    // Backend unreachable — try Android key fallback
-                    calculateDistanceAndDurationFallback(origin, destination);
+                    routeRequestInFlight = false;
+                    // Silent by design: tracking keeps showing the last good route and retries later.
                 }
         );
+        request.setTag(ROUTE_REQUEST_TAG);
         request.setShouldCache(false);
+        request.setRetryPolicy(VolleySingleton.policy(VolleySingleton.Profile.BACKGROUND));
         requestQueue.add(request);
     }
 
-    /**
-     * FALLBACK ONLY — called only when backend get_route_distance.php is unreachable or fails.
-     * Uses getString(R.string.google_maps_key) from Android resources as fallback.
-     * Does not draw polyline in fallback mode to keep tracking screen stable.
-     */
-    private void calculateDistanceAndDurationFallback(LatLng origin, LatLng destination) {
-        try {
-            String androidKey = getString(R.string.google_maps_key);
-            if (androidKey == null || androidKey.isEmpty() || androidKey.startsWith("PASTE_")) {
-                return; // No fallback key available
-            }
-            String fallbackUrl = "https://maps.googleapis.com/maps/api/directions/json?"
-                    + "origin=" + origin.latitude + "," + origin.longitude
-                    + "&destination=" + destination.latitude + "," + destination.longitude
-                    + "&mode=driving"
-                    + "&key=" + androidKey;
-            // Do NOT log fallbackUrl (would expose key in logcat)
-
-            JsonObjectRequest fallback = new JsonObjectRequest(
-                    Request.Method.GET, fallbackUrl, null,
-                    resp -> {
-                        try {
-                            if (!"OK".equals(resp.optString("status"))) return;
-                            JSONObject leg = resp
-                                    .getJSONArray("routes").getJSONObject(0)
-                                    .getJSONArray("legs").getJSONObject(0);
-                            String distText = leg.getJSONObject("distance").optString("text", "");
-                            String durText  = leg.getJSONObject("duration").optString("text", "");
-                            if (!distText.isEmpty()) tvDistance.setText("Distance: " + distText);
-                            if (!durText.isEmpty())  tvDuration.setText("Duration: " + durText);
-                        } catch (Exception ignored) { }
-                    },
-                    err -> { /* silent: keep tracking screen stable */ }
-            );
-            fallback.setShouldCache(false);
-            requestQueue.add(fallback);
-        } catch (Exception ignored) { /* silent: keep tracking screen stable */ }
+    private static float movedMeters(LatLng from, LatLng to) {
+        if (from == null || to == null) return Float.MAX_VALUE;
+        float[] result = new float[1];
+        Location.distanceBetween(from.latitude, from.longitude, to.latitude, to.longitude, result);
+        return result[0];
     }
 
     private List<LatLng> decodePoly(String encoded) {
@@ -451,6 +449,12 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
     protected void onPause() {
         if (mapView != null) mapView.onPause();
         if (updateRunnable != null) handler.removeCallbacks(updateRunnable);
+        if (requestQueue != null) {
+            requestQueue.cancelAll(LIVE_LOCATION_TAG);
+            requestQueue.cancelAll(ROUTE_REQUEST_TAG);
+        }
+        liveLocationRequestInFlight = false;
+        routeRequestInFlight = false;
         super.onPause();
     }
 
@@ -502,3 +506,5 @@ public class track_doctor extends AppCompatActivity implements OnMapReadyCallbac
         try { return Integer.parseInt(nvl(s)); } catch (Exception e) { return fallback; }
     }
 }
+
+// Last Updated: 2026-09-18 14:42 IST

@@ -43,6 +43,7 @@ import java.util.List;
 public class diseases extends AppCompatActivity {
 
     private static final String API_PATH = "fetch_diseases.php";
+    private static final String REQUEST_TAG = "diseases_screen";
 
     private RecyclerView recyclerView;
     private DiseaseAdapter adapter;
@@ -128,7 +129,7 @@ public class diseases extends AppCompatActivity {
         }
 
         // ---- Networking ----
-        requestQueue = Volley.newRequestQueue(this);
+        requestQueue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this);
 
         if (categoryId != null && !categoryId.trim().isEmpty()) {
             fetchDiseases(categoryId.trim());
@@ -174,15 +175,20 @@ public class diseases extends AppCompatActivity {
                         adapter.notifyDataSetChanged();
                     }
                 },
-                error -> Toast.makeText(this, "Network error. Please check your internet.", Toast.LENGTH_SHORT).show()
+                error -> Toast.makeText(this,
+                        com.infowave.thedoctorathomeuser.network.NetworkErrorUtil.userMessage(this, error),
+                        Toast.LENGTH_SHORT).show()
         );
 
+        req.setTag(REQUEST_TAG);
         requestQueue.add(req);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (requestQueue != null) requestQueue.stop();
+        if (requestQueue != null) requestQueue.cancelAll(REQUEST_TAG);
     }
 }
+
+// Last Updated: 2026-09-18 14:42 IST

@@ -139,7 +139,7 @@ public class cancle_appintment extends AppCompatActivity {
                 1,
                 1.0f
         ));
-        Volley.newRequestQueue(this).add(req);
+        com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this).add(req);
     }
 
     private void cancelAppointment(String reason) {
@@ -190,7 +190,7 @@ public class cancle_appintment extends AppCompatActivity {
                 1,
                 1.0f
         ));
-        Volley.newRequestQueue(this).add(req);
+        com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this).add(req);
     }
 
     private void tvError(String message) {
@@ -252,3 +252,5 @@ public class cancle_appintment extends AppCompatActivity {
         root.post(root::requestApplyInsets);
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

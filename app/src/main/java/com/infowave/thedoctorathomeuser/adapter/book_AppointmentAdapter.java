@@ -49,16 +49,8 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
 
         // Load image with Glide
         String imgUrl = categoryImages.get(position);
-        if (imgUrl == null || imgUrl.isEmpty()) {
-            holder.imageBackground.setImageResource(R.drawable.plaseholder_error); // fallback image
-        } else {
-            Glide.with(context)
-                    .load(imgUrl)
-                    .placeholder(R.drawable.plaseholder_error)
-                    .error(R.drawable.plaseholder_error)
-                    .centerCrop()
-                    .into(holder.imageBackground);
-        }
+        com.infowave.thedoctorathomeuser.network.SlowImageLoader.loadCenterCrop(
+                holder.imageBackground, imgUrl, R.drawable.plaseholder_error, R.drawable.plaseholder_error);
 
         // Set click listener
         holder.itemView.setOnClickListener(v -> {
@@ -70,6 +62,12 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
             intent.putExtra("category_name", categoryName);
             context.startActivity(intent);
         });
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull AppointmentViewHolder holder) {
+        com.infowave.thedoctorathomeuser.network.SlowImageLoader.clear(holder.imageBackground);
+        super.onViewRecycled(holder);
     }
 
     @Override
@@ -89,3 +87,5 @@ public class book_AppointmentAdapter extends RecyclerView.Adapter<book_Appointme
         }
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

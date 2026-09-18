@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.infowave.thedoctorathomeuser.AnimalReportViewerActivity;
 import com.infowave.thedoctorathomeuser.ApiConfig;
@@ -24,6 +23,7 @@ import com.infowave.thedoctorathomeuser.RefundStatus;
 import com.infowave.thedoctorathomeuser.complet_bill;
 import com.infowave.thedoctorathomeuser.doctor_details; // For vet details, swap class if you have
 import com.infowave.thedoctorathomeuser.medical_riport;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -247,12 +247,12 @@ public class VetHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             protected Map<String, String> getParams() {
                 Map<String, String> p = new HashMap<>();
                 p.put("patient_id", patientId);
-                p.put("vet_id", String.valueOf(vetId)); // If backend expects doctor_id, change to doctor_id
+                p.put("doctor_id", String.valueOf(vetId));
                 p.put("appointment_id", String.valueOf(appointmentId));
                 return p;
             }
         };
-        Volley.newRequestQueue(context).add(request);
+        VolleySingleton.getInstance(context).getRequestQueue().add(request);
     }
 
     private void showReviewPopup(int vetId, int appointmentId) {
@@ -303,7 +303,7 @@ public class VetHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
             protected Map<String, String> getParams() {
                 Map<String, String> p = new HashMap<>();
                 p.put("patient_id", patientId);
-                p.put("vet_id", String.valueOf(vetId)); // If backend expects doctor_id, change to doctor_id
+                p.put("doctor_id", String.valueOf(vetId));
                 p.put("appointment_id", String.valueOf(appointmentId));
                 p.put("action", action);
                 if ("submit".equals(action)) {
@@ -313,7 +313,7 @@ public class VetHistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHol
                 return p;
             }
         };
-        Volley.newRequestQueue(context).add(req);
+        VolleySingleton.getInstance(context).getRequestQueue().add(req);
     }
 
     // ===== ViewHolders =====

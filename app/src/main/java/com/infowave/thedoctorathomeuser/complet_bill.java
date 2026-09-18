@@ -150,7 +150,7 @@ public class complet_bill extends AppCompatActivity {
                 }
         );
 
-        Volley.newRequestQueue(this).add(request);
+        com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this).add(request);
     }
 
     @SuppressLint("SetTextI18n")
@@ -280,3 +280,5 @@ public class complet_bill extends AppCompatActivity {
         return bitmap;
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

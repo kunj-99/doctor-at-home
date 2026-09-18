@@ -1,7 +1,6 @@
 package com.infowave.thedoctorathomeuser;
 
 import android.app.DatePickerDialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -65,7 +64,6 @@ public class Profile extends AppCompatActivity {
     private Spinner spinnerGender, spinnerBloodGroup;
     private Button btnUpdate;
 
-    private ProgressDialog progressDialog;
     private RequestQueue requestQueue;
     private int patientId;
 
@@ -160,9 +158,7 @@ public class Profile extends AppCompatActivity {
         etCurrentMedications = findViewById(R.id.et_current_medications);
         btnUpdate = findViewById(R.id.btn_update_profile);
 
-        progressDialog = new ProgressDialog(this);
-        progressDialog.setMessage("Please wait...");
-        requestQueue = Volley.newRequestQueue(this);
+        requestQueue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this);
 
         ArrayAdapter<CharSequence> genderAdapter = ArrayAdapter.createFromResource(
                 this, R.array.gender_array, android.R.layout.simple_spinner_item);
@@ -292,12 +288,12 @@ public class Profile extends AppCompatActivity {
 
     // ===== Networking: fetch & update profile =====
     private void fetchProfile() {
-        progressDialog.show();
+        loaderutil.showLoader(this, "Loading profile", "Getting your latest profile information…");
 
         String url = ApiConfig.endpoint("get_profile.php", "patient_id", String.valueOf(patientId));
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 response -> {
-                    progressDialog.dismiss();
+                    loaderutil.hideLoader();
                     try {
                         if ("success".equals(response.optString("status"))) {
                             JSONObject data = response.optJSONObject("data");
@@ -336,8 +332,8 @@ public class Profile extends AppCompatActivity {
                     }
                 },
                 error -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(this, "Unable to connect. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                    loaderutil.hideLoader();
+                    Toast.makeText(this, com.infowave.thedoctorathomeuser.network.NetworkErrorUtil.userMessage(this, error), Toast.LENGTH_LONG).show();
                 });
         requestQueue.add(req);
     }
@@ -361,13 +357,13 @@ public class Profile extends AppCompatActivity {
             etFullName.requestFocus();
             return;
         }
-        progressDialog.show();
+        loaderutil.showLoader(this, "Updating profile", "Saving your changes securely…");
 
         if (selectedBitmap != null) {
             VolleyMultipartRequest multipartRequest = new VolleyMultipartRequest(
                     Request.Method.POST, UPDATE_PROFILE_URL,
                     response -> {
-                        progressDialog.dismiss();
+                        loaderutil.hideLoader();
                         try {
                             JSONObject jsonResponse = new JSONObject(new String(response.data));
                             if ("success".equals(jsonResponse.optString("status"))) {
@@ -382,8 +378,8 @@ public class Profile extends AppCompatActivity {
                         }
                     },
                     error -> {
-                        progressDialog.dismiss();
-                        Toast.makeText(this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                        loaderutil.hideLoader();
+                        Toast.makeText(this, com.infowave.thedoctorathomeuser.network.NetworkErrorUtil.userMessage(this, error, "Could not update your profile. Please try again."), Toast.LENGTH_LONG).show();
                     }) {
                 @Override
                 protected Map<String, String> getParams() {
@@ -402,7 +398,7 @@ public class Profile extends AppCompatActivity {
         } else {
             StringRequest stringRequest = new StringRequest(Request.Method.POST, UPDATE_PROFILE_URL,
                     response -> {
-                        progressDialog.dismiss();
+                        loaderutil.hideLoader();
                         try {
                             JSONObject jsonResponse = new JSONObject(response);
                             if ("success".equals(jsonResponse.optString("status"))) {
@@ -417,8 +413,8 @@ public class Profile extends AppCompatActivity {
                         }
                     },
                     error -> {
-                        progressDialog.dismiss();
-                        Toast.makeText(this, "Unable to update profile. Please check your internet and try again.", Toast.LENGTH_SHORT).show();
+                        loaderutil.hideLoader();
+                        Toast.makeText(this, com.infowave.thedoctorathomeuser.network.NetworkErrorUtil.userMessage(this, error, "Could not update your profile. Please try again."), Toast.LENGTH_LONG).show();
                     }) {
                 @Override
                 protected Map<String, String> getParams() {
@@ -566,3 +562,5 @@ public class Profile extends AppCompatActivity {
         public String getType() { return type; }
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

@@ -215,7 +215,9 @@ public class Register extends AppCompatActivity {
             }
         };
 
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        RequestQueue requestQueue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this);
         requestQueue.add(stringRequest);
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

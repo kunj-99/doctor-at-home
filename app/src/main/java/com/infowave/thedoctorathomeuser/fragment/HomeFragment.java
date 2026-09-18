@@ -22,10 +22,10 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.adapter.*;
 import com.infowave.thedoctorathomeuser.*;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.*;
 
@@ -51,11 +51,16 @@ public class HomeFragment extends Fragment {
     private Runnable loaderRunnable;
     private int pendingRequestCount = 0;
     private final int LOADER_DELAY = 300;
+    private static final String HOME_REQUEST_TAG = "home_requests";
+    private RequestQueue requestQueue;
+    private boolean viewDestroyed = false;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
+        viewDestroyed = false;
+        requestQueue = VolleySingleton.getInstance(requireContext()).getRequestQueue();
 
         // Bind all RecyclerViews
         recyclerView = view.findViewById(R.id.recyclerView);
@@ -124,7 +129,6 @@ public class HomeFragment extends Fragment {
         recyclerView.setClipToPadding(false);
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
         String url = ApiConfig.endpoint("get_slider_images.php");
 
 
@@ -161,13 +165,14 @@ public class HomeFragment extends Fragment {
                     }
                 }
         );
+        jsonObjectRequest.setTag(HOME_REQUEST_TAG);
+        jsonObjectRequest.setShouldCache(false);
         requestQueue.add(jsonObjectRequest);
     }
 
     private void setupHealthTips() {
         pendingRequestCount++;
 
-        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
         String url = ApiConfig.endpoint("healthtip.php");
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
@@ -201,6 +206,8 @@ public class HomeFragment extends Fragment {
                     decrementAndDismissLoader();
                 }
         );
+        jsonArrayRequest.setTag(HOME_REQUEST_TAG);
+        jsonArrayRequest.setShouldCache(false);
         requestQueue.add(jsonArrayRequest);
     }
 
@@ -208,7 +215,6 @@ public class HomeFragment extends Fragment {
     private void setupAppointmentStats() {
         pendingRequestCount++;
 
-        RequestQueue requestQueue = Volley.newRequestQueue(requireContext());
         String url = ApiConfig.endpoint("completed_appointment.php");
 
 
@@ -242,6 +248,8 @@ public class HomeFragment extends Fragment {
                     }
                 }
         );
+        jsonObjectRequest.setTag(HOME_REQUEST_TAG);
+        jsonObjectRequest.setShouldCache(false);
         requestQueue.add(jsonObjectRequest);
     }
 
@@ -257,7 +265,6 @@ public class HomeFragment extends Fragment {
         pendingRequestCount++;
         String url = ApiConfig.endpoint("get_articles.php");
 
-        RequestQueue requestQueue = Volley.newRequestQueue(getContext());
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
                 Request.Method.GET,
@@ -297,6 +304,8 @@ public class HomeFragment extends Fragment {
                     }
                 }
         );
+        jsonArrayRequest.setTag(HOME_REQUEST_TAG);
+        jsonArrayRequest.setShouldCache(false);
         requestQueue.add(jsonArrayRequest);
     }
 
@@ -338,6 +347,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void attemptHideLoader() {
+        if (viewDestroyed || !isAdded()) return;
         if (isNetworkAvailable()) {
             loaderutil.hideLoader();
         } else {
@@ -352,9 +362,13 @@ public class HomeFragment extends Fragment {
 
     @Override
     public void onDestroyView() {
-        super.onDestroyView();
+        viewDestroyed = true;
         if (handler != null && runnable != null) {
             handler.removeCallbacks(runnable);
         }
+        loaderHandler.removeCallbacksAndMessages(null);
+        if (requestQueue != null) requestQueue.cancelAll(HOME_REQUEST_TAG);
+        try { loaderutil.hideLoader(); } catch (Throwable ignored) { }
+        super.onDestroyView();
     }
 }

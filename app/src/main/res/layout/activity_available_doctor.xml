@@ -13,21 +13,6 @@
         android:layout_height="0dp"
         android:background="@android:color/black" />
 
-    <!-- Loader overlay (keep GONE by default) -->
-    <RelativeLayout
-        android:id="@+id/loaderLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
-        android:background="#FFFFFF"
-        android:gravity="center">
-
-        <ProgressBar
-            android:id="@+id/progressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </RelativeLayout>
-
     <!-- Header -->
     <LinearLayout
         android:id="@+id/header_bar"
@@ -92,6 +77,18 @@
             android:src="@drawable/ic_search" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tv_list_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="4dp"
+        android:paddingHorizontal="4dp"
+        android:paddingVertical="6dp"
+        android:text="Checking the latest doctor availability…"
+        android:textColor="#5F6368"
+        android:textSize="13sp" />
+
     <!-- Empty state -->
     <TextView
         android:id="@+id/tv_no_doctors"
@@ -137,4 +134,6 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="@android:color/black" />
+    <!-- Last Updated: 2026-09-18 13:31 IST - Phase 1-3 safe UX/logic optimization -->
 </LinearLayout>
+<!-- Last Updated: 2026-09-18 14:00 IST -->

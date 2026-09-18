@@ -236,7 +236,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
             }
         };
 
-        RequestQueue queue = Volley.newRequestQueue(context);
+        RequestQueue queue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(context);
         queue.add(request);
     }
 
@@ -318,7 +318,7 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
             }
         };
 
-        RequestQueue queue = Volley.newRequestQueue(context);
+        RequestQueue queue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(context);
         queue.add(stringRequest);
     }
 
@@ -357,3 +357,5 @@ public class DoctorHistoryAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

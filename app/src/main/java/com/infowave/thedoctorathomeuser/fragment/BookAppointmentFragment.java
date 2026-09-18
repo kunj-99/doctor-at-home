@@ -16,10 +16,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
 import com.infowave.thedoctorathomeuser.adapter.book_AppointmentAdapter;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -36,6 +36,8 @@ public class BookAppointmentFragment extends Fragment {
     private List<String> categoryImages = new ArrayList<>(); // Added for images
 
     private book_AppointmentAdapter adapter;
+    private RequestQueue queue;
+    private static final String REQUEST_TAG = "book_categories";
 
     private static final String API_URL = ApiConfig.endpoint("bookappointment.php");
 
@@ -43,6 +45,8 @@ public class BookAppointmentFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_book_appointment, container, false);
+
+        queue = VolleySingleton.getInstance(requireContext()).getRequestQueue();
 
         recyclerView = view.findViewById(R.id.recyclerView);
         // Use GridLayoutManager for 2 columns
@@ -59,8 +63,6 @@ public class BookAppointmentFragment extends Fragment {
     }
 
     private void fetchDoctorCategories() {
-        RequestQueue queue = Volley.newRequestQueue(requireContext());
-
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(
                 Request.Method.GET,
                 API_URL,
@@ -73,7 +75,15 @@ public class BookAppointmentFragment extends Fragment {
                 ).show()
         );
 
+        jsonArrayRequest.setTag(REQUEST_TAG);
+        jsonArrayRequest.setShouldCache(false);
         queue.add(jsonArrayRequest);
+    }
+
+    @Override
+    public void onDestroyView() {
+        if (queue != null) queue.cancelAll(REQUEST_TAG);
+        super.onDestroyView();
     }
 
     @SuppressLint("NotifyDataSetChanged")

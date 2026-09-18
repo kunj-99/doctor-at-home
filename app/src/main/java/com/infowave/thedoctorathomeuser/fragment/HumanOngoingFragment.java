@@ -25,9 +25,9 @@ import androidx.activity.OnBackPressedCallback;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 import com.infowave.thedoctorathomeuser.adapter.OngoingAdapter;
 
 import org.json.JSONArray;
@@ -45,7 +45,7 @@ import java.util.Locale;
 public class HumanOngoingFragment extends Fragment {
 
     private static final String TAG = "HumanOngoingFragment"; // ✅
-    private static final long POLL_INTERVAL_MS = 3000L;
+    private static final long POLL_INTERVAL_MS = 15_000L;
     private static final String REQ_TAG = "human_ongoing_poll";
 
     // UI
@@ -77,6 +77,7 @@ public class HumanOngoingFragment extends Fragment {
     private final Handler liveHandler = new Handler();
     private Runnable liveRunnable;
     private boolean isPolling = false;
+    private boolean requestInFlight = false;
     private String lastSig = "";
 
     @Nullable
@@ -105,7 +106,7 @@ public class HumanOngoingFragment extends Fragment {
             recyclerView.setItemAnimator(null);
         }
 
-        queue = Volley.newRequestQueue(requireContext());
+        queue = VolleySingleton.getInstance(requireContext()).getRequestQueue();
 
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
@@ -171,6 +172,8 @@ public class HumanOngoingFragment extends Fragment {
             isPolling = false;
             liveHandler.removeCallbacks(liveRunnable);
         }
+        if (queue != null) queue.cancelAll(REQ_TAG);
+        requestInFlight = false;
     }
 
     @Override public void onDestroyView() {
@@ -185,11 +188,16 @@ public class HumanOngoingFragment extends Fragment {
 
     @SuppressLint("NotifyDataSetChanged")
     private void fetch(boolean firstLoad) {
-        Log.d(TAG, "fetch(firstLoad=" + firstLoad + ") sending request...");
+        if (requestInFlight) {
+            setLoading(false);
+            return;
+        }
+        requestInFlight = true;
         StringRequest req = new StringRequest(
                 Request.Method.POST,
                 apiUrl,
                 resp -> {
+                    requestInFlight = false;
                     setLoading(false);
                     // --- RAW RESPONSE LOG (trim to avoid logcat spam) ---
                     String preview = resp == null ? "null" : resp.substring(0, Math.min(resp.length(), 800));
@@ -339,8 +347,8 @@ public class HumanOngoingFragment extends Fragment {
                     }
                 },
                 err -> {
+                    requestInFlight = false;
                     setLoading(false);
-                    Log.e(TAG, "Volley error: " + err, err);
                 }
         ) {
             @Override protected java.util.Map<String, String> getParams() {
@@ -352,6 +360,7 @@ public class HumanOngoingFragment extends Fragment {
             @Override public Priority getPriority() { return Priority.LOW; }
         };
         req.setTag(REQ_TAG);
+        req.setShouldCache(false);
         queue.add(req);
     }
 

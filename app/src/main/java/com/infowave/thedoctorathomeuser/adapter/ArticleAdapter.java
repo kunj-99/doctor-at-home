@@ -43,9 +43,8 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ArticleV
         holder.title.setText(item.getTitle());
         holder.subtitle.setText(item.getSubtitle());
 
-        Glide.with(context)
-                .load(item.getCover())
-                .into(holder.image);
+        com.infowave.thedoctorathomeuser.network.SlowImageLoader.load(
+                holder.image, item.getCover(), R.drawable.plasholder, R.drawable.plaseholder_error);
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,6 +59,12 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ArticleV
                 }
             }
         });
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull ArticleViewHolder holder) {
+        com.infowave.thedoctorathomeuser.network.SlowImageLoader.clear(holder.image);
+        super.onViewRecycled(holder);
     }
 
     @Override
@@ -79,3 +84,5 @@ public class ArticleAdapter extends RecyclerView.Adapter<ArticleAdapter.ArticleV
         }
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

@@ -104,6 +104,74 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- Server verification / payment recovery status -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/bill_verification_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="#F5F9FF"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeColor="#D5E5F8"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="12dp">
+
+                    <ProgressBar
+                        android:id="@+id/progress_bill_verification"
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginEnd="10dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tv_bill_verification_title"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Verifying bill securely"
+                            android:textColor="#17324D"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tv_bill_verification_message"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="The final amount is checked by the server before payment."
+                            android:textColor="#5C6F82"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btn_bill_status_action"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:layout_marginTop="8dp"
+                            android:backgroundTint="#E6F0FA"
+                            android:minHeight="0dp"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:text="Try again"
+                            android:textAllCaps="false"
+                            android:textColor="#17324D"
+                            android:textSize="13sp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Payment Info Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -143,23 +211,6 @@
                             android:textColor="@color/black"
                             android:layout_marginBottom="10dp" />
 
-                        <!-- Appointment ID -->
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Appointment ID"
-                            android:textColor="@color/black"
-                            android:textSize="15sp" />
-
-                        <TextView
-                            android:id="@+id/tv_appointment_id"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="#765445367"
-                            android:textColor="@color/black"
-                            android:paddingTop="8dp"
-                            android:layout_marginBottom="14dp" />
-
                         <!-- Time -->
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -167,8 +218,9 @@
                             android:orientation="horizontal">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Time"
                                 android:textColor="@color/black"
                                 android:textSize="15sp" />
@@ -177,8 +229,7 @@
                                 android:id="@+id/tv_bill_time"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginLeft="84dp"
-                                android:textSize="16dp"
+                                android:textSize="16sp"
                                 android:layout_marginBottom="8dp"
                                 android:textColor="@color/black" />
                         </LinearLayout>
@@ -190,8 +241,10 @@
                             android:orientation="horizontal">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:id="@+id/tv_bill_patient_label"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Patient Name"
                                 android:textColor="@color/black"
                                 android:textSize="15sp" />
@@ -200,10 +253,8 @@
                                 android:id="@+id/tv_bill_patient_name"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Vansh Mandanka"
                                 android:textColor="@color/black"
-                                android:textSize="16dp"
-                                android:layout_marginLeft="25dp"
+                                android:textSize="16sp"
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
 
@@ -214,8 +265,9 @@
                             android:orientation="horizontal">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Doctor Name"
                                 android:textColor="@color/black"
                                 android:textSize="15sp" />
@@ -224,10 +276,8 @@
                                 android:id="@+id/tv_bill_doctor_name"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Hetanshi Mandanka"
                                 android:textColor="@color/black"
-                                android:textSize="15dp"
-                                android:layout_marginLeft="27dp"
+                                android:textSize="15sp"
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
 
@@ -241,8 +291,9 @@
                             android:visibility="gone">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Animal Name"
                                 android:textColor="@color/black"
                                 android:textSize="15sp" />
@@ -252,8 +303,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textColor="@color/black"
-                                android:textSize="16dp"
-                                android:layout_marginLeft="25dp"
+                                android:textSize="16sp"
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
 
@@ -266,8 +316,9 @@
                             android:visibility="gone">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Animal Age"
                                 android:textColor="@color/black"
                                 android:textSize="15sp" />
@@ -277,8 +328,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textColor="@color/black"
-                                android:textSize="16dp"
-                                android:layout_marginLeft="37dp"
+                                android:textSize="16sp"
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
 
@@ -291,8 +341,9 @@
                             android:visibility="gone">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Animal Gender"
                                 android:textColor="@color/black"
                                 android:textSize="15sp" />
@@ -302,8 +353,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textColor="@color/black"
-                                android:textSize="16dp"
-                                android:layout_marginLeft="19dp"
+                                android:textSize="16sp"
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
 
@@ -316,8 +366,9 @@
                             android:visibility="gone">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Animal Breed"
                                 android:textColor="@color/black"
                                 android:textSize="15sp" />
@@ -327,8 +378,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textColor="@color/black"
-                                android:textSize="16dp"
-                                android:layout_marginLeft="32dp"
+                                android:textSize="16sp"
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
 
@@ -341,8 +391,9 @@
                             android:visibility="gone">
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Vaccination"
                                 android:textColor="@color/black"
                                 android:textSize="15sp" />
@@ -352,8 +403,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textColor="@color/black"
-                                android:textSize="16dp"
-                                android:layout_marginLeft="40dp"
+                                android:textSize="16sp"
                                 android:layout_marginBottom="8dp" />
                         </LinearLayout>
                         <!-- END ANIMAL SECTION -->
@@ -618,6 +668,17 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
+            <TextView
+                android:id="@+id/tv_payment_protection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="22dp"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="If confirmation is slow, do not pay again. We will safely recover the same booking."
+                android:textColor="#667788"
+                android:textSize="12sp" />
+
             <Button
                 android:id="@+id/btn_recharge_wallet"
                 android:layout_width="match_parent"
@@ -638,4 +699,5 @@
         android:layout_height="0dp"
         android:background="@android:color/black" />
 
+    <!-- Last Updated: 2026-09-18 13:02 IST -->
 </LinearLayout>

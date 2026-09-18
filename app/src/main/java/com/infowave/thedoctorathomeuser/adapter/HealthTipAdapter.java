@@ -41,17 +41,21 @@ public class HealthTipAdapter extends RecyclerView.Adapter<HealthTipAdapter.TipV
 
         // If URL present → load with Glide
         if (tip.hasImageUrl()) {
-            Glide.with(context)
-                    .load(tip.getImageUrl())
-                    .placeholder(R.drawable.food)
-                    .error(R.drawable.food)
-                    .into(holder.image);
+            com.infowave.thedoctorathomeuser.network.SlowImageLoader.load(
+                    holder.image, tip.getImageUrl(), R.drawable.food, R.drawable.food);
         } else if (tip.getImageResId() != 0) {
-            // Fallback to local drawable
+            com.infowave.thedoctorathomeuser.network.SlowImageLoader.clear(holder.image);
             holder.image.setImageResource(tip.getImageResId());
         } else {
+            com.infowave.thedoctorathomeuser.network.SlowImageLoader.clear(holder.image);
             holder.image.setImageResource(R.drawable.food);
         }
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull TipViewHolder holder) {
+        com.infowave.thedoctorathomeuser.network.SlowImageLoader.clear(holder.image);
+        super.onViewRecycled(holder);
     }
 
     @Override
@@ -71,3 +75,5 @@ public class HealthTipAdapter extends RecyclerView.Adapter<HealthTipAdapter.TipV
         }
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

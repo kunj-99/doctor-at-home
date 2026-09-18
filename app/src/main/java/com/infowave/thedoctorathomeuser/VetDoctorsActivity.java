@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -35,8 +37,8 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.adapter.VetDoctorsAdapter;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -53,6 +55,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
     private ImageButton btnClearSearch;
     private LinearLayout llEmptyState;
     private TextView tvDoctorsCount;
+    private TextView tvListStatus;
     private SwipeRefreshLayout swipeRefresh;
 
     private final ArrayList<JSONObject> doctors = new ArrayList<>();
@@ -60,6 +63,32 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
     private View statusScrim, navScrim;
     private RequestQueue queue;
+    private static final String TAG_PINCODE_REQUEST = "vet_doctors_pincode";
+    private static final String TAG_DOCTOR_LIST_REQUEST = "vet_doctors_list";
+    private boolean isDoctorListFetching = false;
+    private static final long SLOW_NETWORK_HINT_MS = 2500L;
+    private Runnable slowNetworkHintRunnable;
+    private String inFlightDoctorRequestKey = "";
+
+    // Discovery membership refresh. Fast busy/free state is handled separately by Phase 1 batch polling.
+    private static final long DISCOVERY_REFRESH_INTERVAL_MS = 20_000L;
+    private final Handler discoveryRefreshHandler = new Handler(Looper.getMainLooper());
+    private boolean discoveryRefreshStarted = false;
+    private final Runnable discoveryRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (isFinishing() || isDestroyed()) {
+                discoveryRefreshStarted = false;
+                return;
+            }
+
+            String pin = activePincode == null ? "" : activePincode.trim();
+            if (pin.length() == 6) {
+                fetchVets(pin, false, true);
+            }
+            discoveryRefreshHandler.postDelayed(this, DISCOVERY_REFRESH_INTERVAL_MS);
+        }
+    };
 
     // === Inputs from Intent ===
     private int vetCategoryId = -1;         // from doctor_categories
@@ -104,7 +133,8 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                 + ", doctor_type=" + doctorType);
 
         if (vetCategoryId <= 0 || animalCategoryId <= 0 || doctorType == null || doctorType.isEmpty()) {
-            showToastSafe("Invalid category selection");
+            setListStatus("This veterinarian category is unavailable. Please go back and choose it again.");
+            showToastSafe("Invalid category selection. Please choose the category again.");
             Log.e(TAG, "Invalid IDs or missing doctorType → vetCategoryId=" + vetCategoryId
                     + ", animalCategoryId=" + animalCategoryId
                     + ", doctorType=" + doctorType);
@@ -116,7 +146,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         adapter = new VetDoctorsAdapter(this, filteredDoctors, animalCategoryId, this);
         recyclerView.setAdapter(adapter);
 
-        queue = Volley.newRequestQueue(this);
+        queue = VolleySingleton.getInstance(this).getRequestQueue();
 
         // --- Startup: fetch pincode using user_id from SharedPreferences ---
         SharedPreferences sp = getSharedPreferences(PREFS, MODE_PRIVATE);
@@ -134,6 +164,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         btnClearSearch = findViewById(R.id.btnClearSearch);
         llEmptyState   = findViewById(R.id.llEmptyState);
         tvDoctorsCount = findViewById(R.id.tvDoctorsCount);
+        tvListStatus = findViewById(R.id.tvListStatus);
         recyclerView   = findViewById(R.id.rvDoctors);
         swipeRefresh   = findViewById(R.id.swipeRefresh);
         statusScrim    = findViewById(R.id.status_bar_scrim);
@@ -260,7 +291,7 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         String url = ApiConfig.endpoint("user_pincode.php", "user_id", userId);
         Log.d(TAG, "GET " + url);
         setRefreshing(true);
-        loaderutil.showLoader(this);   // <<< SHOW LOADER
+        setListStatus("Loading your saved area…");
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
                     String pin = resp.optString("pincode", "");
@@ -273,40 +304,64 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                         etSearch.setText(defaultPincode);
 
                         // First render fetch (strict, no fallback)
+                        setListStatus("Checking veterinarians in " + defaultPincode + "…");
                         fetchVets(defaultPincode, /*allowFallback=*/false);
                     } else {
                         resetListForNoPincode();
+                        setListStatus("No pincode is saved in your profile. Enter a 6-digit pincode to continue.");
                         setRefreshing(false);
-                        loaderutil.hideLoader();
                     }
                 },
                 err -> {
                     Log.e(TAG, "user_pincode error", err);
                     resetListForNoPincode();
+                    setListStatus("Could not load your saved area. Enter a 6-digit pincode to continue.");
                     setRefreshing(false);
-                    loaderutil.hideLoader();
-                    showToastSafe("Unable to fetch your area. Please enter pincode manually.");
+                    showToastSafe(com.infowave.thedoctorathomeuser.network.NetworkErrorUtil.userMessage(
+                            this, err, "Could not load your saved area. Enter your pincode manually."));
                 }
         );
-        if (queue == null) queue = Volley.newRequestQueue(this);
+        req.setTag(TAG_PINCODE_REQUEST);
+        queue.cancelAll(TAG_PINCODE_REQUEST);
         queue.add(req);
     }
 
     private void fetchVets(String pin, boolean allowFallback) {
+        fetchVets(pin, allowFallback, false);
+    }
+
+    private void fetchVets(String pin, boolean allowFallback, boolean quietRefresh) {
         if (vetCategoryId <= 0 || animalCategoryId <= 0 || doctorType == null || doctorType.isEmpty()) {
             Log.w(TAG, "fetchVets aborted: vetCategoryId=" + vetCategoryId
                     + ", animalCategoryId=" + animalCategoryId
                     + ", doctorType=" + doctorType);
             setRefreshing(false);
-            showToastSafe("Invalid category selection");
+            setListStatus("This veterinarian category is unavailable. Please go back and choose it again.");
+            showToastSafe("Invalid category selection. Please choose the category again.");
             return;
         }
 
         // Strict behavior: if pincode provided but invalid (<6), treat as "no pincode"
-        if (pin != null && !pin.isEmpty() && pin.length() < 6) {
+        if (pin != null && !pin.isEmpty() && !pin.matches("\\d{6}")) {
             resetListForNoPincode();
+            setListStatus("Enter a valid 6-digit pincode to search for veterinarians.");
             setRefreshing(false);
             return;
+        }
+
+        final String safePin = pin == null ? "" : pin.trim();
+        final String requestKey = vetCategoryId + "|" + animalCategoryId + "|" + doctorType + "|" + safePin;
+
+        if (isDoctorListFetching) {
+            if (requestKey.equals(inFlightDoctorRequestKey)) {
+                if (!quietRefresh) {
+                    setRefreshing(false);
+                }
+                return;
+            }
+            cancelSlowNetworkHint();
+            queue.cancelAll(TAG_DOCTOR_LIST_REQUEST);
+            isDoctorListFetching = false;
         }
 
         String url = ApiConfig.endpoint(
@@ -314,42 +369,92 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                 "vet_category_id", String.valueOf(vetCategoryId),
                 "animal_category_id", String.valueOf(animalCategoryId),
                 "doctor_type", doctorType,
-                "pincode", pin == null ? "" : pin
+                "pincode", safePin
         );
 
-        Log.d(TAG, "GET " + url + " (allowFallback=" + allowFallback + ")");
-        loaderutil.showLoader(this);   // <<< SHOW LOADER
+        isDoctorListFetching = true;
+        inFlightDoctorRequestKey = requestKey;
+        if (!quietRefresh) {
+            setListStatus("Checking veterinarians and latest availability in " + safePin + "…");
+            scheduleSlowNetworkHint(requestKey);
+        }
 
         JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
                 resp -> {
-                    Log.d(TAG, "fetchVets → Response: " + resp);
+                    cancelSlowNetworkHint();
                     boolean ok = resp.optBoolean("success", false);
                     JSONArray arr = resp.optJSONArray("data");
 
                     if (!ok) {
                         Log.w(TAG, "API success=false");
-                        applyResult(null);
+                        if (!quietRefresh) {
+                            if (filteredDoctors.isEmpty()) {
+                                showEmptyState("Could not load veterinarians right now. Pull down to try again.");
+                            }
+                            setListStatus("Could not refresh veterinarians. Please try again.");
+                            showToastSafe(resp.optString("message", "Could not refresh veterinarians. Please try again."));
+                        }
                     } else if (arr == null || arr.length() == 0) {
                         Log.w(TAG, "No results for pin=" + (pin == null ? "" : pin));
-                        applyResult(new JSONArray());
+                        applyResult(new JSONArray(), quietRefresh);
                     } else {
                         Log.d(TAG, "Doctors found → count=" + arr.length());
-                        applyResult(arr);
+                        applyResult(arr, quietRefresh);
                     }
-                    setRefreshing(false);
-                    loaderutil.hideLoader();   // <<< HIDE LOADER
+                    if (requestKey.equals(inFlightDoctorRequestKey)) {
+                        isDoctorListFetching = false;
+                        inFlightDoctorRequestKey = "";
+                    }
+                    if (!quietRefresh) {
+                        setRefreshing(false);
+                    }
                 },
                 err -> {
+                    cancelSlowNetworkHint();
                     Log.e(TAG, "fetchVets error: " + (err.getMessage() == null ? "unknown" : err.getMessage()));
-                    applyResult(null); // show empty
-                    setRefreshing(false);
-                    loaderutil.hideLoader();   // <<< HIDE LOADER
-                    showToastSafe("Failed to load vets. Please try again.");
+                    if (requestKey.equals(inFlightDoctorRequestKey)) {
+                        isDoctorListFetching = false;
+                        inFlightDoctorRequestKey = "";
+                    }
+                    if (!quietRefresh) {
+                        if (filteredDoctors.isEmpty()) {
+                            showEmptyState("Could not load veterinarians right now. Check your internet and pull down to retry.");
+                            setListStatus("Could not refresh veterinarians. Check your connection and try again.");
+                        } else {
+                            if (llEmptyState != null) llEmptyState.setVisibility(View.GONE);
+                            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+                            setListStatus("Could not refresh right now. Showing the last loaded veterinarians.");
+                        }
+                        setRefreshing(false);
+                        showToastSafe(com.infowave.thedoctorathomeuser.network.NetworkErrorUtil.userMessage(
+                                this, err, "Could not refresh veterinarians. Please try again."));
+                    }
                 }
         );
 
-        if (queue == null) queue = Volley.newRequestQueue(this);
+        req.setTag(TAG_DOCTOR_LIST_REQUEST);
+        req.setShouldCache(false);
         queue.add(req);
+    }
+
+    private void scheduleSlowNetworkHint(String requestKey) {
+        cancelSlowNetworkHint();
+        slowNetworkHintRunnable = () -> {
+            if (!isFinishing() && isDoctorListFetching && requestKey.equals(inFlightDoctorRequestKey)) {
+                boolean online = com.infowave.thedoctorathomeuser.network.NetworkErrorUtil.isConnected(this);
+                setListStatus(online
+                        ? "Internet is slow. Still checking veterinarians — loaded results will appear automatically."
+                        : "No internet connection. Pull down to retry when you are online.");
+            }
+        };
+        discoveryRefreshHandler.postDelayed(slowNetworkHintRunnable, SLOW_NETWORK_HINT_MS);
+    }
+
+    private void cancelSlowNetworkHint() {
+        if (slowNetworkHintRunnable != null) {
+            discoveryRefreshHandler.removeCallbacks(slowNetworkHintRunnable);
+            slowNetworkHintRunnable = null;
+        }
     }
 
     private void setRefreshing(boolean refreshing) {
@@ -370,12 +475,18 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
 
         if (llEmptyState != null) llEmptyState.setVisibility(View.VISIBLE);
         if (recyclerView != null) recyclerView.setVisibility(View.GONE);
+        setListStatus("Enter a 6-digit pincode to find veterinarians serving your area.");
 
         Log.d(TAG, "No pincode: showing empty state (no network call).");
     }
 
     @SuppressLint("NotifyDataSetChanged")
     private void applyResult(@Nullable JSONArray arr) {
+        applyResult(arr, false);
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private void applyResult(@Nullable JSONArray arr, boolean suppressEmptyToast) {
         doctors.clear();
         filteredDoctors.clear();
 
@@ -390,13 +501,6 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                         int single = o.optInt("animal_category_id", -1);
                         animalIdsCsv = (single > 0) ? String.valueOf(single) : "";
                     }
-
-                    Log.d(TAG, "Parsed Doctor: " + o.optString("full_name", "NULL")
-                            + ", id=" + o.optInt("doctor_id", 0)
-                            + ", animal_category_ids=" + animalIdsCsv
-                            + ", category_id=" + o.optInt("category_id", -1)
-                            + ", doctor_type=" + o.optString("doctor_type", "")
-                            + ", pincodes=" + o.optString("pincodes", ""));
 
                     doctors.add(o);
                 }
@@ -421,8 +525,29 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
                     ? (" in " + activePincode)
                     : "";
             Log.d(TAG, "No doctors found" + pinMsg);
-            showToastSafe("No vets available" + pinMsg);
+            setListStatus("No veterinarians are currently available" + pinMsg + ".");
+        } else {
+            setListStatus("Showing " + count + " veterinarian" + (count == 1 ? "" : "s") + ". Availability updates automatically.");
         }
+    }
+
+    private void setListStatus(String message) {
+        if (tvListStatus != null) {
+            tvListStatus.setText(message == null ? "" : message);
+        }
+    }
+
+    private void showEmptyState(String message) {
+        doctors.clear();
+        filteredDoctors.clear();
+        if (adapter != null) adapter.notifyDataSetChanged();
+        if (tvDoctorsCount != null) tvDoctorsCount.setText("0");
+        if (llEmptyState != null) {
+            TextView detail = llEmptyState.findViewById(R.id.tvVetEmptyDetail);
+            if (detail != null) detail.setText(message);
+            llEmptyState.setVisibility(View.VISIBLE);
+        }
+        if (recyclerView != null) recyclerView.setVisibility(View.GONE);
     }
 
     /**
@@ -437,13 +562,36 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        if (!discoveryRefreshStarted) {
+            discoveryRefreshStarted = true;
+            discoveryRefreshHandler.postDelayed(discoveryRefreshRunnable, DISCOVERY_REFRESH_INTERVAL_MS);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        cancelSlowNetworkHint();
+        discoveryRefreshHandler.removeCallbacks(discoveryRefreshRunnable);
+        discoveryRefreshStarted = false;
+        super.onStop();
+    }
+
+    @Override
     protected void onDestroy() {
-        super.onDestroy();
-        loaderutil.hideLoader();
+        cancelSlowNetworkHint();
+        discoveryRefreshHandler.removeCallbacksAndMessages(null);
+        discoveryRefreshStarted = false;
+        if (queue != null) {
+            queue.cancelAll(TAG_PINCODE_REQUEST);
+            queue.cancelAll(TAG_DOCTOR_LIST_REQUEST);
+        }
         if (currentToast != null) {
             currentToast.cancel();
             currentToast = null;
         }
+        super.onDestroy();
     }
 
     @Override
@@ -451,4 +599,6 @@ public class VetDoctorsActivity extends AppCompatActivity implements VetDoctorsA
         // Your existing implementation (if any)
         // Handle click on vet doctor item.
     }
+
+    // Last Updated: 2026-09-18 14:42 IST (Phase 4 slow-network veterinarian UX)
 }

@@ -34,6 +34,7 @@ import com.android.volley.toolbox.Volley;
 import com.google.android.material.card.MaterialCardView;
 import com.infowave.thedoctorathomeuser.adapter.TransactionAdapter;
 import com.phonepe.intent.sdk.api.PhonePeKt;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -48,11 +49,13 @@ public class payments extends AppCompatActivity {
     private static final String TAG = "PHONEPE_LOG";
 
     private TextView tvWalletBalance;
+    private TextView tvRechargeStatus;
     private Button btnRecharge; // hidden in XML; kept for ID stability
     private RecyclerView rvTransactions;
 
     // Quick recharge
     private Button btnRecharge50, btnRecharge100;
+    private Button btnCheckRechargeStatus;
 
     // Segments
     private MaterialCardView cardCredit, cardDebit;
@@ -75,6 +78,10 @@ public class payments extends AppCompatActivity {
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean awaitingSdkResult = false;
+    private boolean paymentStatusCheckInFlight = false;
+    private int statusPollAttempts = 0;
+    private Runnable scheduledStatusPoll;
+    private static final int MAX_STATUS_POLLS = 5;
     private ActivityResultLauncher<Intent> checkoutLauncher;
 
     private String activeFilter = "CREDIT";
@@ -128,6 +135,8 @@ public class payments extends AppCompatActivity {
 
         btnRecharge50   = findViewById(R.id.btnRecharge50);
         btnRecharge100  = findViewById(R.id.btnRecharge100);
+        btnCheckRechargeStatus = findViewById(R.id.btnCheckRechargeStatus);
+        tvRechargeStatus = findViewById(R.id.tvRechargeStatus);
 
         cardCredit      = findViewById(R.id.cardCredit);
         cardDebit       = findViewById(R.id.cardDebit);
@@ -152,7 +161,7 @@ public class payments extends AppCompatActivity {
         rvTransactions.setAdapter(adapter);
 
         // Load initial data (show loader during parallel fetches)
-        loaderutil.showLoader(this);
+        loaderutil.showLoader(this, "Loading wallet", "Getting your balance and recent transactions…");
         fetchWalletBalance();       // each call will hide loader on completion
         fetchTransactionHistory();  // each call will hide loader on completion
 
@@ -175,6 +184,16 @@ public class payments extends AppCompatActivity {
             startRecharge(String.valueOf(100 * 100));   // <- change to 100*100 for ₹100
         });
 
+        btnCheckRechargeStatus.setOnClickListener(v -> {
+            if (merchantOrderId == null || merchantOrderId.trim().isEmpty()) {
+                setRechargeStatus("No pending recharge was found.", false);
+                return;
+            }
+            setRechargeStatus("Checking the same payment. Please do not start another recharge…", false);
+            loaderutil.showLoader(this, "Checking payment", "Checking the same payment — please do not pay again.");
+            checkPaymentStatus(merchantOrderId);
+        });
+
         // Segmented partition behavior
         cardCredit.setOnClickListener(v -> {
             activeFilter = "CREDIT";
@@ -192,6 +211,10 @@ public class payments extends AppCompatActivity {
         // Restore instance state (if activity recreated)
         if (savedInstanceState != null) {
             merchantOrderId = savedInstanceState.getString("merchantOrderId", merchantOrderId);
+        }
+        if (merchantOrderId != null && !merchantOrderId.trim().isEmpty()) {
+            updateButtonsForPending(true);
+            setRechargeStatus("A recharge is still being verified. Do not pay again.", true);
         }
     }
 
@@ -226,7 +249,8 @@ public class payments extends AppCompatActivity {
     private void onCheckoutResult(ActivityResult result) {
         // user returned from PhonePe
         if (merchantOrderId != null) {
-            loaderutil.showLoader(this);
+            setRechargeStatus("Checking payment status. Please do not pay again…", false);
+            loaderutil.showLoader(this, "Checking payment", "Confirming the result of the same recharge…");
             if (!awaitingSdkResult) {
                 awaitingSdkResult = true;
                 updateButtonsForPending(true); // keep disabled during polling
@@ -241,7 +265,8 @@ public class payments extends AppCompatActivity {
     private void startRecharge(String paiseAmount) {
         awaitingSdkResult = false;
 
-        loaderutil.showLoader(this);
+        setRechargeStatus("Starting secure recharge…", false);
+        loaderutil.showLoader(this, "Starting secure recharge", "Preparing the payment securely…");
         StringRequest request = new StringRequest(
                 Request.Method.POST,
                 createOrderUrl,
@@ -249,7 +274,8 @@ public class payments extends AppCompatActivity {
                     try {
                         JSONObject obj = new JSONObject(response);
                         if (!"success".equalsIgnoreCase(obj.optString("status"))) {
-                            Toast.makeText(this, "Create order failed: " + obj.optString("message", ""), Toast.LENGTH_SHORT).show();
+                            setRechargeStatus("Could not start recharge. No money was charged. Please try again.", false);
+                            Toast.makeText(this, "Could not start recharge. Please try again.", Toast.LENGTH_SHORT).show();
                             btnRecharge50.setEnabled(true);
                             btnRecharge100.setEnabled(true);
                             loaderutil.hideLoader();
@@ -261,7 +287,8 @@ public class payments extends AppCompatActivity {
                         loaderutil.hideLoader();
 
                         if (token.isEmpty() || orderId.isEmpty()) {
-                            Toast.makeText(this, "Invalid order response", Toast.LENGTH_SHORT).show();
+                            setRechargeStatus("Could not start recharge. No money was charged. Please try again.", false);
+                            Toast.makeText(this, "Invalid payment response. Please try again.", Toast.LENGTH_SHORT).show();
                             btnRecharge50.setEnabled(true);
                             btnRecharge100.setEnabled(true);
                             return;
@@ -270,20 +297,23 @@ public class payments extends AppCompatActivity {
                             PhonePeKt.startCheckoutPage(this, token, orderId, checkoutLauncher);
                         } catch (Throwable t) {
                             Log.e(TAG, "PhonePe launch error", t);
-                            Toast.makeText(this, "Unable to open PhonePe UI", Toast.LENGTH_SHORT).show();
+                            setRechargeStatus("PhonePe could not be opened. No recharge was started.", false);
+                            Toast.makeText(this, "Unable to open PhonePe. Please try again.", Toast.LENGTH_SHORT).show();
                             btnRecharge50.setEnabled(true);
                             btnRecharge100.setEnabled(true);
                         }
                     } catch (Exception e) {
                         loaderutil.hideLoader();
-                        Toast.makeText(this, "Create order parse error", Toast.LENGTH_SHORT).show();
+                        setRechargeStatus("Could not read the payment response. No money was charged by this attempt.", false);
+                        Toast.makeText(this, "Could not start recharge. Please try again.", Toast.LENGTH_SHORT).show();
                         btnRecharge50.setEnabled(true);
                         btnRecharge100.setEnabled(true);
                     }
                 },
                 error -> {
                     loaderutil.hideLoader();
-                    Toast.makeText(this, "Network error creating order", Toast.LENGTH_SHORT).show();
+                    setRechargeStatus("Could not contact the payment server. No money was charged by this attempt.", false);
+                    Toast.makeText(this, "Network error while starting recharge.", Toast.LENGTH_SHORT).show();
                     btnRecharge50.setEnabled(true);
                     btnRecharge100.setEnabled(true);
                 }
@@ -301,94 +331,146 @@ public class payments extends AppCompatActivity {
         };
         request.setShouldCache(false);               // prevent Volley caching
         request.setRetryPolicy(ppRetry());           // robust retry
-        Volley.newRequestQueue(this).add(request);
+        VolleySingleton.getInstance(this).getRequestQueue().add(request);
     }
 
     private void checkPaymentStatusWithBackoff(String moid) {
-        final int[] attempts = {0};
-        final Runnable poll = new Runnable() {
-            @Override public void run() {
-                attempts[0]++;
-                checkPaymentStatus(moid);
-                if (attempts[0] < 5) {
-                    int next = attempts[0] * 2000; // 2s, 4s, 6s, 8s, 10s
-                    mainHandler.postDelayed(this, next);
-                } else {
-                    awaitingSdkResult = false;
-                }
+        cancelScheduledStatusPoll();
+        statusPollAttempts = 0;
+        scheduleStatusPoll(moid, 1200L);
+    }
+
+    private void scheduleStatusPoll(String moid, long delayMs) {
+        if (moid == null || moid.trim().isEmpty()) return;
+        cancelScheduledStatusPoll();
+        scheduledStatusPoll = () -> {
+            scheduledStatusPoll = null;
+            if (isFinishing() || isDestroyed()) return;
+            if (merchantOrderId == null || !moid.equals(merchantOrderId)) return;
+            if (paymentStatusCheckInFlight) {
+                scheduleStatusPoll(moid, 1000L);
+                return;
             }
+            statusPollAttempts++;
+            checkPaymentStatusInternal(moid, true);
         };
-        // Small initial delay so PG can settle
-        mainHandler.postDelayed(poll, 1200);
+        mainHandler.postDelayed(scheduledStatusPoll, Math.max(0L, delayMs));
+    }
+
+    private void cancelScheduledStatusPoll() {
+        if (scheduledStatusPoll != null) {
+            mainHandler.removeCallbacks(scheduledStatusPoll);
+            scheduledStatusPoll = null;
+        }
     }
 
     private void checkPaymentStatus(String moid) {
-        // cache-buster to avoid any intermediary caching
+        checkPaymentStatusInternal(moid, false);
+    }
+
+    private void checkPaymentStatusInternal(String moid, boolean continueBackoff) {
+        if (moid == null || moid.trim().isEmpty()) return;
+        if (paymentStatusCheckInFlight) {
+            if (!continueBackoff) {
+                setRechargeStatus("Already checking this payment. Please wait…", true);
+            }
+            return;
+        }
+
+        paymentStatusCheckInFlight = true;
         String url = statusUrl + "?merchantOrderId=" + Uri.encode(moid) + "&ts=" + System.currentTimeMillis();
 
         StringRequest request = new StringRequest(
                 Request.Method.GET,
                 url,
                 response -> {
+                    paymentStatusCheckInFlight = false;
+                    boolean shouldPollAgain = false;
                     try {
                         JSONObject obj = new JSONObject(response);
                         String apiStatus = obj.optString("status");
                         if (!"success".equalsIgnoreCase(apiStatus) && !"ok".equalsIgnoreCase(apiStatus)) {
-                            Toast.makeText(this, "Status check failed: " + obj.optString("message", ""), Toast.LENGTH_SHORT).show();
+                            setRechargeStatus("Payment status is not confirmed yet. Do not pay again; check the same payment status.", true);
+                            Toast.makeText(this, "Payment status is not confirmed yet.", Toast.LENGTH_SHORT).show();
                             loaderutil.hideLoader();
-                            return;
-                        }
+                            shouldPollAgain = continueBackoff;
+                        } else {
+                            String state = obj.optString("state", "PENDING");
+                            switch (state) {
+                                case "COMPLETED":
+                                    cancelScheduledStatusPoll();
+                                    setRechargeStatus("Recharge successful. Your wallet balance is being updated.", false);
+                                    Toast.makeText(this, "Recharge successful.", Toast.LENGTH_SHORT).show();
+                                    fetchWalletBalance();
+                                    fetchTransactionHistory();
+                                    awaitingSdkResult = false;
+                                    merchantOrderId = null;
+                                    updateButtonsForPending(false);
+                                    break;
 
-                        String state = obj.optString("state", "PENDING");
-                        // Do NOT trust wallet_balance from status; fetch separately.
+                                case "FAILED":
+                                    cancelScheduledStatusPoll();
+                                    setRechargeStatus("Recharge failed. No wallet credit was added. You can try again.", false);
+                                    Toast.makeText(this, "Recharge failed. You can try again.", Toast.LENGTH_SHORT).show();
+                                    fetchWalletBalance();
+                                    loaderutil.hideLoader();
+                                    awaitingSdkResult = false;
+                                    merchantOrderId = null;
+                                    updateButtonsForPending(false);
+                                    break;
 
-                        switch (state) {
-                            case "COMPLETED":
-                                Toast.makeText(this, "Recharge successful!", Toast.LENGTH_SHORT).show();
-                                fetchWalletBalance();       // authoritative: patients.wallet_balance
-                                fetchTransactionHistory();
-                                awaitingSdkResult = false;
-                                merchantOrderId = null;     // stop further polls
-                                updateButtonsForPending(false); // re-enable (threshold rule will apply on balance load)
-                                break;
+                                case "CANCELLED":
+                                case "TIMED_OUT":
+                                    cancelScheduledStatusPoll();
+                                    setRechargeStatus("Payment was " + state.toLowerCase() + ". No wallet credit was added. You can try again.", false);
+                                    Toast.makeText(this, "Payment " + state.toLowerCase() + ".", Toast.LENGTH_SHORT).show();
+                                    fetchWalletBalance();
+                                    loaderutil.hideLoader();
+                                    awaitingSdkResult = false;
+                                    merchantOrderId = null;
+                                    updateButtonsForPending(false);
+                                    break;
 
-                            case "FAILED":
-                                Toast.makeText(this, "Recharge failed", Toast.LENGTH_SHORT).show();
-                                fetchWalletBalance();
-                                loaderutil.hideLoader();
-                                awaitingSdkResult = false;
-                                merchantOrderId = null;
-                                updateButtonsForPending(false);
-                                break;
-
-                            case "CANCELLED":
-                            case "TIMED_OUT":
-                                Toast.makeText(this, "Payment " + state.toLowerCase(), Toast.LENGTH_SHORT).show();
-                                fetchWalletBalance();
-                                loaderutil.hideLoader();
-                                awaitingSdkResult = false;
-                                merchantOrderId = null;
-                                updateButtonsForPending(false);
-                                break;
-
-                            default:
-                                // PENDING: keep UI responsive but keep buttons disabled to avoid duplicate topups
-                                loaderutil.hideLoader();
-                                updateButtonsForPending(true);
+                                default:
+                                    loaderutil.hideLoader();
+                                    updateButtonsForPending(true);
+                                    setRechargeStatus("Payment is still pending. Do not start another recharge; check the same payment status.", true);
+                                    shouldPollAgain = continueBackoff;
+                                    break;
+                            }
                         }
                     } catch (Exception e) {
                         loaderutil.hideLoader();
-                        Toast.makeText(this, "Status parse error", Toast.LENGTH_SHORT).show();
+                        setRechargeStatus("Could not verify the payment yet. Do not pay again; check the same payment status.", true);
+                        Toast.makeText(this, "Could not verify payment status yet.", Toast.LENGTH_SHORT).show();
+                        shouldPollAgain = continueBackoff;
+                    }
+
+                    if (shouldPollAgain) {
+                        if (statusPollAttempts < MAX_STATUS_POLLS && moid.equals(merchantOrderId)) {
+                            scheduleStatusPoll(moid, Math.min(10000L, statusPollAttempts * 2000L));
+                        } else {
+                            awaitingSdkResult = false;
+                            setRechargeStatus("Payment is not final yet. Use Check Payment Status for this same payment — do not pay again.", true);
+                        }
                     }
                 },
                 error -> {
+                    paymentStatusCheckInFlight = false;
                     loaderutil.hideLoader();
-                    Toast.makeText(this, "Network error in status check", Toast.LENGTH_SHORT).show();
+                    setRechargeStatus("Could not check payment right now. Do not pay again; use Check Payment Status.", true);
+                    Toast.makeText(this, "Could not check payment status. Please try again.", Toast.LENGTH_SHORT).show();
+
+                    if (continueBackoff && statusPollAttempts < MAX_STATUS_POLLS && moid.equals(merchantOrderId)) {
+                        scheduleStatusPoll(moid, Math.min(10000L, statusPollAttempts * 2000L));
+                    } else if (continueBackoff) {
+                        awaitingSdkResult = false;
+                    }
                 }
         );
         request.setShouldCache(false);
-        request.setRetryPolicy(ppRetry());
-        Volley.newRequestQueue(this).add(request);
+        request.setRetryPolicy(VolleySingleton.policy(VolleySingleton.Profile.BACKGROUND));
+        VolleySingleton.getInstance(this).getRequestQueue().add(request);
     }
 
     private void fetchWalletBalance() {
@@ -427,7 +509,7 @@ public class payments extends AppCompatActivity {
         };
         request.setShouldCache(false);
         request.setRetryPolicy(ppRetry());
-        Volley.newRequestQueue(this).add(request);
+        VolleySingleton.getInstance(this).getRequestQueue().add(request);
     }
 
     private void fetchTransactionHistory() {
@@ -474,7 +556,7 @@ public class payments extends AppCompatActivity {
         };
         request.setShouldCache(false);
         request.setRetryPolicy(ppRetry());
-        Volley.newRequestQueue(this).add(request);
+        VolleySingleton.getInstance(this).getRequestQueue().add(request);
     }
 
     /* ===== Helpers for the recharge disable rule ===== */
@@ -514,6 +596,24 @@ public class payments extends AppCompatActivity {
         btnRecharge100.setAlpha(isPending ? 0.5f : 1.0f);
     }
 
+    private void setRechargeStatus(String message, boolean showCheckButton) {
+        if (tvRechargeStatus != null) {
+            tvRechargeStatus.setText(message == null ? "" : message);
+            tvRechargeStatus.setVisibility((message == null || message.trim().isEmpty()) ? View.GONE : View.VISIBLE);
+        }
+        if (btnCheckRechargeStatus != null) {
+            btnCheckRechargeStatus.setVisibility(showCheckButton ? View.VISIBLE : View.GONE);
+            btnCheckRechargeStatus.setEnabled(showCheckButton);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        cancelScheduledStatusPoll();
+        paymentStatusCheckInFlight = false;
+        super.onDestroy();
+    }
+
     // ===== Persist important state across rotation/process death =====
     @Override
     protected void onSaveInstanceState(Bundle out) {
@@ -536,3 +636,5 @@ public class payments extends AppCompatActivity {
         );
     }
 }
+
+// Last Updated: 2026-09-18 15:21 IST

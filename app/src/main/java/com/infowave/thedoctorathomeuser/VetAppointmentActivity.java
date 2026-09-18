@@ -35,7 +35,7 @@ import androidx.fragment.app.FragmentManager;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -70,6 +70,9 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
     private String doctorAutoStatus;           // carries availability from list (auto_status)
     private String adapterProvidedCTA = null;  // "Book Appointment" / "Request for visit" (from adapter)
     private String derivedInitialStatus = null;// "Confirmed"/"Requested" after mapping
+    /** Reservation token from VetDoctorsAdapter — must flow through to pending_bill */
+    private String reservationToken = "";
+    private String pendingBillPatientId = "";  // patientId passed from adapter (via SharedPrefs as backup)
 
     // UI refs
     private Spinner spPincode, spBreed, spVaccination;
@@ -132,6 +135,10 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         doctorName       = getIntent().getStringExtra("doctor_name");
         doctorAutoStatus = getIntent().getStringExtra("auto_status"); // may be null
         adapterProvidedCTA = getIntent().getStringExtra("appointment_status"); // from adapter, if sent
+        reservationToken    = getIntent().getStringExtra("reservation_token") != null
+                            ? getIntent().getStringExtra("reservation_token") : "";
+        pendingBillPatientId = getIntent().getStringExtra("patient_id") != null
+                             ? getIntent().getStringExtra("patient_id") : "";
 
         if (doctorName == null) doctorName = "";
 
@@ -193,7 +200,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         mapView.getMapAsync(this);
 
         // Volley
-        requestQueue = Volley.newRequestQueue(this);
+        requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
     }
 
     // --- Decide initial status with logs ---
@@ -409,21 +416,21 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                             breedAdapter.notifyDataSetChanged();
                             vaccinationAdapter.notifyDataSetChanged();
                         } else {
-                            Toast.makeText(this, "Failed to load options", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Could not load booking options. Please try again.", Toast.LENGTH_LONG).show();
                             Log.w(TAG, "[loadDropdownsMaster] API success=false");
                         }
                     } catch (JSONException e) {
-                        Toast.makeText(this, "Parse error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Could not read booking options. Please try again.", Toast.LENGTH_LONG).show();
                         Log.e(TAG, "[loadDropdownsMaster] parse error", e);
                     }
                 },
                 error -> {
-                    Toast.makeText(this, "Network error", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Could not load booking options. Check your internet and try again.", Toast.LENGTH_LONG).show();
                     Log.e(TAG, "[loadDropdownsMaster] network error", error);
                 }
         );
 
-        if (requestQueue == null) requestQueue = Volley.newRequestQueue(this);
+        if (requestQueue == null) requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
         requestQueue.add(req);
     }
 
@@ -449,7 +456,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         btnPickLocation.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
-                loaderutil.showLoader(this);
+                loaderutil.showLoader(this, "Finding your location", "Getting your current location…");
                 fetchAndCenterOnLocation();
             } else {
                 requestLocationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
@@ -483,7 +490,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         });
 
         // first map load → try current location
-        loaderutil.showLoader(this);
+        loaderutil.showLoader(this, "Finding your location", "Getting your current location…");
         fetchAndCenterOnLocation();
     }
 
@@ -516,7 +523,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                 .addOnFailureListener(e -> {
                     loaderutil.hideLoader();
                     Log.e(TAG, "[fetchAndCenterOnLocation] error", e);
-                    Toast.makeText(this, "Location error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Could not get your location. Please select it on the map or try again.", Toast.LENGTH_LONG).show();
                 });
     }
 
@@ -553,7 +560,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
                     .replace(R.id.map_fullscreen_container_vet, fullscreenMapFragment)
                     .commitNowAllowingStateLoss();
 
-            loaderutil.showLoader(this);
+            loaderutil.showLoader(this, "Opening map", "Loading the full-screen map…");
             fullscreenMapFragment.getMapAsync(m -> {
                 fullscreenMap = m;
                 setupOverlayMap(fullscreenMap);
@@ -756,21 +763,45 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         intent.putExtra("vaccination_id", vaccinationId == 0 ? "" : String.valueOf(vaccinationId));
         intent.putExtra("vaccination_name", vaccinationName);
         intent.putExtra("vaccination_price", vaccinationPrice); // exact selected price
+        // ── Forward reservation token so pending_bill includes it in save_appointment ──
+        intent.putExtra("reservation_token", reservationToken);
+        intent.putExtra("patient_id",        pendingBillPatientId);
 
-        Log.d(TAG, "[submitAppointment] → launching pending_bill with extras:"
-                + " doctor_id=" + doctorId
-                + ", doctorName=" + doctorName
-                + ", is_vet_case=1"
-                + ", animal_category_id=" + animalCategoryId
-                + ", appointment_status=" + derivedInitialStatus
-                + ", pincode=" + pincode
-                + ", lat=" + latitude + ", lng=" + longitude
-                + ", vaccination_id=" + vaccinationId
-                + ", vaccination_name=" + vaccinationName
-                + ", vaccination_price=" + vaccinationPrice);
+        Log.d(TAG, "[submitAppointment] opening verified bill for vet booking");
 
         startActivity(intent);
         finish();
+    }
+
+    // ── Release lock when user presses Back without completing vet booking ───
+    @Override
+    public void onBackPressed() {
+        releaseLockIfHeld();
+        super.onBackPressed();
+    }
+
+    private void releaseLockIfHeld() {
+        if (reservationToken.isEmpty() || pendingBillPatientId.isEmpty()) return;
+        try {
+            com.android.volley.toolbox.StringRequest rel =
+                    new com.android.volley.toolbox.StringRequest(
+                            com.android.volley.Request.Method.POST,
+                            ApiConfig.RELEASE_DOCTOR_LOCK,
+                            resp -> Log.d(TAG, "VetAppt lock released: " + resp),
+                            err  -> Log.w(TAG, "VetAppt lock release failed (auto-expire): " + err)
+                    ) {
+                        @Override
+                        protected java.util.Map<String, String> getParams() {
+                            java.util.Map<String, String> p = new java.util.HashMap<>();
+                            p.put("reservation_token", reservationToken);
+                            p.put("patient_id",        pendingBillPatientId);
+                            return p;
+                        }
+                    };
+            rel.setShouldCache(false);
+            if (requestQueue == null) requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
+            requestQueue.add(rel);
+        } catch (Exception ignored) {}
     }
 
     // ---------- MapView lifecycle ----------
@@ -792,3 +823,7 @@ public class VetAppointmentActivity extends AppCompatActivity implements OnMapRe
         mapView.onSaveInstanceState(mapViewBundle);
     }
 }
+
+// Last Updated 2026-09-18 13:31 IST (Phase 3 vet booking UX + shared network queue)
+
+// Last Updated: 2026-09-18 14:42 IST

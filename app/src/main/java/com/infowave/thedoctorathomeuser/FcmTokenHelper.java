@@ -88,7 +88,7 @@ public final class FcmTokenHelper {
         }
 
         String url = ApiConfig.endpoint("save_patient_token.php");
-        RequestQueue queue = Volley.newRequestQueue(ctx);
+        RequestQueue queue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(ctx);
 
         final String model = Build.MANUFACTURER + " " + Build.MODEL;
 
@@ -148,3 +148,5 @@ public final class FcmTokenHelper {
         queue.add(req);
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

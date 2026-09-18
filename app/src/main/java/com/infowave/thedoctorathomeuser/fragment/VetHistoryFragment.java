@@ -24,9 +24,9 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 import com.infowave.thedoctorathomeuser.adapter.VetHistoryAdapter;
 
 import org.json.JSONArray;
@@ -47,7 +47,7 @@ import java.util.Locale;
  */
 public class VetHistoryFragment extends Fragment {
 
-    private static final long POLL_INTERVAL_MS = 6000L;
+    private static final long POLL_INTERVAL_MS = 15_000L;
     private static final String REQ_TAG = "vet_history_poll";
 
     // UI
@@ -80,6 +80,7 @@ public class VetHistoryFragment extends Fragment {
     private final Handler liveHandler = new Handler();
     private Runnable liveRunnable;
     private boolean isPolling = false;
+    private boolean requestInFlight = false;
 
     // Lightweight diff
     private String lastSig = "";
@@ -100,7 +101,7 @@ public class VetHistoryFragment extends Fragment {
         rvVetHistory.setLayoutManager(new LinearLayoutManager(requireContext()));
 
         // Request queue
-        volleyQueue = Volley.newRequestQueue(requireContext());
+        volleyQueue = VolleySingleton.getInstance(requireContext()).getRequestQueue();
 
         // Logged-in patient
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
@@ -169,6 +170,8 @@ public class VetHistoryFragment extends Fragment {
             isPolling = false;
             liveHandler.removeCallbacks(liveRunnable);
         }
+        if (volleyQueue != null) volleyQueue.cancelAll(REQ_TAG);
+        requestInFlight = false;
     }
 
     @Override public void onDestroyView() {
@@ -186,6 +189,11 @@ public class VetHistoryFragment extends Fragment {
      * @param silent      true ⇒ कोई Toast/Log नहीं (हम यहाँ purely silent रख रहे हैं)
      */
     private void fetchData(boolean showLoader, boolean silent) {
+        if (requestInFlight) {
+            setLoading(false);
+            return;
+        }
+        requestInFlight = true;
         setLoading(showLoader);
 
         @SuppressLint("NotifyDataSetChanged")
@@ -193,6 +201,7 @@ public class VetHistoryFragment extends Fragment {
                 Request.Method.GET,
                 vetHistoryUrl,
                 resp -> {
+                    requestInFlight = false;
                     setLoading(false);
                     try {
                         JSONObject root = new JSONObject(resp);
@@ -281,11 +290,13 @@ public class VetHistoryFragment extends Fragment {
                     }
                 },
                 err -> {
+                    requestInFlight = false;
                     setLoading(false);
                     // silent
                 }
         );
         req.setTag(REQ_TAG);
+        req.setShouldCache(false);
         volleyQueue.add(req);
     }
 

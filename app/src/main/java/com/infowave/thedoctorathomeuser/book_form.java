@@ -26,12 +26,12 @@ import androidx.fragment.app.FragmentManager;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonArrayRequest;
-import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.*;
 import com.google.android.gms.maps.*;
 import com.google.android.gms.maps.model.*;
 import com.google.android.gms.tasks.Task;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -63,6 +63,9 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
     // Intent data
     private String doctorId, doctorName, appointmentStatus;
+    /** Lock token received from DoctorAdapter.reserveAndOpenHumanForm() — must be forwarded to pending_bill */
+    private String reservationToken = "";
+    private String patientId = "";
 
     // Maps
     private GoogleMap embeddedMap, fullscreenMap;
@@ -79,6 +82,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
     // state
     private boolean isLocating = false;
+    private boolean isOpeningBill = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,9 +139,13 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
         // Intent Data
         Intent intent = getIntent();
-        doctorId = intent.getStringExtra("doctor_id");
-        doctorName = intent.getStringExtra("doctorName");
-        appointmentStatus = intent.getStringExtra("appointment_status");
+        doctorId           = intent.getStringExtra("doctor_id");
+        doctorName         = intent.getStringExtra("doctorName");
+        appointmentStatus  = intent.getStringExtra("appointment_status");
+        reservationToken   = intent.getStringExtra("reservation_token")  != null
+                           ? intent.getStringExtra("reservation_token") : "";
+        patientId          = intent.getStringExtra("patient_id") != null
+                           ? intent.getStringExtra("patient_id") : "";
         headerBook.setText(doctorName != null ? doctorName : "Book Appointment");
         bookButton.setText(appointmentStatus != null ? appointmentStatus : "Book Appointment");
 
@@ -156,7 +164,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         // Setup Map Fragment
         embeddedMapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map_fragment);
         if (embeddedMapFragment != null) {
-            loaderutil.showLoader(this);
+            loaderutil.showLoader(this, "Loading map", "Getting the booking map ready…");
             embeddedMapFragment.getMapAsync(this);
         }
 
@@ -242,6 +250,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
 
     // ---------------- Booking Logic ----------------
     private void onClickBook() {
+        if (isOpeningBill) return;
         String name = etName.getText().toString().trim();
         String address = etAddress.getText().toString().trim();
         String problem = etProblem.getText().toString().trim();
@@ -278,7 +287,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                     selectedDob.get(Calendar.DAY_OF_MONTH)
             );
             if (ageCheck < 4) { // keeping your logic unchanged
-                Toast.makeText(this, "Minimum age is 1 year.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Minimum age is 4 years.", Toast.LENGTH_SHORT).show();
                 valid = false;
             } else if (ageCheck > 150) {
                 Toast.makeText(this, "Please select a valid date of birth.", Toast.LENGTH_SHORT).show();
@@ -305,19 +314,6 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 selectedDob.get(Calendar.DAY_OF_MONTH)
         );
 
-        Log.d("BOOK_FORM_INTENT", "Passing intent to pending_bill with:");
-        Log.d("BOOK_FORM_INTENT", "patient_name=" + name);
-        Log.d("BOOK_FORM_INTENT", "age=" + age);
-        Log.d("BOOK_FORM_INTENT", "gender=" + gender);
-        Log.d("BOOK_FORM_INTENT", "problem=" + problem);
-        Log.d("BOOK_FORM_INTENT", "address=" + address);
-        Log.d("BOOK_FORM_INTENT", "pincode=" + pin);
-        Log.d("BOOK_FORM_INTENT", "doctor_id=" + doctorId);
-        Log.d("BOOK_FORM_INTENT", "doctorName=" + doctorName);
-        Log.d("BOOK_FORM_INTENT", "appointment_status=" + appointmentStatus);
-        Log.d("BOOK_FORM_INTENT", "latitude=" + (selectedLocation != null ? selectedLocation.latitude : "null"));
-        Log.d("BOOK_FORM_INTENT", "longitude=" + (selectedLocation != null ? selectedLocation.longitude : "null"));
-
         Intent next = new Intent(book_form.this, pending_bill.class);
         next.putExtra("patient_name", name);
         next.putExtra("age", age);
@@ -330,14 +326,20 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         next.putExtra("appointment_status", appointmentStatus);
         next.putExtra("latitude", selectedLocation.latitude);
         next.putExtra("longitude", selectedLocation.longitude);
+        // ── Forward lock token so pending_bill can include it in save_appointment call ──
+        next.putExtra("reservation_token", reservationToken);
+        next.putExtra("patient_id", patientId);
+        isOpeningBill = true;
+        bookButton.setEnabled(false);
+        bookButton.setText("Preparing bill…");
         startActivity(next);
     }
 
     // ---------------- Pincode List ----------------
     private void fetchPincodesForDoctor(String doctorId) {
-        loaderutil.showLoader(this);
+        loaderutil.showLoader(this, "Checking service area", "Loading the doctor’s service pincodes…");
         String url = ApiConfig.endpoint("get_pincode.php", "doctor_id", doctorId);
-        RequestQueue q = Volley.newRequestQueue(this);
+        RequestQueue q = VolleySingleton.getInstance(this).getRequestQueue();
 
         JsonArrayRequest r = new JsonArrayRequest(Request.Method.GET, url, null,
                 resp -> {
@@ -358,7 +360,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
                 },
                 err -> {
                     loaderutil.hideLoader();
-                    Toast.makeText(this, "Pincode list unavailable. You can still proceed.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Could not load this doctor’s service pincodes. Please go back and try again.", Toast.LENGTH_LONG).show();
                 });
         q.add(r);
     }
@@ -373,7 +375,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
             fm.beginTransaction()
                     .replace(R.id.map_fullscreen_container, fullscreenMapFragment)
                     .commitNowAllowingStateLoss();
-            loaderutil.showLoader(this);
+            loaderutil.showLoader(this, "Opening map", "Loading the full-screen map…");
             fullscreenMapFragment.getMapAsync(m -> {
                 fullscreenMap = m;
                 setupMapCommon(fullscreenMap, true);
@@ -462,7 +464,7 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
     private void startLocating() {
         if (isLocating) return;
         isLocating = true;
-        loaderutil.showLoader(this);
+        loaderutil.showLoader(this, "Finding your location", "Getting your current location…");
         checkLocationSettings();
     }
 
@@ -588,4 +590,51 @@ public class book_form extends AppCompatActivity implements OnMapReadyCallback {
         @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) { onItemSelected(position); }
         public abstract void onItemSelected(int position);
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (isOpeningBill) {
+            isOpeningBill = false;
+            if (bookButton != null) {
+                bookButton.setEnabled(true);
+                bookButton.setText(appointmentStatus != null ? appointmentStatus : "Book Appointment");
+            }
+        }
+    }
+
+    // ── Release lock when user presses Back without completing booking ──────
+    @Override
+    public void onBackPressed() {
+        releaseLockIfHeld();
+        super.onBackPressed();
+    }
+
+    /** Fire-and-forget POST to release_doctor_lock.php. No UI feedback needed. */
+    private void releaseLockIfHeld() {
+        if (reservationToken.isEmpty() || patientId.isEmpty()) return;
+        try {
+            com.android.volley.toolbox.StringRequest rel =
+                    new com.android.volley.toolbox.StringRequest(
+                            com.android.volley.Request.Method.POST,
+                            ApiConfig.RELEASE_DOCTOR_LOCK,
+                            resp -> Log.d("book_form", "Lock released: " + resp),
+                            err  -> Log.w("book_form", "Lock release failed (will auto-expire): " + err)
+                    ) {
+                        @Override
+                        protected java.util.Map<String, String> getParams() {
+                            java.util.Map<String, String> p = new java.util.HashMap<>();
+                            p.put("reservation_token", reservationToken);
+                            p.put("patient_id",        patientId);
+                            return p;
+                        }
+                    };
+            rel.setShouldCache(false);
+            VolleySingleton.getInstance(this).getRequestQueue().add(rel);
+        } catch (Exception ignored) {}
+    }
 }
+
+// Last Updated 2026-09-18 13:31 IST (Safe booking transition UX + privacy/network cleanup)
+
+// Last Updated: 2026-09-18 14:42 IST

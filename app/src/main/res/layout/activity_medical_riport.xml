@@ -527,19 +527,30 @@
         android:gravity="center"
         android:background="#AA000000">  <!-- Semi-transparent black background -->
 
-        <ImageView
-            android:id="@+id/iv_loader"
-            android:layout_width="150dp"
-            android:layout_height="150dp"
-            android:scaleType="fitCenter" />
+        <ProgressBar
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:indeterminate="true"
+            android:indeterminateTint="@android:color/white" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Please wait..."
+            android:layout_marginTop="14dp"
+            android:gravity="center"
+            android:text="Loading medical report…"
             android:textColor="@android:color/white"
-            android:textSize="20sp"
-            android:layout_marginTop="16dp"/>
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="280dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="This can take a little longer on a slow connection."
+            android:textColor="#E6FFFFFF"
+            android:textSize="13sp" />
     </LinearLayout>
 
     <View
@@ -548,3 +559,4 @@
         android:layout_height="0dp"
         android:background="@android:color/black" />
 </FrameLayout>
+<!-- Last Updated: 2026-09-18 14:00 IST -->

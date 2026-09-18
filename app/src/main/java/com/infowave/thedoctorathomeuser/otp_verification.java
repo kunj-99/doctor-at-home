@@ -18,8 +18,8 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -145,7 +145,7 @@ public class otp_verification extends AppCompatActivity {
             }
         };
 
-        RequestQueue requestQueue = Volley.newRequestQueue(otp_verification.this);
+        RequestQueue requestQueue = VolleySingleton.getInstance(otp_verification.this).getRequestQueue();
         requestQueue.add(stringRequest);
     }
 
@@ -213,7 +213,9 @@ public class otp_verification extends AppCompatActivity {
             }
         };
 
-        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        RequestQueue requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
         requestQueue.add(request);
     }
 }
+
+// Last Updated 2026-09-18 13:31 IST (Phase 1 shared network queue)

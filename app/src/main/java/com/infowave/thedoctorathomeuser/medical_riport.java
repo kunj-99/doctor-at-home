@@ -71,7 +71,6 @@ public class medical_riport extends AppCompatActivity {
     private Button btnDownload;
 
     private View loader;
-    private ImageView ivLoader;
 
     private RequestQueue requestQueue;
 
@@ -117,7 +116,6 @@ public class medical_riport extends AppCompatActivity {
         btnDownload = findViewById(R.id.btn_download);
 
         loader = findViewById(R.id.loader);
-        ivLoader = findViewById(R.id.iv_loader);
 
         // Set hospital info
         tvHospitalName.setText("VRAJ HOSPITAL");
@@ -127,10 +125,8 @@ public class medical_riport extends AppCompatActivity {
     }
 
     private void setupLoader() {
+        // Native lightweight loader; avoids decoding/animating the old multi-megabyte GIF.
         loader.setVisibility(View.VISIBLE);
-        try {
-            Glide.with(this).asGif().load(R.drawable.loader).into(ivLoader);
-        } catch (Throwable ignored) {}
     }
 
     private void setupClickListeners() {
@@ -194,13 +190,13 @@ public class medical_riport extends AppCompatActivity {
                 },
                 error -> {
                     Log.e(TAG, "Volley error: " + error);
-                    Toast.makeText(medical_riport.this, "Unable to load your report. Please check your internet connection.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(medical_riport.this, com.infowave.thedoctorathomeuser.network.NetworkErrorUtil.userMessage(medical_riport.this, error, "Unable to load your report right now. Please try again."), Toast.LENGTH_LONG).show();
                     hideLoader();
                 }
         );
 
         if (requestQueue == null) {
-            requestQueue = Volley.newRequestQueue(this);
+            requestQueue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this);
         }
         requestQueue.add(request);
     }
@@ -555,3 +551,5 @@ public class medical_riport extends AppCompatActivity {
         finish();
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

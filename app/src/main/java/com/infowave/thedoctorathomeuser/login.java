@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.SystemClock;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -31,8 +32,8 @@ import com.android.volley.RequestQueue;
 import com.android.volley.ServerError;
 import com.android.volley.TimeoutError;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,6 +50,13 @@ public class login extends AppCompatActivity {
     private Button sendotp;
     private String originalButtonText;
     private BottomSheetDialog otpDialog;
+    private TextView tvLoginStatus;
+    private TextView otpStatusText;
+    private Button otpContinueButton;
+    private Button otpResendButton;
+    private EditText[] otpFields;
+    private CountDownTimer resendTimer;
+    private boolean otpVerifyInFlight = false;
 
     private RequestQueue requestQueue;
 
@@ -63,7 +71,8 @@ public class login extends AppCompatActivity {
         etMobile = findViewById(R.id.etMobileNumber);
         sendotp = findViewById(R.id.btnSendOtp);
         originalButtonText = sendotp.getText().toString();
-        requestQueue = Volley.newRequestQueue(this);
+        tvLoginStatus = findViewById(R.id.tvLoginStatus);
+        requestQueue = VolleySingleton.getInstance(this).getRequestQueue();
 
         TextView tvCreateAccount = findViewById(R.id.tvCreateAccount);
         tvCreateAccount.setOnClickListener(v -> {
@@ -76,16 +85,19 @@ public class login extends AppCompatActivity {
             String mobile = etMobile.getText().toString().trim();
             Log.d(TAG, "Send OTP clicked | rawMobile=" + mobile);
             if (TextUtils.isEmpty(mobile) || mobile.length() != 10) {
-                etMobile.setError("Please enter a valid 10-digit mobile number.");
+                etMobile.setError("Enter a valid 10-digit mobile number.");
+                setLoginStatus("Enter your 10-digit mobile number to continue.");
                 Log.w(TAG, "Invalid mobile entered");
                 return;
             }
             if (!isOnline()) {
                 Log.e(TAG, "No connectivity detected; aborting request");
+                setLoginStatus("No internet connection. Check your connection and try again.");
                 Toast.makeText(this, "No internet connection. Please check and try again.", Toast.LENGTH_SHORT).show();
                 return;
             }
-            setButtonState(true, "Loading...");
+            setLoginStatus("Checking your account and sending OTP…");
+            setButtonState(true, "Sending OTP…");
             Log.i(TAG, "checkMobileNumber() -> " + maskMobile(mobile));
             checkMobileNumber(mobile, originalButtonText);
         });
@@ -104,40 +116,49 @@ public class login extends AppCompatActivity {
                 url,
                 response -> {
                     long took = SystemClock.elapsedRealtime() - startAt;
-                    Log.d(TAG, "checkMobileNumber() SUCCESS | ms=" + took + " | response=" + safeTrim(response));
+                    Log.d(TAG, "checkMobileNumber() SUCCESS | ms=" + took);
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         boolean success = jsonObject.optBoolean("success", false);
                         String srvMsg = jsonObject.optString("message", "");
                         Log.i(TAG, "checkMobileNumber() parsed | success=" + success + " | message=" + srvMsg);
                         if (success) {
-                            Toast.makeText(login.this, "OTP sent successfully. Please check your SMS.", Toast.LENGTH_SHORT).show();
+                            setLoginStatus("OTP sent. Enter the 4-digit code to continue.");
+                            Toast.makeText(login.this, "OTP sent. Please check your SMS.", Toast.LENGTH_SHORT).show();
                             showOtpBottomSheet(mobile);
                         } else {
                             Log.w(TAG, "checkMobileNumber() server says NOT success");
-                            Toast.makeText(login.this, "Mobile number not found. Please check and try again.", Toast.LENGTH_SHORT).show();
+                            String code = jsonObject.optString("code", "");
+                            if ("OTP_COOLDOWN".equals(code)) {
+                                int retryAfter = jsonObject.optInt("retry_after", 45);
+                                setLoginStatus("OTP was already sent. Please wait " + retryAfter + " seconds before trying again.");
+                            } else {
+                                setLoginStatus("This mobile number is not registered. Check the number or create an account.");
+                            }
+                            Toast.makeText(login.this, srvMsg.isEmpty() ? "Could not send OTP. Please try again." : srvMsg, Toast.LENGTH_SHORT).show();
                             setButtonState(false, originalText);
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "checkMobileNumber() JSON parse error", e);
+                        setLoginStatus("Could not start login. Please try again.");
                         Toast.makeText(login.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
                         setButtonState(false, originalText);
                     }
                 },
                 error -> {
                     long took = SystemClock.elapsedRealtime() - startAt;
-                    String body = VolleyErrorUtil.body(error);
                     int code = VolleyErrorUtil.status(error);
                     String klass = VolleyErrorUtil.kind(error);
-                    Log.e(TAG, "checkMobileNumber() ERROR | ms=" + took + " | http=" + code + " | kind=" + klass + " | body=" + body, error);
-                    Toast.makeText(login.this, VolleyErrorUtil.userMsg(this, error), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "checkMobileNumber() ERROR | ms=" + took + " | http=" + code + " | kind=" + klass, error);
+                    String userMessage = VolleyErrorUtil.userMsg(this, error);
+                    setLoginStatus(userMessage);
+                    Toast.makeText(login.this, userMessage, Toast.LENGTH_SHORT).show();
                     setButtonState(false, originalText);
                 }) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
                 params.put("mobile", mobile);
-                Log.d(TAG, "checkMobileNumber() params=" + params);
                 return params;
             }
 
@@ -167,6 +188,15 @@ public class login extends AppCompatActivity {
         EditText otp4 = sheetView.findViewById(R.id.otp4);
         Button btnContinue = sheetView.findViewById(R.id.btnContinue);
         Button btnResend = sheetView.findViewById(R.id.btnResend);
+        TextView tvOtpStatus = sheetView.findViewById(R.id.tvOtpStatus);
+
+        otpContinueButton = btnContinue;
+        otpResendButton = btnResend;
+        otpStatusText = tvOtpStatus;
+        otpFields = new EditText[]{otp1, otp2, otp3, otp4};
+        otpVerifyInFlight = false;
+        setOtpStatus("OTP sent to " + maskMobile(mobile) + ". It is valid for 5 minutes.");
+        startResendCooldown(45);
 
         setupOtpInputs(otp1, otp2, otp3, otp4);
 
@@ -177,22 +207,34 @@ public class login extends AppCompatActivity {
                     + otp4.getText().toString();
             Log.d(TAG, "Continue clicked | otpLen=" + otp.length());
             if (otp.length() == 4) {
+                if (otpVerifyInFlight) return;
                 Log.i(TAG, "verifyOtpApi() -> " + maskMobile(mobile) + " | otp=****");
+                otpVerifyInFlight = true;
+                btnContinue.setEnabled(false);
+                btnContinue.setText("Verifying…");
+                setOtpStatus("Verifying OTP securely…");
                 verifyOtpApi(mobile, otp);
             } else {
                 Log.w(TAG, "OTP not 4 digits");
-                Toast.makeText(login.this, "Please enter 4-digit OTP", Toast.LENGTH_SHORT).show();
+                setOtpStatus("Enter all 4 digits of the OTP.");
+                Toast.makeText(login.this, "Please enter the 4-digit OTP.", Toast.LENGTH_SHORT).show();
             }
         });
 
         btnResend.setOnClickListener(v -> {
             Log.d(TAG, "Resend OTP clicked");
             btnResend.setEnabled(false);
+            setOtpStatus("Requesting a new OTP…");
             resendOtpApi(mobile, btnResend);
         });
 
         otpDialog.setOnShowListener(d -> Log.d(TAG, "OTP bottom sheet shown"));
-        otpDialog.setOnDismissListener(d -> Log.d(TAG, "OTP bottom sheet dismissed"));
+        otpDialog.setOnDismissListener(d -> {
+            Log.d(TAG, "OTP bottom sheet dismissed");
+            if (resendTimer != null) { resendTimer.cancel(); resendTimer = null; }
+            otpVerifyInFlight = false;
+            setButtonState(false, originalButtonText);
+        });
         otpDialog.show();
     }
 
@@ -229,7 +271,7 @@ public class login extends AppCompatActivity {
                 url,
                 response -> {
                     long took = SystemClock.elapsedRealtime() - startAt;
-                    Log.d(TAG, "verifyOtpApi() SUCCESS | ms=" + took + " | response=" + safeTrim(response));
+                    Log.d(TAG, "verifyOtpApi() SUCCESS | ms=" + took);
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         boolean success = jsonObject.optBoolean("success", false);
@@ -249,7 +291,8 @@ public class login extends AppCompatActivity {
                             editor.putString("patient_id", patientId);
                             editor.apply();
 
-                            Toast.makeText(login.this, "Login successful!", Toast.LENGTH_SHORT).show();
+                            setOtpStatus("Login successful. Opening your account…");
+                            Toast.makeText(login.this, "Login successful.", Toast.LENGTH_SHORT).show();
                             Log.i(TAG, "Launching MainActivity");
                             Intent intent = new Intent(login.this, MainActivity.class);
                             startActivity(intent);
@@ -257,27 +300,45 @@ public class login extends AppCompatActivity {
                             if (otpDialog != null) otpDialog.dismiss();
                         } else {
                             Log.w(TAG, "verifyOtpApi() server says NOT success");
-                            Toast.makeText(login.this, "Incorrect OTP. Please try again.", Toast.LENGTH_SHORT).show();
+                            String code = jsonObject.optString("code", "OTP_INVALID");
+                            String message;
+                            if ("OTP_EXPIRED".equals(code)) {
+                                message = "This OTP expired. Request a new OTP to continue.";
+                            } else if ("OTP_TOO_MANY_ATTEMPTS".equals(code)) {
+                                message = "Too many incorrect attempts. Request a new OTP.";
+                            } else {
+                                int remaining = jsonObject.optInt("attempts_remaining", -1);
+                                message = remaining >= 0
+                                        ? "Incorrect OTP. " + remaining + " attempt" + (remaining == 1 ? "" : "s") + " remaining."
+                                        : "Incorrect OTP. Please try again.";
+                            }
+                            clearOtpFields();
+                            setOtpStatus(message);
+                            Toast.makeText(login.this, message, Toast.LENGTH_SHORT).show();
+                            finishOtpVerificationAttempt();
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "verifyOtpApi() JSON parse error", e);
-                        Toast.makeText(login.this, "Something went wrong. Please try again.", Toast.LENGTH_SHORT).show();
+                        setOtpStatus("Could not verify the OTP right now. Please try again.");
+                        Toast.makeText(login.this, "Could not verify OTP. Please try again.", Toast.LENGTH_SHORT).show();
+                        finishOtpVerificationAttempt();
                     }
                 },
                 error -> {
                     long took = SystemClock.elapsedRealtime() - startAt;
-                    String body = VolleyErrorUtil.body(error);
                     int code = VolleyErrorUtil.status(error);
                     String klass = VolleyErrorUtil.kind(error);
-                    Log.e(TAG, "verifyOtpApi() ERROR | ms=" + took + " | http=" + code + " | kind=" + klass + " | body=" + body, error);
-                    Toast.makeText(login.this, VolleyErrorUtil.userMsg(this, error), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "verifyOtpApi() ERROR | ms=" + took + " | http=" + code + " | kind=" + klass, error);
+                    String userMessage = VolleyErrorUtil.userMsg(this, error);
+                    setOtpStatus(userMessage + " Your OTP has not been consumed.");
+                    Toast.makeText(login.this, userMessage, Toast.LENGTH_SHORT).show();
+                    finishOtpVerificationAttempt();
                 }) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
                 params.put("mobile", mobile);
                 params.put("otp", otp);
-                Log.d(TAG, "verifyOtpApi() params=" + params);
                 return params;
             }
 
@@ -306,38 +367,50 @@ public class login extends AppCompatActivity {
                 url,
                 response -> {
                     long took = SystemClock.elapsedRealtime() - startAt;
-                    Log.d(TAG, "resendOtpApi() SUCCESS | ms=" + took + " | response=" + safeTrim(response));
+                    Log.d(TAG, "resendOtpApi() SUCCESS | ms=" + took);
                     try {
                         JSONObject jsonObject = new JSONObject(response);
                         boolean success = jsonObject.optBoolean("success", false);
                         String srvMsg = jsonObject.optString("message", "");
                         Log.i(TAG, "resendOtpApi() parsed | success=" + success + " | message=" + srvMsg);
                         if (success) {
-                            Toast.makeText(login.this, "A new OTP has been sent. Please check your SMS.", Toast.LENGTH_SHORT).show();
+                            setOtpStatus("A new OTP was sent. It is valid for 5 minutes.");
+                            Toast.makeText(login.this, "A new OTP has been sent.", Toast.LENGTH_SHORT).show();
+                            startResendCooldown(45);
                         } else {
                             Log.w(TAG, "resendOtpApi() server says NOT success");
-                            Toast.makeText(login.this, "Unable to send OTP. Please try again later.", Toast.LENGTH_SHORT).show();
+                            String code = jsonObject.optString("code", "");
+                            int retryAfter = jsonObject.optInt("retry_after", 0);
+                            if ("OTP_COOLDOWN".equals(code) && retryAfter > 0) {
+                                setOtpStatus("Please wait " + retryAfter + " seconds before requesting another OTP.");
+                                startResendCooldown(retryAfter);
+                            } else {
+                                setOtpStatus(srvMsg.isEmpty() ? "Unable to send a new OTP. Please try again." : srvMsg);
+                                btnResend.setEnabled(true);
+                                btnResend.setText("Resend OTP");
+                            }
+                            Toast.makeText(login.this, srvMsg.isEmpty() ? "Unable to send OTP. Please try again." : srvMsg, Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
                         Log.e(TAG, "resendOtpApi() JSON parse error", e);
                         Toast.makeText(login.this, "Unexpected error. Please try again.", Toast.LENGTH_SHORT).show();
                     }
-                    btnResend.setEnabled(true);
                 },
                 error -> {
                     long took = SystemClock.elapsedRealtime() - startAt;
-                    String body = VolleyErrorUtil.body(error);
                     int code = VolleyErrorUtil.status(error);
                     String klass = VolleyErrorUtil.kind(error);
-                    Log.e(TAG, "resendOtpApi() ERROR | ms=" + took + " | http=" + code + " | kind=" + klass + " | body=" + body, error);
-                    Toast.makeText(login.this, VolleyErrorUtil.userMsg(this, error), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "resendOtpApi() ERROR | ms=" + took + " | http=" + code + " | kind=" + klass, error);
+                    String userMessage = VolleyErrorUtil.userMsg(this, error);
+                    setOtpStatus(userMessage + " You can try resend again.");
+                    Toast.makeText(login.this, userMessage, Toast.LENGTH_SHORT).show();
+                    btnResend.setText("Resend OTP");
                     btnResend.setEnabled(true);
                 }) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<>();
                 params.put("mobile", mobile);
-                Log.d(TAG, "resendOtpApi() params=" + params);
                 return params;
             }
 
@@ -372,6 +445,57 @@ public class login extends AppCompatActivity {
     }
 
     // --------------- helpers ---------------
+
+    private void setLoginStatus(String message) {
+        if (tvLoginStatus != null) {
+            tvLoginStatus.setText(message == null ? "" : message);
+            tvLoginStatus.setVisibility(TextUtils.isEmpty(message) ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    private void setOtpStatus(String message) {
+        if (otpStatusText != null) {
+            otpStatusText.setText(message == null ? "" : message);
+        }
+    }
+
+    private void clearOtpFields() {
+        if (otpFields == null) return;
+        for (EditText field : otpFields) {
+            if (field != null) field.setText("");
+        }
+        if (otpFields.length > 0 && otpFields[0] != null) otpFields[0].requestFocus();
+    }
+
+    private void finishOtpVerificationAttempt() {
+        otpVerifyInFlight = false;
+        if (otpContinueButton != null) {
+            otpContinueButton.setEnabled(true);
+            otpContinueButton.setText("Continue");
+        }
+    }
+
+    private void startResendCooldown(int seconds) {
+        int safeSeconds = Math.max(1, seconds);
+        if (resendTimer != null) resendTimer.cancel();
+        if (otpResendButton == null) return;
+        otpResendButton.setEnabled(false);
+        resendTimer = new CountDownTimer(safeSeconds * 1000L, 1000L) {
+            @Override public void onTick(long millisUntilFinished) {
+                if (otpResendButton != null) {
+                    long left = Math.max(1L, (millisUntilFinished + 999L) / 1000L);
+                    otpResendButton.setText("Resend OTP in " + left + "s");
+                }
+            }
+            @Override public void onFinish() {
+                if (otpResendButton != null) {
+                    otpResendButton.setText("Resend OTP");
+                    otpResendButton.setEnabled(true);
+                }
+                resendTimer = null;
+            }
+        }.start();
+    }
 
     private void setButtonState(boolean loading, String text) {
         sendotp.setEnabled(!loading);
@@ -445,6 +569,7 @@ public class login extends AppCompatActivity {
             return e.getClass().getSimpleName();
         }
         public static String userMsg(Context ctx, com.android.volley.VolleyError e) {
+            if (status(e) == 429) return "Too many requests. Please wait a moment and try again.";
             if (e instanceof NoConnectionError) return "Unable to connect to the server. Please check your internet.";
             if (e instanceof TimeoutError) return "Request timed out. Please try again.";
             if (e instanceof ServerError) return "Server error. Please try again shortly.";
@@ -455,3 +580,5 @@ public class login extends AppCompatActivity {
         }
     }
 }
+
+// Last Updated 2026-09-18 13:31 IST (Phase 1 login/OTP UX hardening + Volley singleton)

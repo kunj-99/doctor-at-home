@@ -243,7 +243,7 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
 
     /* -------------------- Network -------------------- */
     private void fetchReport(String url) {
-        RequestQueue q = Volley.newRequestQueue(this);
+        RequestQueue q = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this);
         StringRequest req = new StringRequest(
                 Request.Method.GET,
                 url,
@@ -678,3 +678,5 @@ public class AnimalReportViewerActivity extends AppCompatActivity {
         return sb.toString();
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

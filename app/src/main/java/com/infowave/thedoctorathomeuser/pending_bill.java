@@ -17,6 +17,7 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,12 +33,13 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
-import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.phonepe.intent.sdk.api.PhonePeKt;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
+import com.infowave.thedoctorathomeuser.billing.BookingQuote;
+import com.infowave.thedoctorathomeuser.billing.MoneyUtil;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -52,35 +54,21 @@ public class pending_bill extends AppCompatActivity {
     private static final String TAG = "PendingBill";
 
     // Turn on/off logs from one place
-    private static final boolean DBG = true;
+    private static final boolean DBG = false;
 
-    // Pricing/config
-    private static double APPOINTMENT_CHARGE;
-    private static double DEPOSIT;
-    private static double PER_KM_CHARGE;
-    private static double GST_PERCENT;
-    private static double FREE_DISTANCE_KM;
+    // Phase 4C: financial state is server-authoritative and stored in integer paise only.
+    private long gatewayPaise = 0L;
+    private long   platformChargePaise = 0L;
+    private long   walletBalancePaise = 0L;
+    private BookingQuote activeQuote;
 
-    // State flags
-    private boolean cfgLoaded = false;
-    private boolean chargeLoaded = false;
-    private boolean distanceReady = false;
-
-    // Computed amounts
-    private double consultingFee;
-    private double distanceKm = 0.0;
-    private double distanceCharge = 0.0;
-    private double gstAmount = 0.0;
-    private double finalCost = 0.0;          // rupees (double for math)
-    private long   finalPayRupees = 0L;      // rupees (rounded up for display)
-
-    // Locations
-    private double docLat = 0.0, docLng = 0.0, userLat = 0.0, userLng = 0.0;
+    // Booking destination sent to the server quote endpoint.
+    private double userLat = 0.0, userLng = 0.0;
 
     // Appointment/person fields
     private String patientName, patientAge, patientGender, patientProblem, patientAddress, doctorId, doctorName, status;
     private String selectedPaymentMethod = "Online";
-    private String patientId, pincode, googleMapsLink = "";
+    private String patientId, pincode;
 
     // Vet case
     private int isVetCase = 0;
@@ -88,12 +76,29 @@ public class pending_bill extends AppCompatActivity {
     private String animalCategoryId = "";
     private String vaccinationId   = "";
 
-    // NEW: vaccine price from previous activity
-    private double vaccinationPrice = 0.0;
+
+    // ─── Reservation token (from DoctorAdapter / VetDoctorsAdapter) ──────────
+    /** Token from reserve_doctor.php — bound into the server quote and finalized through finalize_booking.php. */
+    private String reservationToken = "";
+    // Patient ID is loaded from SharedPrefs at onCreate and sent only as a transitional ownership cross-check.
+
+    // ─── Lock-release safety flags ────────────────────────────────────────────
+    /** True once user commits to payment (PhonePe or offline pay button pressed) */
+    private boolean paymentStarted          = false;
+    /** True while finalize_booking.php confirmation is in flight. */
+    private boolean appointmentSaveInProgress = false;
+    /** True after server confirms appointment_id successfully */
+    private boolean appointmentConfirmed    = false;
+    /** True after we have already sent a release request (prevent duplicate) */
+    private boolean lockReleased            = false;
+    /** Blocks duplicate payment/finalization taps while a server operation is active. */
+    private boolean bookingOperationInProgress = false;
 
     // UI
-    private Button payButton, btnOnlinePayment, btnOfflinePayment, btnRechargeWallet;
-    private TextView tvBillDate, tvBillTime, tvBillPatientName, tvBillDoctorName;
+    private Button payButton, btnOnlinePayment, btnOfflinePayment, btnRechargeWallet, btnBillStatusAction;
+    private TextView tvBillDate, tvBillTime, tvBillPatientName, tvBillDoctorName, tvBillPatientLabel;
+    private TextView tvBillVerificationTitle, tvBillVerificationMessage;
+    private ProgressBar progressBillVerification;
     private TextView tvAppointmentCharge, tvDeposit, tvConsultingFeeValue, tvDistanceKmValue, tvDistanceChargeValue, tvGstValue, tvTotalPaidValue, tvWalletBalance;
     private LinearLayout rowAnimalName, rowAnimalAge, rowAnimalGender, rowAnimalBreed, rowAnimalVaccination;
     private TextView tvAnimalName, tvAnimalAge, tvAnimalGender, tvAnimalBreed, tvAnimalVaccination;
@@ -110,18 +115,44 @@ public class pending_bill extends AppCompatActivity {
 
     // NEW: UPI verify URL (per two-block rule above)
     private final String upiVerifyUrl     = ApiConfig.endpoint("verify_upi.php");
+    private final String bookingQuoteUrl  = ApiConfig.endpoint("get_booking_quote.php");
+    private final String finalizeBookingUrl = ApiConfig.endpoint("finalize_booking.php");
 
     private String ppMerchantOrderId;
+    private String bookingQuoteToken = "";
     private ActivityResultLauncher<Intent> ppCheckoutLauncher;
 
     // Wallet
-    private double walletBalance = 0.0;
     private final Handler walletHandler = new Handler();
     private Runnable walletRunnable;
     private TextView tvPricePerKm;
 
     private enum DepositMode { NONE, WALLET, BILL }
     private DepositMode lastConfirmedDepositMode = DepositMode.NONE;
+
+    private enum BillStatusAction {
+        NONE,
+        RETRY_QUOTE,
+        RETRY_PAYMENT_SETUP,
+        CHECK_PAYMENT,
+        RETRY_FINALIZE,
+        GO_BACK,
+        VIEW_APPOINTMENTS
+    }
+    private BillStatusAction billStatusAction = BillStatusAction.NONE;
+    private String billStatusPaymentReference = "";
+    private boolean walletRechargeLaunched = false;
+
+    private static final String RECOVERY_PREFS = "BookingRecoveryPrefs";
+    private static final String RECOVERY_QUOTE = "quote_token";
+    private static final String RECOVERY_MERCHANT = "merchant_order_id";
+    private static final String RECOVERY_PATIENT = "patient_id";
+    private static final String RECOVERY_DOCTOR = "doctor_id";
+    private static final String RECOVERY_RESERVATION = "reservation_token";
+    private static final String RECOVERY_STATUS = "booking_status";
+    private static final String RECOVERY_PAYMENT_METHOD = "payment_method";
+    private static final String RECOVERY_SAVED_AT = "saved_at";
+    private static final long RECOVERY_MAX_AGE_MS = 24L * 60L * 60L * 1000L;
 
     // NEW: hold the verified UPI so we can store it in payment_history later
     private String enteredUpiId = "";
@@ -143,14 +174,6 @@ public class pending_bill extends AppCompatActivity {
         if (DBG) Log.e(TAG, msg, t);
     }
 
-    private static String fmt2(double v) {
-        return String.format(Locale.getDefault(), "%.2f", v);
-    }
-
-    private static String fmt1(double v) {
-        return String.format(Locale.getDefault(), "%.1f", v);
-    }
-
     private static String safe(String s) {
         return (s == null) ? "null" : s;
     }
@@ -167,36 +190,29 @@ public class pending_bill extends AppCompatActivity {
         return left.substring(0, 2) + "***" + right;
     }
 
-    // Do not print Google Directions API key in logs
-    private void logDirectionsRequest(double oLat, double oLng, double dLat, double dLng) {
-        d("Directions request (NO KEY LOGGED): origin=" + oLat + "," + oLng + " destination=" + dLat + "," + dLng);
-    }
-
-    // Centralized state dump for price/location/distance
     private void logBillingState(String where) {
+        if (!DBG) return;
+        BookingQuote q = activeQuote;
         d("=== BILLING STATE @ " + where + " ===");
-        d("Flags: cfgLoaded=" + cfgLoaded + ", chargeLoaded=" + chargeLoaded + ", distanceReady=" + distanceReady);
-        d("Payment: selectedPaymentMethod=" + safe(selectedPaymentMethod) + ", lastConfirmedDepositMode=" + lastConfirmedDepositMode);
-        d("User: patientId=" + safe(patientId) + ", doctorId=" + safe(doctorId) + ", pincode=" + safe(pincode));
-        d("Vet: isVetCase=" + isVetCase
-                + ", animalCategoryId=" + safe(animalCategoryId)
-                + ", vaccinationId=" + safe(vaccinationId)
-                + ", vaccinationName=" + safe(vaccinationName)
-                + ", vaccinationPrice=" + fmt2(vaccinationPrice));
-        d("Locations: userLatLng=" + userLat + "," + userLng
-                + " docLatLng=" + docLat + "," + docLng
-                + " mapLink=" + safe(googleMapsLink));
-        d("Config: FREE_DISTANCE_KM=" + fmt2(FREE_DISTANCE_KM)
-                + ", PER_KM_CHARGE=" + fmt2(PER_KM_CHARGE)
-                + ", DEPOSIT=" + fmt2(DEPOSIT)
-                + ", GST_PERCENT=" + fmt2(GST_PERCENT)
-                + ", APPOINTMENT_CHARGE=" + fmt2(APPOINTMENT_CHARGE));
-        d("Distance: distanceKm=" + fmt2(distanceKm) + ", distanceCharge=" + fmt2(distanceCharge));
-        d("Amounts: consultingFee=" + fmt2(consultingFee)
-                + ", gstAmount=" + fmt2(gstAmount)
-                + ", finalCost=" + fmt2(finalCost)
-                + ", finalPayRupees=" + finalPayRupees);
-        d("Wallet: walletBalance=" + fmt2(walletBalance));
+        d("Payment: selected=" + safe(selectedPaymentMethod)
+                + ", depositMode=" + lastConfirmedDepositMode
+                + ", paymentStarted=" + paymentStarted
+                + ", operationInProgress=" + bookingOperationInProgress);
+        d("Booking: patientId=" + safe(patientId) + ", doctorId=" + safe(doctorId)
+                + ", pincode=" + safe(pincode) + ", quote=" + (q == null ? "none" : "verified-v" + q.pricingVersion));
+        d("Location: userLatLng=" + userLat + "," + userLng);
+        if (q != null) {
+            d("Exact bill paise: appointment=" + q.appointmentChargePaise
+                    + ", consultation=" + q.consultationFeePaise
+                    + ", platform=" + q.platformChargePaise
+                    + ", gst=" + q.gstPaise
+                    + ", distance=" + q.distanceChargePaise
+                    + ", vaccine=" + q.vaccinationPricePaise
+                    + ", walletDeposit=" + q.walletDepositPaise
+                    + ", final=" + q.finalExactPaise
+                    + ", gateway=" + q.gatewayPaise);
+        }
+        d("Wallet balance paise=" + walletBalancePaise);
         d("=== END STATE ===");
     }
 
@@ -206,10 +222,19 @@ public class pending_bill extends AppCompatActivity {
         isDestroyedOrFinishing = false;
         d("onResume()");
         fetchWalletBalance();
-        recomputeTotalsAndUI();
-        if (walletRunnable != null) {
-            walletHandler.postDelayed(walletRunnable, 30000);
+        if (walletRechargeLaunched && payButton != null && !paymentStarted && !bookingOperationInProgress) {
+            walletRechargeLaunched = false;
+            bookingQuoteToken = "";
+            activeQuote = null;
+            gatewayPaise = 0L;
+            lastConfirmedDepositMode = DepositMode.NONE;
+            setBookingUiState("VERIFYING", "Refreshing bill",
+                    "Checking your updated wallet balance and final amount.");
+            fetchAuthoritativeBookingQuote(false);
+        } else if (activeQuote != null) {
+            renderAuthoritativeQuote();
         }
+        startWalletPolling();
     }
 
     @SuppressLint("SetTextI18n")
@@ -247,7 +272,7 @@ public class pending_bill extends AppCompatActivity {
         }
 
         // Show loader for initial async work
-        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
+        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this, "Preparing bill", "Verifying the latest booking details…");
 
         // Intent extras
         Intent intent = getIntent();
@@ -271,8 +296,10 @@ public class pending_bill extends AppCompatActivity {
         vaccinationId    = intent.getStringExtra("vaccination_id");
         isVetCase        = intent.getIntExtra("is_vet_case", 0);
 
-        // NEW: vaccination price
-        vaccinationPrice = intent.getDoubleExtra("vaccination_price", 0.0);
+
+        // ─── Reservation token (forwarded from adapter through form activity) ───
+        reservationToken = intent.getStringExtra("reservation_token") != null
+                         ? intent.getStringExtra("reservation_token") : "";
 
         if (animalCategoryId == null) animalCategoryId = "";
         if (vaccinationId == null)    vaccinationId = "";
@@ -287,8 +314,7 @@ public class pending_bill extends AppCompatActivity {
                 + ", pincode=" + safe(pincode)
                 + ", isVetCase=" + isVetCase
                 + ", animalName=" + safe(animalName)
-                + ", vaccinationName=" + safe(vaccinationName)
-                + ", vaccinationPrice=" + fmt2(vaccinationPrice));
+                + ", vaccinationName=" + safe(vaccinationName));
 
         if (doctorId == null || doctorId.isEmpty()) {
             loaderutil.hideLoader();
@@ -302,16 +328,14 @@ public class pending_bill extends AppCompatActivity {
 
         d("Normalized status=" + safe(status));
 
-        // User location for map link
+        // User location is quoted and canonicalized server-side.
         userLat = intent.getDoubleExtra("latitude", 0.0);
         userLng = intent.getDoubleExtra("longitude", 0.0);
-        if (userLat != 0.0 && userLng != 0.0) {
-            googleMapsLink = "https://www.google.com/maps/search/?api=1&query=" + userLat + "," + userLng;
-        }
-        d("User location: userLatLng=" + userLat + "," + userLng + " mapLink=" + safe(googleMapsLink));
+        d("User location: userLatLng=" + userLat + "," + userLng);
 
         // Bind UI
         tvBillPatientName     = findViewById(R.id.tv_bill_patient_name);
+        tvBillPatientLabel    = findViewById(R.id.tv_bill_patient_label);
         tvBillDoctorName      = findViewById(R.id.tv_bill_doctor_name);
         tvBillDate            = findViewById(R.id.tv_bill_date);
         tvBillTime            = findViewById(R.id.tv_bill_time);
@@ -329,6 +353,10 @@ public class pending_bill extends AppCompatActivity {
         btnOfflinePayment     = findViewById(R.id.btn_offline_payment);
         btnRechargeWallet     = findViewById(R.id.btn_recharge_wallet);
         payButton             = findViewById(R.id.pay_button);
+        btnBillStatusAction   = findViewById(R.id.btn_bill_status_action);
+        tvBillVerificationTitle = findViewById(R.id.tv_bill_verification_title);
+        tvBillVerificationMessage = findViewById(R.id.tv_bill_verification_message);
+        progressBillVerification = findViewById(R.id.progress_bill_verification);
 
         rowAnimalName        = findViewById(R.id.row_animal_name);
         rowAnimalAge         = findViewById(R.id.row_animal_age);
@@ -350,8 +378,11 @@ public class pending_bill extends AppCompatActivity {
         depositLabelView = (labelId != 0) ? findViewById(labelId) : null;
         hideDepositRow();
 
-        // Header info
-        setTextOrDash(tvBillPatientName, isVetCase == 1 ? animalName : patientName);
+        // Header info. For veterinary bookings keep owner and pet identity separate.
+        if (tvBillPatientLabel != null) {
+            tvBillPatientLabel.setText(isVetCase == 1 ? "Pet Owner" : "Patient Name");
+        }
+        setTextOrDash(tvBillPatientName, patientName);
         setTextOrDash(tvBillDoctorName, doctorName);
         String curDate = new SimpleDateFormat("dd MMMM, yyyy", Locale.getDefault()).format(new Date());
         String curTime = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(new Date());
@@ -375,13 +406,8 @@ public class pending_bill extends AppCompatActivity {
             setRowVisibility(rowAnimalVaccination, false);
         }
 
-        // NEW: vaccination price line
-        if (isVetCase == 1 && vaccinationPrice > 0.0) {
-            setRowVisibility(rowVaccinationPrice, true);
-            tvVaccinationPriceValue.setText("₹ " + (int) Math.round(vaccinationPrice));
-        } else {
-            setRowVisibility(rowVaccinationPrice, false);
-        }
+        // Never display a client-provided vaccine price. The row is shown only after a verified server quote.
+        setRowVisibility(rowVaccinationPrice, false);
 
         // Buttons default
         setButtonNeutralState();
@@ -391,9 +417,14 @@ public class pending_bill extends AppCompatActivity {
 
         d("Initial paymentMethod=" + selectedPaymentMethod);
 
-        // Load config + doctor location
-        fetchAppConfig();
-        fetchDoctorLocation(doctorId);
+        // Recover an in-progress online payment before offering any new payment attempt.
+        // This protects users after process death / lost PhonePe result callbacks.
+        boolean recoveringPayment = restorePaymentRecoveryIfAny();
+        if (!recoveringPayment) {
+            setBookingUiState("VERIFYING", "Verifying bill securely",
+                    "Checking doctor availability, service area and final amount.");
+            fetchAuthoritativeBookingQuote(false);
+        }
 
         // Wallet polling (lifecycle-aware)
         walletRunnable = () -> {
@@ -403,31 +434,22 @@ public class pending_bill extends AppCompatActivity {
                 walletHandler.postDelayed(walletRunnable, 30000);
             }
         };
-        walletHandler.postDelayed(walletRunnable, 30000);
+        startWalletPolling();
 
-        btnOfflinePayment.setOnClickListener(v -> {
-            selectedPaymentMethod = "Offline";
-            d("Selected payment method -> Offline");
-            stylePaymentButtons();
-            if (walletBalance < DEPOSIT) {
-                Toast.makeText(this, "Offline booking के लिए Wallet में कम से कम ₹" + (int) DEPOSIT + " चाहिए.", Toast.LENGTH_SHORT).show();
-                w("Offline selected but walletBalance(" + fmt2(walletBalance) + ") < DEPOSIT(" + fmt2(DEPOSIT) + ")");
-            }
-            recomputeTotalsAndUI();
+        btnOfflinePayment.setOnClickListener(v -> selectPaymentMethod("Offline"));
+        btnOnlinePayment.setOnClickListener(v -> selectPaymentMethod("Online"));
+
+        btnRechargeWallet.setOnClickListener(v -> {
+            if (paymentStarted || bookingOperationInProgress) return;
+            walletRechargeLaunched = true;
+            startActivity(new Intent(pending_bill.this, payments.class));
         });
 
-        btnOnlinePayment.setOnClickListener(v -> {
-            selectedPaymentMethod = "Online";
-            d("Selected payment method -> Online");
-            stylePaymentButtons();
-            recomputeTotalsAndUI();
-        });
-
-        btnRechargeWallet.setOnClickListener(v -> startActivity(new Intent(pending_bill.this, payments.class)));
+        btnBillStatusAction.setOnClickListener(v -> handleBillStatusAction());
 
         // payButton click → show dialog with UPI input + verify before proceeding
         payButton.setOnClickListener(v -> {
-            d("Pay button clicked. current totalPayRupees=" + finalPayRupees + ", finalCost=" + fmt2(finalCost));
+            d("Pay button clicked. verified gatewayPaise=" + gatewayPaise);
             logBillingState("payButtonClicked");
             showConfirmWithUpiDialog();
         });
@@ -439,9 +461,7 @@ public class pending_bill extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         d("onPause()");
-        if (walletHandler != null && walletRunnable != null) {
-            walletHandler.removeCallbacks(walletRunnable);
-        }
+        stopWalletPolling();
         loaderutil.hideLoader();
     }
 
@@ -456,10 +476,13 @@ public class pending_bill extends AppCompatActivity {
     protected void onDestroy() {
         d("onDestroy()");
         isDestroyedOrFinishing = true;
-        if (walletHandler != null && walletRunnable != null) {
-            walletHandler.removeCallbacks(walletRunnable);
-        }
+        stopWalletPolling();
         loaderutil.hideLoader();
+        // Only release lock if finishing before payment ever started
+        // (e.g., user backs out, OS eviction). Never releases after payment committed.
+        if (isFinishing()) {
+            releaseReservationLockIfSafe("onDestroy_finishing");
+        }
         super.onDestroy();
     }
 
@@ -519,43 +542,372 @@ public class pending_bill extends AppCompatActivity {
         if (v != null) v.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
+    private void startWalletPolling() {
+        if (walletRunnable == null || isDestroyedOrFinishing || isFinishing() || isDestroyed()) return;
+        walletHandler.removeCallbacks(walletRunnable);
+        walletHandler.postDelayed(walletRunnable, 30000L);
+    }
+
+    private void stopWalletPolling() {
+        if (walletRunnable != null) walletHandler.removeCallbacks(walletRunnable);
+    }
+
+    private boolean isValidBookingLocation() {
+        return Double.isFinite(userLat) && Double.isFinite(userLng)
+                && userLat >= -90.0 && userLat <= 90.0
+                && userLng >= -180.0 && userLng <= 180.0
+                && !(Math.abs(userLat) < 0.000001 && Math.abs(userLng) < 0.000001);
+    }
+
+    private void selectPaymentMethod(String method) {
+        if (paymentStarted || bookingOperationInProgress) return;
+        if (!"Online".equals(method) && !"Offline".equals(method)) return;
+
+        selectedPaymentMethod = method;
+        bookingQuoteToken = "";
+        activeQuote = null;
+        gatewayPaise = 0L;
+        lastConfirmedDepositMode = DepositMode.NONE;
+        stylePaymentButtons();
+        disablePayButton();
+
+        if ("Offline".equals(method) && platformChargePaise > 0L && walletBalancePaise < platformChargePaise) {
+            setBookingUiState("VERIFYING", "Checking offline booking",
+                    "We will verify whether your wallet can cover the platform charge.");
+        } else {
+            setBookingUiState("VERIFYING", "Updating verified bill",
+                    "Checking the final amount for the selected payment option.");
+        }
+        fetchAuthoritativeBookingQuote(false);
+    }
+
+    private void setBillStatusAction(BillStatusAction action, String label, String paymentReference) {
+        billStatusAction = action == null ? BillStatusAction.NONE : action;
+        billStatusPaymentReference = paymentReference == null ? "" : paymentReference;
+        if (btnBillStatusAction == null) return;
+
+        if (billStatusAction == BillStatusAction.NONE || label == null || label.trim().isEmpty()) {
+            btnBillStatusAction.setVisibility(View.GONE);
+            btnBillStatusAction.setEnabled(false);
+            return;
+        }
+        btnBillStatusAction.setText(label);
+        btnBillStatusAction.setEnabled(true);
+        btnBillStatusAction.setVisibility(View.VISIBLE);
+    }
+
+    private void handleBillStatusAction() {
+        if (bookingOperationInProgress || appointmentSaveInProgress) return;
+        BillStatusAction action = billStatusAction;
+        String ref = billStatusPaymentReference;
+        setBillStatusAction(BillStatusAction.NONE, "", "");
+
+        switch (action) {
+            case RETRY_QUOTE:
+                fetchAuthoritativeBookingQuote(false);
+                break;
+            case RETRY_PAYMENT_SETUP:
+                paymentStarted = true;
+                startPhonePeCheckout();
+                break;
+            case CHECK_PAYMENT:
+                if (!TextUtils.isEmpty(ref)) checkPhonePeStatus(ref);
+                else if (!TextUtils.isEmpty(ppMerchantOrderId)) checkPhonePeStatus(ppMerchantOrderId);
+                else startPhonePeCheckout();
+                break;
+            case RETRY_FINALIZE:
+                finalizeBooking(ref);
+                break;
+            case GO_BACK:
+                releaseReservationLockIfSafe("status_action_go_back");
+                finish();
+                break;
+            case VIEW_APPOINTMENTS:
+                onBookingSuccess();
+                break;
+            case NONE:
+            default:
+                break;
+        }
+    }
+
+    private JSONObject parseVolleyErrorBody(VolleyError err) {
+        if (err == null || err.networkResponse == null || err.networkResponse.data == null) return null;
+        try {
+            return new JSONObject(new String(err.networkResponse.data));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private void handleQuoteFailure(String code, String message) {
+        loaderutil.hideLoader();
+        bookingOperationInProgress = false;
+        bookingQuoteToken = "";
+        activeQuote = null;
+        gatewayPaise = 0L;
+        lastConfirmedDepositMode = DepositMode.NONE;
+
+        String safeCode = code == null ? "" : code.trim();
+        String safeMessage = TextUtils.isEmpty(message)
+                ? "We could not verify the booking right now. Please try again."
+                : message.trim();
+        String title = "Could not verify bill";
+        BillStatusAction action = BillStatusAction.RETRY_QUOTE;
+        String actionLabel = "Retry bill check";
+
+        if ("RESERVATION_REQUIRED".equals(safeCode) || "RESERVATION_EXPIRED".equals(safeCode)) {
+            title = "Doctor reservation expired";
+            action = BillStatusAction.GO_BACK;
+            actionLabel = "Go back";
+        } else if ("DOCTOR_INACTIVE".equals(safeCode) || "DOCTOR_NOT_ACCEPTING".equals(safeCode)
+                || "DOCTOR_NOT_FOUND".equals(safeCode)) {
+            title = "Doctor unavailable";
+            action = BillStatusAction.GO_BACK;
+            actionLabel = "Go back";
+        } else if ("PINCODE_NOT_SERVED".equals(safeCode) || "INVALID_PINCODE".equals(safeCode)) {
+            title = "Service area needs updating";
+            action = BillStatusAction.GO_BACK;
+            actionLabel = "Change location";
+        } else if ("BOOKING_DETAILS_REQUIRED".equals(safeCode) || "PET_DETAILS_REQUIRED".equals(safeCode)
+                || "ANIMAL_BREED_REQUIRED".equals(safeCode) || "ANIMAL_BREED_NOT_AVAILABLE".equals(safeCode)
+                || "VET_CATEGORY_MISMATCH".equals(safeCode) || "VACCINATION_NOT_AVAILABLE".equals(safeCode)
+                || "VACCINATION_CATEGORY_MISMATCH".equals(safeCode)) {
+            title = "Booking details need attention";
+            action = BillStatusAction.GO_BACK;
+            actionLabel = "Review details";
+        } else if ("BOOKING_LOCATION_REQUIRED".equals(safeCode) || "INVALID_COORDINATES".equals(safeCode)) {
+            title = "Location required";
+            action = BillStatusAction.GO_BACK;
+            actionLabel = "Go back";
+        } else if ("OFFLINE_WALLET_INSUFFICIENT".equals(safeCode) || "WALLET_BALANCE_CHANGED".equals(safeCode)) {
+            title = "Wallet recharge required";
+            action = BillStatusAction.RETRY_QUOTE;
+            actionLabel = "Verify after recharge";
+        } else if ("QUOTE_FINAL_MISMATCH".equals(safeCode) || "QUOTE_GST_MISMATCH".equals(safeCode)
+                || "QUOTE_DISTANCE_MISMATCH".equals(safeCode) || "QUOTE_SETTLEMENT_MISMATCH".equals(safeCode)
+                || "MONEY_OVERFLOW".equals(safeCode) || "INVALID_DECIMAL_VALUE".equals(safeCode)) {
+            title = "Bill verification failed";
+            action = BillStatusAction.RETRY_QUOTE;
+            actionLabel = "Verify bill again";
+        }
+
+        setBookingUiState("ERROR", title, safeMessage);
+        setBillStatusAction(action, actionLabel, "");
+        if (("OFFLINE_WALLET_INSUFFICIENT".equals(safeCode) || "WALLET_BALANCE_CHANGED".equals(safeCode))
+                && btnRechargeWallet != null) {
+            btnRechargeWallet.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void savePaymentRecovery(String quoteToken, String merchantOrderId) {
+        if (TextUtils.isEmpty(quoteToken)) return;
+        getSharedPreferences(RECOVERY_PREFS, MODE_PRIVATE).edit()
+                .putString(RECOVERY_QUOTE, quoteToken)
+                .putString(RECOVERY_MERCHANT, merchantOrderId == null ? "" : merchantOrderId)
+                .putString(RECOVERY_PATIENT, patientId == null ? "" : patientId)
+                .putString(RECOVERY_DOCTOR, doctorId == null ? "" : doctorId)
+                .putString(RECOVERY_RESERVATION, reservationToken == null ? "" : reservationToken)
+                .putString(RECOVERY_STATUS, status == null ? "" : status)
+                .putString(RECOVERY_PAYMENT_METHOD, selectedPaymentMethod == null ? "Online" : selectedPaymentMethod)
+                .putLong(RECOVERY_SAVED_AT, System.currentTimeMillis())
+                .apply();
+    }
+
+    private void clearPaymentRecovery() {
+        getSharedPreferences(RECOVERY_PREFS, MODE_PRIVATE).edit().clear().apply();
+    }
+
+    private boolean restorePaymentRecoveryIfAny() {
+        SharedPreferences recovery = getSharedPreferences(RECOVERY_PREFS, MODE_PRIVATE);
+        String savedQuote = recovery.getString(RECOVERY_QUOTE, "");
+        if (TextUtils.isEmpty(savedQuote)) return false;
+
+        long savedAt = recovery.getLong(RECOVERY_SAVED_AT, 0L);
+        boolean tooOld = savedAt <= 0L || System.currentTimeMillis() - savedAt > RECOVERY_MAX_AGE_MS;
+        boolean sameContext = safe(patientId).equals(recovery.getString(RECOVERY_PATIENT, ""))
+                && safe(doctorId).equals(recovery.getString(RECOVERY_DOCTOR, ""))
+                && safe(reservationToken).equals(recovery.getString(RECOVERY_RESERVATION, ""))
+                && safe(status).equals(recovery.getString(RECOVERY_STATUS, ""));
+        if (tooOld || !sameContext) {
+            clearPaymentRecovery();
+            return false;
+        }
+
+        bookingQuoteToken = savedQuote;
+        ppMerchantOrderId = recovery.getString(RECOVERY_MERCHANT, "");
+        selectedPaymentMethod = recovery.getString(RECOVERY_PAYMENT_METHOD, "Online");
+        if (!"Offline".equals(selectedPaymentMethod)) selectedPaymentMethod = "Online";
+        paymentStarted = true;
+        bookingOperationInProgress = true;
+        stylePaymentButtons();
+
+        if ("Offline".equals(selectedPaymentMethod)) {
+            setBookingUiState("FINALIZING", "Restoring appointment confirmation",
+                    "Checking the same wallet booking safely. No second wallet charge will be created.");
+            finalizeBooking("");
+        } else if (!TextUtils.isEmpty(ppMerchantOrderId)) {
+            setBookingUiState("PAYMENT", "Restoring previous payment",
+                    "Checking the same PhonePe payment. Please do not pay again.");
+            checkPhonePeStatus(ppMerchantOrderId);
+        } else {
+            setBookingUiState("PAYMENT", "Restoring secure payment",
+                    "A previous payment setup was interrupted. Reusing the same booking reference safely.");
+            startPhonePeCheckout();
+        }
+        return true;
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void setBookingUiState(String state, String title, String message) {
+        if (tvBillVerificationTitle != null) tvBillVerificationTitle.setText(title);
+        if (tvBillVerificationMessage != null) tvBillVerificationMessage.setText(message);
+        setBillStatusAction(BillStatusAction.NONE, "", "");
+
+        boolean busy = "VERIFYING".equals(state) || "PAYMENT".equals(state) || "FINALIZING".equals(state);
+        if (progressBillVerification != null) progressBillVerification.setVisibility(busy ? View.VISIBLE : View.GONE);
+
+        if (payButton != null) {
+            if ("PAYMENT".equals(state)) {
+                payButton.setText("Payment in progress…");
+            } else if ("FINALIZING".equals(state)) {
+                payButton.setText("Confirming appointment…");
+            } else if ("SUCCESS".equals(state)) {
+                payButton.setText("Appointment confirmed");
+            } else {
+                payButton.setText("Proceed to Payment");
+            }
+        }
+
+        if (busy || "SUCCESS".equals(state)) {
+            if (payButton != null) {
+                payButton.setEnabled(false);
+                payButton.setAlpha(0.65f);
+            }
+            if (btnOnlinePayment != null) btnOnlinePayment.setEnabled(false);
+            if (btnOfflinePayment != null) btnOfflinePayment.setEnabled(false);
+        } else {
+            if (btnOnlinePayment != null) btnOnlinePayment.setEnabled(true);
+            if (btnOfflinePayment != null) btnOfflinePayment.setEnabled(true);
+            // Rendering is explicit. Do not re-enter renderAuthoritativeQuote() from state changes.
+        }
+    }
+
+    private void resetBeforePaymentFailure(String title, String message) {
+        paymentStarted = false;
+        bookingOperationInProgress = false;
+        ppMerchantOrderId = null;
+        bookingQuoteToken = "";
+        activeQuote = null;
+        gatewayPaise = 0L;
+        lastConfirmedDepositMode = DepositMode.NONE;
+        clearPaymentRecovery();
+        loaderutil.hideLoader();
+        setBookingUiState("ERROR", title, message);
+        setBillStatusAction(BillStatusAction.RETRY_QUOTE, "Verify latest bill", "");
+    }
+
+    private void handlePaymentSetupUncertain(String message) {
+        loaderutil.hideLoader();
+        bookingOperationInProgress = false;
+        paymentStarted = true;
+        savePaymentRecovery(bookingQuoteToken, ppMerchantOrderId);
+        setBookingUiState("PAYMENT", "Payment setup interrupted",
+                TextUtils.isEmpty(message)
+                        ? "Do not start a new payment. Retry safely with the same booking reference."
+                        : message);
+        setBillStatusAction(BillStatusAction.RETRY_PAYMENT_SETUP, "Retry secure payment", "");
+    }
+
+    private void handleBookingConfirmed(int appointmentId) {
+        appointmentConfirmed = true;
+        appointmentSaveInProgress = false;
+        bookingOperationInProgress = false;
+        clearPaymentRecovery();
+        setBookingUiState("SUCCESS", "Appointment confirmed",
+                "Your booking is saved safely. Opening your ongoing appointments…");
+        fetchWalletBalance();
+        Toast.makeText(this, "Appointment booked successfully.", Toast.LENGTH_SHORT).show();
+        onBookingSuccess();
+    }
+
     /* ---------------- Confirm dialog with UPI ---------------- */
 
+    private interface UpiVerificationCallback {
+        void onSuccess();
+        void onFailure(String message);
+    }
+
     private void showConfirmWithUpiDialog() {
+        if (paymentStarted || bookingOperationInProgress) return;
+
         View content = LayoutInflater.from(this).inflate(R.layout.dialog_upi_capture, null, false);
         @SuppressLint({"MissingInflatedId", "LocalSuppress"}) EditText etUpi = content.findViewById(R.id.et_upi);
+        TextView tvUpiError = content.findViewById(R.id.tv_upi_error);
+        ProgressBar progressUpi = content.findViewById(R.id.progress_upi_verification);
 
-        String msg = "Are you sure?\n\nBooking appointment charge will be ₹" +
-                String.format(Locale.getDefault(), "%.0f", DEPOSIT) + " if you cancel.\n\n" +
-                "Please enter your refund UPI ID (e.g., name@bank).";
+        String verifiedAmount = activeQuote == null ? "" : ("\nVerified amount: " + MoneyUtil.formatPaise(activeQuote.gatewayPaise) + "\n");
+        String msg = "Please confirm the appointment details before continuing." + verifiedAmount + "\n"
+                + "Your UPI ID is used only for eligible refunds if a refund is required later.";
 
-        d("UPI dialog opened. Deposit(Platform Charge)=" + fmt2(DEPOSIT));
-
-        new AlertDialog.Builder(pending_bill.this)
+        AlertDialog dialog = new AlertDialog.Builder(pending_bill.this)
                 .setTitle("Confirm Appointment")
                 .setMessage(msg)
                 .setView(content)
                 .setCancelable(false)
-                .setPositiveButton("Proceed", (dialog, which) -> {
-                    Editable ed = etUpi.getText();
-                    String vpa = (ed == null) ? "" : ed.toString().trim();
+                .setPositiveButton("Verify & continue", null)
+                .setNegativeButton("Cancel", (d, which) -> d.dismiss())
+                .create();
 
-                    d("UPI entered (masked)=" + maskUpi(vpa) + " length=" + vpa.length());
+        dialog.setOnShowListener(ignored -> {
+            Button positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button negative = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            positive.setOnClickListener(v -> {
+                Editable ed = etUpi.getText();
+                String vpa = (ed == null) ? "" : ed.toString().trim();
+                tvUpiError.setVisibility(View.GONE);
+                etUpi.setError(null);
 
-                    if (!isLikelyValidUpi(vpa)) {
-                        w("UPI failed local validation (masked)=" + maskUpi(vpa));
-                        Toast.makeText(this, "Please enter a valid UPI like name@bank", Toast.LENGTH_LONG).show();
-                        return;
+                if (!isLikelyValidUpi(vpa)) {
+                    etUpi.setError("Enter a valid UPI ID, for example name@bank");
+                    tvUpiError.setText("Please check the UPI ID and try again.");
+                    tvUpiError.setVisibility(View.VISIBLE);
+                    return;
+                }
+
+                positive.setEnabled(false);
+                negative.setEnabled(false);
+                positive.setText("Checking…");
+                progressUpi.setVisibility(View.VISIBLE);
+                tvUpiError.setTextColor(Color.parseColor("#5C6F82"));
+                tvUpiError.setText("Verifying UPI ID…");
+                tvUpiError.setVisibility(View.VISIBLE);
+
+                verifyUpi(vpa, new UpiVerificationCallback() {
+                    @Override
+                    public void onSuccess() {
+                        if (!dialog.isShowing()) return;
+                        dialog.dismiss();
+                        continueAfterUpiVerified(vpa);
                     }
 
-                    d("UPI passed local validation. Verifying with backend...");
-                    verifyUpi(vpa, () -> continueAfterUpiVerified(vpa));
-                })
-                .setNegativeButton("Cancel", (d, w) -> {
-                    d("UPI dialog cancelled by user");
-                    d.dismiss();
-                })
-                .show();
+                    @Override
+                    public void onFailure(String message) {
+                        if (!dialog.isShowing()) return;
+                        progressUpi.setVisibility(View.GONE);
+                        positive.setEnabled(true);
+                        negative.setEnabled(true);
+                        positive.setText("Verify & continue");
+                        tvUpiError.setTextColor(Color.parseColor("#B3261E"));
+                        tvUpiError.setText(TextUtils.isEmpty(message)
+                                ? "UPI verification failed. Please check the ID and try again."
+                                : message);
+                        tvUpiError.setVisibility(View.VISIBLE);
+                    }
+                });
+            });
+        });
+        dialog.show();
     }
 
     private boolean isLikelyValidUpi(String vpa) {
@@ -565,38 +917,32 @@ public class pending_bill extends AppCompatActivity {
         return vpa.matches("^[a-zA-Z0-9._\\-]{2,256}@[a-zA-Z]{3,64}$");
     }
 
-    private void verifyUpi(String vpa, Runnable onSuccess) {
-        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
-
-        d("verifyUpi() POST -> " + upiVerifyUrl + " vpa(masked)=" + maskUpi(vpa));
+    private void verifyUpi(String vpa, UpiVerificationCallback callback) {
+        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this, "Verifying UPI ID", "Checking the refund UPI ID securely…");
 
         StringRequest req = new StringRequest(
                 Request.Method.POST,
                 upiVerifyUrl,
                 resp -> {
-                    d("verifyUpi() response=" + resp);
+                    loaderutil.hideLoader();
                     try {
                         JSONObject o = new JSONObject(resp);
                         boolean ok = o.optBoolean("valid", false);
                         String msg = o.optString("message", "");
-                        d("verifyUpi() parsed: valid=" + ok + ", message=" + msg);
-
-                        if (!ok) {
-                            loaderutil.hideLoader();
-                            Toast.makeText(this, (msg.isEmpty() ? "UPI not supported" : msg), Toast.LENGTH_LONG).show();
-                        } else {
-                            if (onSuccess != null) onSuccess.run();
+                        if (ok) {
+                            if (callback != null) callback.onSuccess();
+                        } else if (callback != null) {
+                            callback.onFailure(msg.isEmpty() ? "This UPI ID could not be verified." : msg);
                         }
                     } catch (Exception e) {
-                        loaderutil.hideLoader();
-                        e("UPI verification parse error.", e);
-                        Toast.makeText(this, "UPI verification parse error.", Toast.LENGTH_LONG).show();
+                        this.e("UPI verification parse error", e);
+                        if (callback != null) callback.onFailure("We could not verify the UPI ID right now. Please try again.");
                     }
                 },
                 err -> {
                     loaderutil.hideLoader();
                     e("verifyUpi() network error", err);
-                    Toast.makeText(this, "Network error during UPI verification.", Toast.LENGTH_LONG).show();
+                    if (callback != null) callback.onFailure("Network error while verifying UPI. Check your connection and try again.");
                 }
         ) {
             @Override
@@ -609,53 +955,154 @@ public class pending_bill extends AppCompatActivity {
         };
         req.setShouldCache(false);
         req.setRetryPolicy(new DefaultRetryPolicy(10000, 1, 1.5f));
-        Volley.newRequestQueue(this).add(req);
+        VolleySingleton.getInstance(this).getRequestQueue().add(req);
     }
 
     private void continueAfterUpiVerified(String vpa) {
         enteredUpiId = vpa;
         d("UPI verified OK. enteredUpiId(masked)=" + maskUpi(enteredUpiId));
 
-        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
-
-        if (selectedPaymentMethod.isEmpty()) {
+        if (selectedPaymentMethod == null || selectedPaymentMethod.isEmpty()) {
             loaderutil.hideLoader();
             Toast.makeText(this, "Please choose a payment option to continue.", Toast.LENGTH_SHORT).show();
-            w("continueAfterUpiVerified() blocked: selectedPaymentMethod empty");
             return;
         }
 
-        if ("Offline".equals(selectedPaymentMethod) && walletBalance < DEPOSIT) {
+        // Phase 3: one authoritative server quote before any money action.
+        fetchAuthoritativeBookingQuote(true);
+    }
+
+    private void fetchAuthoritativeBookingQuote(boolean continueAfterLoad) {
+        if (!isValidBookingLocation()) {
+            bookingOperationInProgress = false;
+            handleQuoteFailure("BOOKING_LOCATION_REQUIRED",
+                    "Please go back and select the appointment location again.");
+            return;
+        }
+        bookingOperationInProgress = continueAfterLoad;
+        setBookingUiState("VERIFYING", "Verifying bill securely",
+                "Checking doctor availability, service pincode and final amount.");
+        loaderutil.showLoader(this, "Verifying bill", "Checking availability and the latest server price…");
+
+        StringRequest req = new StringRequest(Request.Method.POST, bookingQuoteUrl,
+                resp -> {
+                    try {
+                        JSONObject root = new JSONObject(resp);
+                        if (!root.optBoolean("success")) {
+                            handleQuoteFailure(root.optString("code", "QUOTE_FAILED"),
+                                    root.optString("message", "Unable to calculate booking price."));
+                            return;
+                        }
+                        JSONObject q = root.getJSONObject("quote");
+                        BookingQuote verifiedQuote = BookingQuote.fromJson(q);
+                        verifiedQuote.validateForPaymentMethod(selectedPaymentMethod);
+                        activeQuote = verifiedQuote;
+                        bookingQuoteToken = verifiedQuote.quoteToken;
+
+                        // Phase 4C: Android stores the immutable exact server quote; it does not recalculate money.
+                        if (!verifiedQuote.vaccinationName.isEmpty()) vaccinationName = verifiedQuote.vaccinationName;
+                        walletBalancePaise = verifiedQuote.walletBalancePaise;
+                        platformChargePaise = verifiedQuote.platformChargePaise;
+                        gatewayPaise = verifiedQuote.gatewayPaise;
+                        lastConfirmedDepositMode = "Wallet Debited".equalsIgnoreCase(verifiedQuote.depositStatus)
+                                ? DepositMode.WALLET : DepositMode.BILL;
+                        renderAuthoritativeQuote();
+
+                        setBookingUiState("READY", "Bill verified by server",
+                                "Doctor availability, service area and amount are verified. The bill will be checked again before payment.");
+                        if (continueAfterLoad) {
+                            continueWithAuthoritativeQuote();
+                        } else {
+                            bookingOperationInProgress = false;
+                            loaderutil.hideLoader();
+                        }
+                    } catch (Exception ex) {
+                        e("Authoritative quote parse error", ex);
+                        handleQuoteFailure("QUOTE_RESPONSE_INVALID",
+                                "We could not read the verified bill. No payment has started; please try again.");
+                    }
+                },
+                err -> {
+                    e("Authoritative quote network error", err);
+                    JSONObject body = parseVolleyErrorBody(err);
+                    String code = body == null ? "QUOTE_NETWORK_ERROR" : body.optString("code", "QUOTE_NETWORK_ERROR");
+                    String message = body == null
+                            ? "Check your connection and retry the bill check. No payment has started."
+                            : body.optString("message", "Could not verify the booking right now.");
+                    handleQuoteFailure(code, message);
+                }) {
+            @Override protected Map<String, String> getParams() {
+                Map<String, String> p = new HashMap<>();
+                // Explicit opt-in keeps the live v3 APK contract backward-compatible on the same backend.
+                p.put("intent_version", "5");
+                p.put("pricing_version", "5");
+                p.put("patient_id", patientId);
+                p.put("doctor_id", doctorId);
+                p.put("user_lat", String.valueOf(userLat));
+                p.put("user_lng", String.valueOf(userLng));
+                p.put("is_vet_case", String.valueOf(isVetCase));
+                p.put("booking_status", status == null ? "Pending" : status);
+                p.put("patient_name", patientName == null ? "" : patientName);
+                p.put("patient_age", patientAge == null ? "" : patientAge);
+                p.put("patient_gender", patientGender == null ? "" : patientGender);
+                p.put("address", patientAddress == null ? "" : patientAddress);
+                p.put("pincode", pincode == null ? "" : pincode);
+                p.put("reason_for_visit", patientProblem == null ? "" : patientProblem);
+                p.put("appointment_mode", "Online");
+                p.put("payment_method", selectedPaymentMethod == null ? "Online" : selectedPaymentMethod);
+                p.put("upi_id", enteredUpiId == null ? "" : enteredUpiId);
+                if (reservationToken != null && !reservationToken.isEmpty()) p.put("reservation_token", reservationToken);
+                if (animalCategoryId != null && !animalCategoryId.trim().isEmpty()) p.put("animal_category_id", animalCategoryId);
+                if (vaccinationId != null && !vaccinationId.trim().isEmpty()) p.put("vaccination_id", vaccinationId);
+                if (isVetCase == 1) {
+                    p.put("animal_name", animalName == null ? "" : animalName);
+                    p.put("animal_gender", animalGender == null ? "" : animalGender);
+                    p.put("animal_age", animalAge == null ? "" : animalAge);
+                    p.put("animal_breed", animalBreed == null ? "" : animalBreed);
+                }
+                return p;
+            }
+        };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
+        VolleySingleton.getInstance(this).getRequestQueue().add(req);
+    }
+
+    private void continueWithAuthoritativeQuote() {
+        if (activeQuote == null || TextUtils.isEmpty(bookingQuoteToken)) {
+            resetBeforePaymentFailure("Bill verification required", "Please verify the latest server bill before continuing.");
+            return;
+        }
+        if ("Offline".equals(selectedPaymentMethod) && lastConfirmedDepositMode != DepositMode.WALLET) {
             loaderutil.hideLoader();
-            Toast.makeText(this, "Wallet में ₹" + (int) DEPOSIT + " होने पर ही Offline booking होगी.", Toast.LENGTH_LONG).show();
-            w("Offline blocked: walletBalance(" + fmt2(walletBalance) + ") < DEPOSIT(" + fmt2(DEPOSIT) + ")");
+            bookingOperationInProgress = false;
+            paymentStarted = false;
+            bookingQuoteToken = "";
+            activeQuote = null;
+            gatewayPaise = 0L;
+            lastConfirmedDepositMode = DepositMode.NONE;
+            setBookingUiState("ERROR", "Wallet balance is too low",
+                    "Offline booking needs at least " + MoneyUtil.formatPaise(platformChargePaise) + " in your wallet for the platform charge. Recharge the wallet, then verify the bill again.");
+            renderAuthoritativeQuote();
             return;
         }
-
-        lastConfirmedDepositMode = (walletBalance >= DEPOSIT) ? DepositMode.WALLET : DepositMode.BILL;
-        d("Deposit decision: walletBalance=" + fmt2(walletBalance) + ", DEPOSIT=" + fmt2(DEPOSIT)
-                + " => lastConfirmedDepositMode=" + lastConfirmedDepositMode);
 
         if ("Offline".equals(selectedPaymentMethod)) {
-            if (lastConfirmedDepositMode == DepositMode.WALLET) {
-                d("Offline flow: debiting deposit from wallet now. amount=" + fmt2(DEPOSIT));
-                deductWalletCharge(DEPOSIT, "Platform charge for offline appointment booking");
-                setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
-            } else {
-                d("Offline flow: deposit will be added to bill (no wallet debit). amount=" + fmt2(DEPOSIT));
-                setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
-            }
-            logBillingState("before_saveBookingData_offline");
-            saveBookingData(googleMapsLink);
+            setDepositLine("Platform Charge will be debited safely during booking: " + MoneyUtil.formatPaise(platformChargePaise), true);
+            paymentStarted = true;
+            bookingOperationInProgress = true;
+            savePaymentRecovery(bookingQuoteToken, "");
+            setBookingUiState("FINALIZING", "Confirming appointment",
+                    "Wallet charge and appointment are being saved together securely.");
+            finalizeBooking("");
         } else {
-            if (lastConfirmedDepositMode == DepositMode.WALLET) {
-                d("Online flow: deposit will be debited from wallet after payment completion. amount=" + fmt2(DEPOSIT));
-                setDepositLine("Wallet will be debited: ₹" + (int) DEPOSIT, true);
-            } else {
-                d("Online flow: deposit will be added to bill. amount=" + fmt2(DEPOSIT));
-                setDepositLine("Platform Charge added to bill: ₹" + (int) DEPOSIT, true);
-            }
-            logBillingState("before_startPhonePeCheckout");
+            // v4 Online settlement intentionally keeps wallet out of the post-payment critical path.
+            setDepositLine("Platform Charge included in secure online payment: " + MoneyUtil.formatPaise(platformChargePaise), true);
+            paymentStarted = true;
+            bookingOperationInProgress = true;
+            savePaymentRecovery(bookingQuoteToken, "");
+            setBookingUiState("PAYMENT", "Preparing secure payment",
+                    "PhonePe will open once. If anything is interrupted, this same booking reference will be recovered safely.");
             startPhonePeCheckout();
         }
     }
@@ -663,8 +1110,18 @@ public class pending_bill extends AppCompatActivity {
     /* ---------------- PhonePe ---------------- */
 
     private void startPhonePeCheckout() {
+        if (bookingQuoteToken == null || bookingQuoteToken.isEmpty()) {
+            resetBeforePaymentFailure("Bill verification expired", "Please verify the latest amount before paying.");
+            Toast.makeText(this, "Booking price expired. Please try again.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        bookingOperationInProgress = true;
+        paymentStarted = true;
+        savePaymentRecovery(bookingQuoteToken, ppMerchantOrderId);
+        setBookingUiState("PAYMENT", "Preparing secure payment",
+                "Creating or restoring the same PhonePe payment securely. Please do not start another payment.");
         d("startPhonePeCheckout() -> " + ppCreateOrderUrl);
-        d("Gateway amount alignment: finalPayRupees=" + finalPayRupees + " => paise=" + (finalPayRupees * 100L));
+        d("Gateway amount alignment: exact server paise=" + gatewayPaise);
         logBillingState("startPhonePeCheckout");
 
         StringRequest req = new StringRequest(
@@ -675,531 +1132,437 @@ public class pending_bill extends AppCompatActivity {
                     try {
                         JSONObject obj = new JSONObject(resp);
                         if (!"success".equalsIgnoreCase(obj.optString("status"))) {
-                            loaderutil.hideLoader();
-                            Toast.makeText(this, "Failed to create order.", Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "create_order failed: " + obj);
+                            String msg = obj.optString("message", "Payment could not be started.");
+                            resetBeforePaymentFailure("Payment not started", msg);
+                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                             return;
                         }
 
                         ppMerchantOrderId = obj.optString("merchantOrderId", null);
                         String token   = obj.optString("token", "");
                         String orderId = obj.optString("orderId", "");
+                        long orderAmountPaise = obj.optLong("amountPaise", -1L);
+
+                        if (activeQuote != null && orderAmountPaise >= 0L
+                                && orderAmountPaise != activeQuote.gatewayPaise) {
+                            resetBeforePaymentFailure("Payment amount mismatch",
+                                    "The payment order did not match the verified bill. No checkout was opened. Please verify the latest bill again.");
+                            return;
+                        }
 
                         d("create_order parsed: merchantOrderId=" + ppMerchantOrderId
                                 + ", tokenLen=" + token.length()
                                 + ", orderId=" + orderId);
 
                         if (ppMerchantOrderId == null || token.isEmpty() || orderId.isEmpty()) {
-                            loaderutil.hideLoader();
-                            Toast.makeText(this, "Invalid order response.", Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "Missing token/orderId/merchantOrderId: " + obj);
+                            handlePaymentSetupUncertain("The payment setup response was incomplete. Do not start a new payment; retry this same setup safely.");
                             return;
                         }
 
+                        savePaymentRecovery(bookingQuoteToken, ppMerchantOrderId);
+                        setBookingUiState("PAYMENT", "Secure payment ready",
+                                "Complete this PhonePe payment once. Do not start another payment if confirmation is slow.");
                         PhonePeKt.startCheckoutPage(this, token, orderId, ppCheckoutLauncher);
 
                     } catch (Exception e) {
-                        loaderutil.hideLoader();
                         e("create_order parse error", e);
-                        Toast.makeText(this, "Order parse error.", Toast.LENGTH_SHORT).show();
+                        handlePaymentSetupUncertain("We could not read the payment setup response. Retry safely with the same booking reference.");
                     }
                 },
                 err -> {
-                    loaderutil.hideLoader();
                     e("create_order network error", err);
-                    Toast.makeText(this, "Network error creating order.", Toast.LENGTH_SHORT).show();
+                    JSONObject body = parseVolleyErrorBody(err);
+                    if (body != null && err.networkResponse != null && err.networkResponse.statusCode >= 400
+                            && err.networkResponse.statusCode < 500) {
+                        String msg = body.optString("message", "Payment could not be started. Please verify the bill again.");
+                        resetBeforePaymentFailure("Payment not started", msg);
+                    } else {
+                        handlePaymentSetupUncertain("The network interrupted payment setup. Do not start a new payment; retry this same setup safely.");
+                    }
                 }
         ) {
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> p = new HashMap<>();
                 p.put("patient_id", patientId);
-                long paise = finalPayRupees * 100L;
-                p.put("amount", String.valueOf(paise));
                 p.put("purpose", "APPOINTMENT");
+                p.put("quote_token", bookingQuoteToken);
                 p.put("_ts", String.valueOf(System.currentTimeMillis()));
-                d("create_order params: patient_id=" + safe(patientId) + ", amount(paise)=" + paise + ", purpose=APPOINTMENT");
                 return p;
             }
         };
         req.setShouldCache(false);
         req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
-        Volley.newRequestQueue(this).add(req);
+        VolleySingleton.getInstance(this).getRequestQueue().add(req);
     }
 
     private void checkPhonePeStatus(String merchantOrderId) {
+        if (TextUtils.isEmpty(merchantOrderId)) {
+            handlePaymentSetupUncertain("We do not have the payment reference yet. Retry the same secure payment setup.");
+            return;
+        }
+        ppMerchantOrderId = merchantOrderId;
+        paymentStarted = true;
+        bookingOperationInProgress = true;
+        savePaymentRecovery(bookingQuoteToken, merchantOrderId);
+
         final Handler h = new Handler(getMainLooper());
         final int[] attempts = {0};
         final int maxAttempts = 5;
-
-        d("checkPhonePeStatus() start merchantOrderId=" + merchantOrderId + " maxAttempts=" + maxAttempts);
+        setBookingUiState("PAYMENT", "Verifying payment",
+                "Please do not start another payment while we confirm this one.");
 
         Runnable check = new Runnable() {
             @Override public void run() {
                 if (isFinishing() || isDestroyedOrFinishing || isDestroyed()) {
                     loaderutil.hideLoader();
-                    w("checkPhonePeStatus() aborted due to lifecycle");
                     return;
                 }
-
                 attempts[0]++;
-                String url = ppStatusUrl + "?merchantOrderId=" + Uri.encode(merchantOrderId) + "&skipWallet=1&ts=" + System.currentTimeMillis();
-                d("checkPhonePeStatus() attempt " + attempts[0] + "/" + maxAttempts + " GET -> " + url);
-
+                String url = ppStatusUrl + "?merchantOrderId=" + Uri.encode(merchantOrderId)
+                        + "&skipWallet=1&ts=" + System.currentTimeMillis();
                 StringRequest req = new StringRequest(Request.Method.GET, url,
                         resp -> {
-                            d("check_status response=" + resp);
                             try {
                                 JSONObject obj = new JSONObject(resp);
-
-                                String topStatus = obj.optString("status");
-                                if (!"success".equalsIgnoreCase(topStatus) && !"ok".equalsIgnoreCase(topStatus)) {
-                                    w("check_status top status not success/ok: " + topStatus);
-                                    if (attempts[0] < maxAttempts) {
-                                        h.postDelayed(this, 2000);
-                                        return;
-                                    }
+                                if (!"success".equalsIgnoreCase(obj.optString("status"))) {
+                                    if (attempts[0] < maxAttempts) { h.postDelayed(this, 2000); return; }
                                     loaderutil.hideLoader();
-                                    Toast.makeText(pending_bill.this, "Could not verify payment right now. Please try again.", Toast.LENGTH_LONG).show();
+                                    bookingOperationInProgress = false;
+                                    setBookingUiState("PAYMENT", "Payment verification pending",
+                                            "Do not pay again. Check the same payment status again when your connection is stable.");
+                                    setBillStatusAction(BillStatusAction.CHECK_PAYMENT, "Check payment again", merchantOrderId);
                                     return;
                                 }
 
                                 String state = obj.optString("state", "PENDING");
-                                d("check_status parsed state=" + state + ", selectedPaymentMethod=" + selectedPaymentMethod);
-
                                 if ("COMPLETED".equalsIgnoreCase(state)) {
-                                    if ("Online".equals(selectedPaymentMethod) && lastConfirmedDepositMode == DepositMode.WALLET) {
-                                        d("PhonePe COMPLETED: debiting deposit from wallet. amount=" + fmt2(DEPOSIT));
-                                        deductWalletCharge(DEPOSIT, "Platform charge for online appointment (wallet debit)");
-                                        setDepositLine("Platform Charge debited from wallet: ₹" + (int) DEPOSIT, true);
-                                        recomputeTotalsAndUI();
-                                    }
-
-                                    fetchWalletBalance();
-
-                                    Toast.makeText(pending_bill.this, "Payment successful.", Toast.LENGTH_SHORT).show();
-                                    d("PhonePe COMPLETED, merchantOrderId=" + ppMerchantOrderId);
-                                    loaderutil.hideLoader();
-
-                                    logBillingState("before_saveBookingData_online_completed");
-                                    saveBookingData(googleMapsLink);
-
-                                } else if ("FAILED".equalsIgnoreCase(state)) {
-                                    loaderutil.hideLoader();
-                                    Toast.makeText(pending_bill.this, "Payment failed.", Toast.LENGTH_SHORT).show();
-                                    w("PhonePe FAILED for merchantOrderId=" + merchantOrderId);
-
-                                } else {
-                                    if (attempts[0] < maxAttempts) {
-                                        h.postDelayed(this, 2000);
-                                    } else {
+                                    int recoveredAppointmentId = obj.optInt("appointment_id", 0);
+                                    if (recoveredAppointmentId > 0 && "CONFIRMED".equalsIgnoreCase(obj.optString("booking_status"))) {
                                         loaderutil.hideLoader();
-                                        Toast.makeText(pending_bill.this, "Payment pending. You can check again from history.", Toast.LENGTH_SHORT).show();
-                                        w("PhonePe state still " + state + " after max attempts");
+                                        handleBookingConfirmed(recoveredAppointmentId);
+                                        return;
                                     }
+                                    setBookingUiState("FINALIZING", "Payment received",
+                                            "Payment is verified. Confirming your appointment now…");
+                                    finalizeBooking(merchantOrderId);
+                                    return;
                                 }
-                            } catch (Exception e) {
-                                e("Status parse error", e);
+
+                                if ("FAILED".equalsIgnoreCase(state)
+                                        || "CANCELLED".equalsIgnoreCase(state)
+                                        || "TIMED_OUT".equalsIgnoreCase(state)) {
+                                    loaderutil.hideLoader();
+                                    paymentStarted = false;
+                                    bookingOperationInProgress = false;
+                                    bookingQuoteToken = "";
+                                    activeQuote = null;
+                                    gatewayPaise = 0L;
+                                    ppMerchantOrderId = null;
+                                    lastConfirmedDepositMode = DepositMode.NONE;
+                                    clearPaymentRecovery();
+
+                                    String reason;
+                                    if ("CANCELLED".equalsIgnoreCase(state)) {
+                                        reason = "The PhonePe payment was cancelled. No appointment payment was confirmed.";
+                                    } else if ("TIMED_OUT".equalsIgnoreCase(state)) {
+                                        reason = "The PhonePe payment timed out. No appointment payment was confirmed.";
+                                    } else {
+                                        reason = "The PhonePe payment failed. No appointment payment was confirmed.";
+                                    }
+                                    setBookingUiState("ERROR", "Payment not completed",
+                                            reason + " Your temporary doctor reservation is kept briefly so you can retry with a fresh verified bill.");
+                                    setBillStatusAction(BillStatusAction.RETRY_QUOTE, "Verify bill & retry", "");
+                                    return;
+                                }
+
                                 if (attempts[0] < maxAttempts) {
                                     h.postDelayed(this, 2000);
                                 } else {
                                     loaderutil.hideLoader();
-                                    Toast.makeText(pending_bill.this, "Status parse error.", Toast.LENGTH_SHORT).show();
+                                    bookingOperationInProgress = false;
+                                    setBookingUiState("PAYMENT", "Payment verification pending",
+                                            "Do not pay again. The same payment can be checked safely without creating a second payment.");
+                                    setBillStatusAction(BillStatusAction.CHECK_PAYMENT, "Check payment again", merchantOrderId);
+                                }
+                            } catch (Exception e) {
+                                if (attempts[0] < maxAttempts) h.postDelayed(this, 2000);
+                                else {
+                                    loaderutil.hideLoader();
+                                    bookingOperationInProgress = false;
+                                    setBookingUiState("PAYMENT", "Payment verification pending",
+                                            "Do not pay again. We could not read the latest payment status, but this same payment can be checked safely.");
+                                    setBillStatusAction(BillStatusAction.CHECK_PAYMENT, "Check payment again", merchantOrderId);
                                 }
                             }
                         },
                         err -> {
-                            e("Server error while checking status.", err);
-                            if (attempts[0] < maxAttempts) {
-                                h.postDelayed(this, 2000);
-                            } else {
+                            if (attempts[0] < maxAttempts) h.postDelayed(this, 2000);
+                            else {
                                 loaderutil.hideLoader();
-                                Toast.makeText(pending_bill.this, "Server error while checking status.", Toast.LENGTH_SHORT).show();
+                                bookingOperationInProgress = false;
+                                setBookingUiState("PAYMENT", "Payment verification pending",
+                                        "Network is unstable. Do not pay again; check the same payment when the connection improves.");
+                                setBillStatusAction(BillStatusAction.CHECK_PAYMENT, "Check payment again", merchantOrderId);
                             }
                         });
                 req.setShouldCache(false);
-                req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
-                Volley.newRequestQueue(pending_bill.this).add(req);
+                req.setRetryPolicy(new DefaultRetryPolicy(15000, 0, 1.0f));
+                VolleySingleton.getInstance(pending_bill.this).getRequestQueue().add(req);
             }
         };
 
-        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
+        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this, "Checking payment", "Checking the same payment — please do not pay again.");
         check.run();
     }
 
-    /* ---------------- Config & distance ---------------- */
+    /**
+     * v5 server-authoritative finalization. This endpoint is idempotent: retrying the same
+     * quote is safe even when Android lost the original response after the server committed.
+     */
+    private void finalizeBooking(String paymentReference) {
+        if (bookingQuoteToken == null || bookingQuoteToken.trim().isEmpty()) {
+            loaderutil.hideLoader();
+            bookingOperationInProgress = false;
+            if (!TextUtils.isEmpty(paymentReference) || !TextUtils.isEmpty(ppMerchantOrderId)) {
+                paymentStarted = true;
+                setBookingUiState("PAYMENT", "Payment reference needs checking",
+                        "Do not pay again. Check the existing PhonePe payment before doing anything else.");
+                setBillStatusAction(BillStatusAction.CHECK_PAYMENT, "Check payment", !TextUtils.isEmpty(paymentReference) ? paymentReference : ppMerchantOrderId);
+            } else {
+                paymentStarted = false;
+                clearPaymentRecovery();
+                setBookingUiState("ERROR", "Booking reference expired",
+                        "Please verify the latest bill before trying again.");
+                setBillStatusAction(BillStatusAction.RETRY_QUOTE, "Verify latest bill", "");
+            }
+            return;
+        }
 
-    private void fetchAppConfig() {
-        String url = ApiConfig.endpoint("get_app_config.php") + "?ts=" + System.currentTimeMillis();
-        d("fetchAppConfig() GET -> " + url);
+        appointmentSaveInProgress = true;
+        bookingOperationInProgress = true;
+        setBookingUiState("FINALIZING", "Confirming appointment",
+                "Saving your appointment securely. Please do not pay again or close the app yet.");
+        if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this, "Confirming appointment", "Payment is safe. Finishing the same booking now…");
 
-        @SuppressLint("DefaultLocale") JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
+        StringRequest req = new StringRequest(Request.Method.POST, finalizeBookingUrl,
                 resp -> {
-                    d("fetchAppConfig() response=" + resp);
-                    if (!resp.optBoolean("success")) {
-                        String err = resp.optString("error", "CONFIG_FAILED");
-                        loaderutil.hideLoader();
-                        Toast.makeText(this, "Config error: " + err, Toast.LENGTH_LONG).show();
-                        w("Config error: " + err);
-                        finish();
-                        return;
+                    loaderutil.hideLoader();
+                    appointmentSaveInProgress = false;
+                    try {
+                        JSONObject obj = new JSONObject(resp);
+                        if (obj.optBoolean("success", false)) {
+                            int appointmentId = obj.optInt("appointment_id", 0);
+                            if (appointmentId > 0) {
+                                handleBookingConfirmed(appointmentId);
+                                return;
+                            }
+                        }
+                        bookingOperationInProgress = false;
+                        setBookingUiState("FINALIZING", "Confirmation pending",
+                                "Do not pay again. Retry confirmation with the same booking reference.");
+                        setBillStatusAction(BillStatusAction.RETRY_FINALIZE, "Retry confirmation", paymentReference);
+                        showSafeFinalizeRetryDialog(paymentReference,
+                                obj.optString("message", "Booking confirmation is still pending."));
+                    } catch (Exception ex) {
+                        bookingOperationInProgress = false;
+                        setBookingUiState("FINALIZING", "Confirmation pending",
+                                "The server response was interrupted. Do not pay again; retrying confirmation is safe.");
+                        setBillStatusAction(BillStatusAction.RETRY_FINALIZE, "Retry confirmation", paymentReference);
+                        showSafeFinalizeRetryDialog(paymentReference,
+                                "We could not read the confirmation response.");
                     }
-
-                    FREE_DISTANCE_KM = resp.optDouble("base_distance");
-                    PER_KM_CHARGE    = resp.optDouble("extra_cost_per_km");
-                    DEPOSIT          = resp.optDouble("platform_charge");
-                    GST_PERCENT      = resp.optDouble("gst_percent");
-                    cfgLoaded = true;
-
-                    d("Config loaded: base_distance=" + fmt2(FREE_DISTANCE_KM)
-                            + ", extra_cost_per_km=" + fmt2(PER_KM_CHARGE)
-                            + ", platform_charge=" + fmt2(DEPOSIT)
-                            + ", gst_percent=" + fmt2(GST_PERCENT));
-
-                    tvPricePerKm.setText(String.format("₹ %.2f per kilometer", PER_KM_CHARGE));
-                    fetchAppointmentCharge(doctorId);
-                    logBillingState("after_fetchAppConfig");
                 },
                 err -> {
                     loaderutil.hideLoader();
-                    e("Network error fetching config", err);
-                    Toast.makeText(this, "Config network error", Toast.LENGTH_LONG).show();
-                    finish();
-                }
-        );
-        req.setShouldCache(false);
-        Volley.newRequestQueue(this).add(req);
-    }
+                    appointmentSaveInProgress = false;
 
-    private void fetchAppointmentCharge(String doctorId) {
-        String url = ApiConfig.endpoint("get_appointment_charge.php", "doctor_id", doctorId) + "&ts=" + System.currentTimeMillis();
-        d("fetchAppointmentCharge() GET -> " + url);
-
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
-                response -> {
-                    d("fetchAppointmentCharge() response=" + response);
-
-                    if (response.optBoolean("success")) {
-                        APPOINTMENT_CHARGE = response.optDouble("appointment_charge", 250.0);
-                    } else {
-                        APPOINTMENT_CHARGE = 250.0;
-                    }
-
-                    gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
-                    consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
-                    chargeLoaded  = true;
-
-                    d("Charge loaded: APPOINTMENT_CHARGE=" + fmt2(APPOINTMENT_CHARGE)
-                            + ", GST_PERCENT=" + fmt2(GST_PERCENT) + " => gstAmount=" + fmt2(gstAmount)
-                            + ", DEPOSIT=" + fmt2(DEPOSIT) + " => consultingFee=" + fmt2(consultingFee));
-
-                    recomputeTotalsAndUI();
-                    logBillingState("after_fetchAppointmentCharge");
-                },
-                error -> {
-                    e("Volley error fetching doctor charge", error);
-
-                    APPOINTMENT_CHARGE = 250.0;
-                    gstAmount     = APPOINTMENT_CHARGE * (GST_PERCENT / 100.0);
-                    consultingFee = APPOINTMENT_CHARGE - DEPOSIT;
-                    chargeLoaded  = true;
-
-                    d("Charge fallback: APPOINTMENT_CHARGE=" + fmt2(APPOINTMENT_CHARGE)
-                            + ", gstAmount=" + fmt2(gstAmount)
-                            + ", consultingFee=" + fmt2(consultingFee));
-
-                    recomputeTotalsAndUI();
-                    logBillingState("after_fetchAppointmentCharge_errorFallback");
-                }
-        );
-        req.setShouldCache(false);
-        Volley.newRequestQueue(this).add(req);
-    }
-
-    private void fetchDoctorLocation(String docId) {
-        String url = ApiConfig.endpoint("get_doctor_location.php", "doctor_id", docId) + "&ts=" + System.currentTimeMillis();
-        d("fetchDoctorLocation() GET -> " + url);
-
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
-                resp -> {
-                    d("fetchDoctorLocation() response=" + resp);
-                    try {
-                        if (resp.getBoolean("success")) {
-                            String loc = resp.getString("location");
-                            d("Doctor location string=" + loc);
-                            parseDoctorLatLng(loc);
-                        } else {
-                            w("fetchDoctorLocation(): success=false. Distance will be marked ready with 0km.");
-                            distanceReady = true;
-                            recomputeTotalsAndUI();
-                        }
-                    } catch (JSONException e) {
-                        e("fetchDoctorLocation() JSON parse error", e);
-                        distanceReady = true;
-                        recomputeTotalsAndUI();
-                    }
-                },
-                err -> {
-                    e("fetchDoctorLocation() network error", err);
-                    distanceReady = true;
-                    recomputeTotalsAndUI();
-                }
-        );
-        req.setShouldCache(false);
-        Volley.newRequestQueue(this).add(req);
-    }
-
-    private void parseDoctorLatLng(String docUrl) {
-        try {
-            Uri uri = Uri.parse(docUrl);
-            String q = uri.getQueryParameter("query");
-            d("parseDoctorLatLng(): parsed query=" + q);
-
-            if (q != null && q.contains(",")) {
-                String[] p = q.split(",");
-                docLat = Double.parseDouble(p[0]);
-                docLng = Double.parseDouble(p[1]);
-                d("Doctor lat/lng parsed: " + docLat + "," + docLng);
-
-                if (userLat != 0.0 && userLng != 0.0 && docLat != 0.0 && docLng != 0.0) {
-                    fetchDrivingDistance(userLat, userLng, docLat, docLng);
-                } else {
-                    w("Cannot fetch distance: missing coords. userLatLng=" + userLat + "," + userLng + " docLatLng=" + docLat + "," + docLng);
-                    distanceReady = true;
-                    recomputeTotalsAndUI();
-                }
-            } else {
-                w("parseDoctorLatLng(): query missing/invalid in docUrl. Distance will be marked ready with 0km.");
-                distanceReady = true;
-                recomputeTotalsAndUI();
-            }
-        } catch (Exception e) {
-            e("parseDoctorLatLng() error", e);
-            distanceReady = true;
-            recomputeTotalsAndUI();
-        }
-    }
-
-    private void fetchDrivingDistance(double lat1, double lng1, double lat2, double lng2) {
-        logDirectionsRequest(lat1, lng1, lat2, lng2);
-
-        // PRIMARY: Backend route endpoint — API key stays on server.
-        String url = ApiConfig.endpoint(
-                "get_route_distance.php",
-                "origin_lat", String.valueOf(lat1),
-                "origin_lng",  String.valueOf(lng1),
-                "destination_lat", String.valueOf(lat2),
-                "destination_lng", String.valueOf(lng2),
-                "mode", "driving"
-        ) + "&ts=" + System.currentTimeMillis();
-
-        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, null,
-                response -> {
-                    boolean success = response.optBoolean("success", false);
-                    if (success) {
-                        parseRoutesResponse(response);
-                    } else {
-                        w("Backend route API returned success=false: " + response.optString("message", ""));
-                        // FALLBACK: Use Android string key when backend returns failure
-                        fetchDrivingDistanceFallback(lat1, lng1, lat2, lng2);
-                    }
-                },
-                err -> {
-                    e("Backend route distance network error — trying Android key fallback", err);
-                    // FALLBACK: Only reached if backend endpoint is unreachable
-                    fetchDrivingDistanceFallback(lat1, lng1, lat2, lng2);
-                }
-        );
-        req.setShouldCache(false);
-        req.setRetryPolicy(new com.android.volley.DefaultRetryPolicy(8000, 1, 1.0f));
-        Volley.newRequestQueue(this).add(req);
-    }
-
-    /**
-     * FALLBACK ONLY — called only when backend get_route_distance.php is unreachable or fails.
-     * Uses the Android string resource key (google_maps_key) directly.
-     * Primary method is fetchDrivingDistance() which uses the backend.
-     */
-    private void fetchDrivingDistanceFallback(double lat1, double lng1, double lat2, double lng2) {
-        w("Using Android key fallback for Directions API (backend unavailable)");
-        try {
-            String androidKey = getString(R.string.google_maps_key);
-            if (androidKey == null || androidKey.isEmpty() || androidKey.startsWith("PASTE_")) {
-                w("Android fallback key not set. Skipping distance calculation.");
-                distanceReady = true;
-                recomputeTotalsAndUI();
-                return;
-            }
-            String fallbackUrl = "https://maps.googleapis.com/maps/api/directions/json?"
-                    + "origin=" + lat1 + "," + lng1
-                    + "&destination=" + lat2 + "," + lng2
-                    + "&mode=driving"
-                    + "&key=" + androidKey;
-            // Note: we do NOT log the URL here (would expose key in logcat)
-            d("Directions fallback request: origin=" + lat1 + "," + lng1
-                    + " destination=" + lat2 + "," + lng2);
-
-            JsonObjectRequest fallbackReq = new JsonObjectRequest(Request.Method.GET, fallbackUrl, null,
-                    fallbackResp -> {
+                    String code = "";
+                    String message = "Booking confirmation was interrupted.";
+                    if (err.networkResponse != null && err.networkResponse.data != null) {
                         try {
-                            String status = fallbackResp.optString("status", "");
-                            if ("OK".equals(status)) {
-                                JSONObject leg = fallbackResp
-                                        .getJSONArray("routes").getJSONObject(0)
-                                        .getJSONArray("legs").getJSONObject(0);
-                                long meters = leg.getJSONObject("distance").getLong("value");
-                                distanceKm = meters / 1000.0;
-                                d("Fallback distance: meters=" + meters + " km=" + fmt2(distanceKm));
-
-                                if (distanceKm <= FREE_DISTANCE_KM) {
-                                    distanceCharge = 0.0;
-                                    tvDistanceChargeValue.setText("Free under "
-                                            + String.format(Locale.getDefault(), "%.0f", FREE_DISTANCE_KM) + " km");
-                                } else {
-                                    distanceCharge = distanceKm * PER_KM_CHARGE;
-                                    tvDistanceChargeValue.setText(String.format(Locale.getDefault(),
-                                            "₹ %.0f", distanceCharge));
-                                }
-                            } else {
-                                w("Fallback Directions API status=" + status + ". Proceeding with 0km.");
-                            }
-                        } catch (Exception ex) {
-                            e("Fallback parse error", ex);
-                        }
-                        distanceReady = true;
-                        recomputeTotalsAndUI();
-                    },
-                    fallbackErr -> {
-                        e("Fallback Directions API also failed", fallbackErr);
-                        distanceReady = true;
-                        recomputeTotalsAndUI();
+                            JSONObject body = new JSONObject(new String(err.networkResponse.data));
+                            code = body.optString("code", "");
+                            message = body.optString("message", message);
+                        } catch (Exception ignored) { }
                     }
-            );
-            fallbackReq.setShouldCache(false);
-            Volley.newRequestQueue(this).add(fallbackReq);
-        } catch (Exception ex) {
-            e("fetchDrivingDistanceFallback exception", ex);
-            distanceReady = true;
-            recomputeTotalsAndUI();
-        }
-    }
 
-    @SuppressLint("SetTextI18n")
-    private void parseRoutesResponse(JSONObject response) {
-        d("parseRoutesResponse() raw=" + response);
-        try {
-            boolean success = response.optBoolean("success", false);
-            if (success) {
-                long meters = response.optLong("distance_meters", 0L);
-                distanceKm  = meters / 1000.0;
+                    if ("PAYMENT_NOT_COMPLETED".equals(code)) {
+                        // Payment state is still uncertain. Never release the doctor lock or invite a second payment.
+                        bookingOperationInProgress = false;
+                        paymentStarted = true;
+                        setBookingUiState("PAYMENT", "Payment verification pending",
+                                "Do not pay again. We are checking the same PhonePe payment.");
+                        if (paymentReference != null && !paymentReference.isEmpty()) {
+                            new Handler(getMainLooper()).postDelayed(
+                                    () -> checkPhonePeStatus(paymentReference), 1500L);
+                        } else {
+                            setBillStatusAction(BillStatusAction.CHECK_PAYMENT, "Check payment", ppMerchantOrderId);
+                        }
+                        return;
+                    }
 
-                d("Distance parsed from backend: meters=" + meters + " => distanceKm=" + fmt2(distanceKm)
-                        + ", FREE_DISTANCE_KM=" + fmt2(FREE_DISTANCE_KM)
-                        + ", PER_KM_CHARGE=" + fmt2(PER_KM_CHARGE));
+                    boolean financialIntegrityIssue = "PHASE4C_MIGRATION_REQUIRED".equals(code)
+                            || "QUOTE_CALCULATION_VERSION_INVALID".equals(code)
+                            || "QUOTE_SETTLEMENT_MISMATCH".equals(code)
+                            || "QUOTE_INTEGRITY_MISMATCH".equals(code)
+                            || "PAYMENT_HISTORY_AUDIT_PREPARE_FAILED".equals(code)
+                            || "PAYMENT_HISTORY_AUDIT_FAILED".equals(code);
+                    boolean paidConflict = "DOCTOR_BUSY_AFTER_PAYMENT".equals(code)
+                            || "DOCTOR_RESERVED_AFTER_PAYMENT".equals(code)
+                            || "RESERVATION_UNAVAILABLE_AFTER_PAYMENT".equals(code)
+                            || "PAYMENT_AMOUNT_MISMATCH".equals(code)
+                            || ("Online".equals(selectedPaymentMethod) && financialIntegrityIssue);
+                    if (paidConflict) {
+                        bookingOperationInProgress = false;
+                        paymentStarted = true;
+                        setBookingUiState("FINALIZING", "Payment received — action required",
+                                "Do not pay again. Your payment is recorded and this booking needs reconciliation.");
+                        setBillStatusAction(BillStatusAction.VIEW_APPOINTMENTS, "Check ongoing appointments", "");
+                        new AlertDialog.Builder(pending_bill.this)
+                                .setTitle("Do not pay again")
+                                .setMessage(message + "\n\nYour payment reference is already recorded. Check Ongoing Appointments first. If it still does not appear, contact support with the same payment reference.")
+                                .setPositiveButton("Check appointments", (d, which) -> onBookingSuccess())
+                                .setNegativeButton("Stay here", null)
+                                .show();
+                        return;
+                    }
 
-                if (distanceKm <= FREE_DISTANCE_KM) {
-                    distanceCharge = 0.0;
-                    tvDistanceChargeValue.setText("Free under " + String.format(Locale.getDefault(),"%.0f", FREE_DISTANCE_KM) + " km");
-                    d("Distance charge: FREE (<= base distance)");
-                } else {
-                    distanceCharge = distanceKm * PER_KM_CHARGE;
-                    tvDistanceChargeValue.setText(String.format(Locale.getDefault(), "₹ %.0f", distanceCharge));
-                    d("Distance charge computed: distanceKm(" + fmt2(distanceKm) + ") * perKm(" + fmt2(PER_KM_CHARGE) + ") = " + fmt2(distanceCharge));
+                    if ("OFFLINE_WALLET_REQUIRED".equals(code)
+                            || "WALLET_BALANCE_CHANGED".equals(code)
+                            || "QUOTE_EXPIRED".equals(code)
+                            || "PINCODE_NOT_SERVED".equals(code)
+                            || "DOCTOR_INACTIVE".equals(code)
+                            || "DOCTOR_BUSY".equals(code)
+                            || "RESERVATION_EXPIRED".equals(code)
+                            || "RESERVATION_REQUIRED".equals(code)
+                            || "ANIMAL_BREED_NOT_AVAILABLE".equals(code)
+                            || "BOOKING_INTENT_INCOMPLETE".equals(code)
+                            || ("Offline".equals(selectedPaymentMethod) && financialIntegrityIssue)) {
+                        bookingOperationInProgress = false;
+                        paymentStarted = false;
+                        bookingQuoteToken = "";
+                        activeQuote = null;
+                        gatewayPaise = 0L;
+                        lastConfirmedDepositMode = DepositMode.NONE;
+                        clearPaymentRecovery();
+                        setBookingUiState("ERROR", "Booking needs an update", message);
+                        if ("DOCTOR_BUSY".equals(code) || "DOCTOR_INACTIVE".equals(code) || "PINCODE_NOT_SERVED".equals(code)
+                                || "RESERVATION_EXPIRED".equals(code) || "RESERVATION_REQUIRED".equals(code)) {
+                            releaseReservationLockIfSafe("finalize_business_rule_" + code);
+                            setBillStatusAction(BillStatusAction.GO_BACK,
+                                    "PINCODE_NOT_SERVED".equals(code) ? "Change location" : "Go back", "");
+                        } else if ("ANIMAL_BREED_NOT_AVAILABLE".equals(code) || "BOOKING_INTENT_INCOMPLETE".equals(code)) {
+                            setBillStatusAction(BillStatusAction.GO_BACK, "Review details", "");
+                        } else {
+                            setBillStatusAction(BillStatusAction.RETRY_QUOTE, "Verify latest bill", "");
+                        }
+                        fetchWalletBalance();
+                        return;
+                    }
+
+                    // Ambiguous network/5xx response: the server may have committed already.
+                    // Keep paymentStarted=true so onBack/onDestroy cannot release the reservation.
+                    bookingOperationInProgress = false;
+                    paymentStarted = true;
+                    savePaymentRecovery(bookingQuoteToken, paymentReference);
+                    setBookingUiState("FINALIZING", "Confirmation interrupted",
+                            "Do not pay again. Retrying confirmation uses the same booking reference safely.");
+                    setBillStatusAction(BillStatusAction.RETRY_FINALIZE, "Retry confirmation", paymentReference);
+                    showSafeFinalizeRetryDialog(paymentReference, message);
+                }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> p = new HashMap<>();
+                p.put("quote_token", bookingQuoteToken);
+                p.put("patient_id", patientId == null ? "" : patientId);
+                if (paymentReference != null && !paymentReference.isEmpty()) {
+                    p.put("payment_reference", paymentReference);
                 }
-            } else {
-                w("Route backend failed: " + response.optString("message", "No route found")
-                        + " raw_status=" + response.optString("raw_status", ""));
+                return p;
             }
-        } catch (Exception e) {
-            e("Routes parse error", e);
-        }
-        distanceReady = true;
-        recomputeTotalsAndUI();
-        logBillingState("after_parseRoutesResponse");
+        };
+        req.setShouldCache(false);
+        req.setRetryPolicy(new DefaultRetryPolicy(15000, 0, 1.0f));
+        VolleySingleton.getInstance(this).getRequestQueue().add(req);
     }
-    /* ---------------- UI recompute ---------------- */
+
+    private void showSafeFinalizeRetryDialog(String paymentReference, String detail) {
+        if (isFinishing() || isDestroyed()) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Booking confirmation pending")
+                .setMessage(detail + "\n\nDo not make another payment. Retrying only checks/finalizes the same booking reference.")
+                .setNegativeButton("Check later", null)
+                .setPositiveButton("Retry confirmation", (d, which) -> finalizeBooking(paymentReference))
+                .show();
+    }
+
+    /* ---------------- Authoritative bill rendering ---------------- */
+
 
     @SuppressLint("SetTextI18n")
-    private void recomputeTotalsAndUI() {
-        boolean ready = cfgLoaded && chargeLoaded && distanceReady;
+    private void renderAuthoritativeQuote() {
+        BookingQuote q = activeQuote;
+        boolean hasVerifiedQuote = q != null
+                && bookingQuoteToken != null
+                && bookingQuoteToken.equals(q.quoteToken)
+                && lastConfirmedDepositMode != DepositMode.NONE;
 
-        double distanceChargeRaw = (distanceKm <= FREE_DISTANCE_KM) ? 0.0 : (distanceKm * PER_KM_CHARGE);
-        distanceCharge = distanceChargeRaw;
-
-        // Base total (consulting + GST + distance)
-        double baseTotal = consultingFee + gstAmount + distanceChargeRaw;
-
-        // Add vaccination price if any
-        boolean addVaccine = (isVetCase == 1 && vaccinationPrice > 0.0);
-        if (addVaccine) {
-            baseTotal += vaccinationPrice;
-            setRowVisibility(rowVaccinationPrice, true);
-            if (tvVaccinationPriceValue != null) {
-                tvVaccinationPriceValue.setText("₹ " + (int) Math.round(vaccinationPrice));
-            }
-        } else {
-            setRowVisibility(rowVaccinationPrice, false);
+        if (!hasVerifiedQuote) {
+            disablePayButton();
+            btnRechargeWallet.setVisibility(View.GONE);
+            if (tvWalletBalance != null) tvWalletBalance.setText(MoneyUtil.formatPaise(walletBalancePaise));
+            return;
         }
 
-        boolean depositCoveredByWallet = walletBalance >= DEPOSIT;
-        boolean addDepositToBill = !depositCoveredByWallet;
-        String depositLine;
+        // Phase 4C rule: render the immutable server quote only. No client-side billing math.
+        platformChargePaise = q.platformChargePaise;
+        gatewayPaise = q.gatewayPaise;
 
-        if ("Offline".equals(selectedPaymentMethod) && walletBalance < DEPOSIT) {
-            depositLine = "Offline booking के लिए wallet में ₹" + (int) DEPOSIT + " होना ज़रूरी है.";
-        } else if (depositCoveredByWallet) {
-            depositLine = "Wallet will be debited: ₹" + (int) DEPOSIT;
-        } else {
-            depositLine = "Platform Charge added to bill: ₹" + (int) DEPOSIT;
+        boolean addVaccine = isVetCase == 1 && q.vaccinationPricePaise > 0L;
+        setRowVisibility(rowVaccinationPrice, addVaccine);
+        if (addVaccine && tvVaccinationPriceValue != null) {
+            tvVaccinationPriceValue.setText(MoneyUtil.formatPaise(q.vaccinationPricePaise));
         }
 
-        double finalCostRaw = baseTotal + (addDepositToBill ? DEPOSIT : 0.0);
-        finalPayRupees = (long) Math.ceil(finalCostRaw);
-        finalCost = finalCostRaw;
+        tvAppointmentCharge.setText(MoneyUtil.formatPaise(q.appointmentChargePaise));
+        tvConsultingFeeValue.setText(MoneyUtil.formatPaise(q.consultationFeePaise));
+        tvDistanceKmValue.setText(MoneyUtil.formatDistanceMeters(q.distanceMeters));
+        tvGstValue.setText(MoneyUtil.formatPaise(q.gstPaise));
+        tvDistanceChargeValue.setText(q.distanceChargePaise > 0L
+                ? MoneyUtil.formatPaise(q.distanceChargePaise)
+                : "Free under " + MoneyUtil.formatDistanceMeters(q.baseDistanceMeters));
+        tvTotalPaidValue.setText(MoneyUtil.formatPaise(q.gatewayPaise));
+        tvWalletBalance.setText(MoneyUtil.formatPaise(walletBalancePaise));
+        if (tvPricePerKm != null) {
+            tvPricePerKm.setText(MoneyUtil.formatPaise(q.extraCostPerKmPaise) + " per kilometer");
+        }
 
-        // FULL PRICE BREAKDOWN LOG
-        d("PRICE CALC:"
-                + " consultingFee=" + fmt2(consultingFee)
-                + " + gstAmount=" + fmt2(gstAmount)
-                + " + distanceChargeRaw=" + fmt2(distanceChargeRaw)
-                + (addVaccine ? (" + vaccinationPrice=" + fmt2(vaccinationPrice)) : "")
-                + " => baseTotal=" + fmt2(baseTotal)
-                + " | depositCoveredByWallet=" + depositCoveredByWallet
-                + " | addDepositToBill=" + addDepositToBill + " (deposit=" + fmt2(DEPOSIT) + ")"
-                + " => finalCostRaw=" + fmt2(finalCostRaw)
-                + " => finalPayRupees(ceil)=" + finalPayRupees);
+        if (lastConfirmedDepositMode == DepositMode.WALLET) {
+            showDepositRow("Platform Charge will be debited from wallet: " + MoneyUtil.formatPaise(q.platformChargePaise));
+        } else {
+            showDepositRow("Platform Charge included in online bill: " + MoneyUtil.formatPaise(q.platformChargePaise));
+        }
 
-        tvAppointmentCharge.setText("₹ " + (int) APPOINTMENT_CHARGE);
-        tvConsultingFeeValue.setText("₹ " + (int) consultingFee);
-        tvDistanceKmValue.setText(String.format(Locale.getDefault(),"%.1f km", distanceKm));
-        tvGstValue.setText("₹ " + (int) gstAmount);
-        tvDistanceChargeValue.setText(distanceChargeRaw > 0
-                ? "₹ " + (int) Math.round(distanceChargeRaw)
-                : "Free under " + (int) FREE_DISTANCE_KM + " km");
-        tvTotalPaidValue.setText("₹ " + finalPayRupees);
-        tvWalletBalance.setText("₹" + String.format(Locale.getDefault(),"%.2f", walletBalance));
-
-        if (depositLine.isEmpty()) hideDepositRow(); else showDepositRow(depositLine);
-
-        if ("Offline".equals(selectedPaymentMethod) && walletBalance < DEPOSIT) {
+        boolean offlineInsufficient = "Offline".equals(selectedPaymentMethod)
+                && walletBalancePaise < q.platformChargePaise;
+        if (offlineInsufficient) {
             btnRechargeWallet.setVisibility(View.VISIBLE);
             disablePayButton();
+            setBookingUiState("ERROR", "Wallet balance changed",
+                    "Offline booking needs " + MoneyUtil.formatPaise(q.platformChargePaise)
+                            + " in your wallet. Recharge, then verify the bill again.");
+            setBillStatusAction(BillStatusAction.RETRY_QUOTE, "Verify bill again", "");
         } else {
             btnRechargeWallet.setVisibility(View.GONE);
-            if (!ready) {
-                disablePayButton();
-                if (!isFinishing() && !isDestroyed()) loaderutil.showLoader(this);
-            } else {
-                loaderutil.hideLoader();
-                enablePayButton();
-            }
+            loaderutil.hideLoader();
+            if (!bookingOperationInProgress && !paymentStarted) enablePayButton();
+            else disablePayButton();
         }
 
-        boolean canUseOffline = walletBalance >= DEPOSIT;
+        boolean canUseOffline = platformChargePaise <= 0L || walletBalancePaise >= platformChargePaise;
         btnOfflinePayment.setAlpha(canUseOffline ? 1f : 0.7f);
-
-        // Always log after recompute
-        logBillingState("recomputeTotalsAndUI");
+        logBillingState("renderAuthoritativeQuote");
     }
 
     private void hideDepositRow() {
@@ -1262,11 +1625,28 @@ public class pending_bill extends AppCompatActivity {
                     try {
                         JSONObject obj = new JSONObject(resp);
                         if ("success".equals(obj.optString("status"))) {
-                            double old = walletBalance;
-                            walletBalance = obj.optDouble("wallet_balance", 0.0);
-                            d("Wallet balance updated: " + fmt2(old) + " -> " + fmt2(walletBalance));
-                            tvWalletBalance.setText("₹" + String.format(Locale.getDefault(),"%.2f", walletBalance));
-                            recomputeTotalsAndUI();
+                            long oldPaise = walletBalancePaise;
+                            Object rawBalance = obj.has("wallet_balance") ? obj.opt("wallet_balance") : 0;
+                            walletBalancePaise = MoneyUtil.parseRupeesToPaise(rawBalance);
+                            d("Wallet balance updated paise: " + oldPaise + " -> " + walletBalancePaise);
+                            tvWalletBalance.setText(MoneyUtil.formatPaise(walletBalancePaise));
+
+                            if (!paymentStarted && !bookingOperationInProgress
+                                    && activeQuote != null
+                                    && "Offline".equals(selectedPaymentMethod)
+                                    && walletBalancePaise < activeQuote.platformChargePaise) {
+                                // Do not let a stale offline quote proceed after the wallet fell below the locked platform charge.
+                                bookingQuoteToken = "";
+                                activeQuote = null;
+                                gatewayPaise = 0L;
+                                lastConfirmedDepositMode = DepositMode.NONE;
+                                disablePayButton();
+                                setBookingUiState("ERROR", "Wallet balance changed",
+                                        "Your wallet no longer covers the platform charge. Recharge, then verify the bill again.");
+                                setBillStatusAction(BillStatusAction.RETRY_QUOTE, "Verify bill again", "");
+                            } else {
+                                renderAuthoritativeQuote();
+                            }
                         } else {
                             w("fetchWalletBalance(): status=" + obj.optString("status"));
                         }
@@ -1286,242 +1666,73 @@ public class pending_bill extends AppCompatActivity {
         };
         req.setShouldCache(false);
         req.setRetryPolicy(new DefaultRetryPolicy(10000, 1, 1.5f));
-        Volley.newRequestQueue(this).add(req);
+        VolleySingleton.getInstance(this).getRequestQueue().add(req);
     }
 
-    @SuppressLint("SetTextI18n")
-    private void deductWalletCharge(double charge, String reason) {
-        d("deductWalletCharge(): charge=" + fmt2(charge) + " reason=" + reason + " walletBefore=" + fmt2(walletBalance));
+    /* Legacy client-side save_appointment flow removed in Phase 4C.
+     * New builds finalize only through finalize_booking.php using the immutable quote token.
+     */
 
-        walletBalance -= charge;
-        if (walletBalance < 0) walletBalance = 0;
-
-        d("walletAfter=" + fmt2(walletBalance));
-
-        updateUserWallet(patientId, walletBalance);
-        addWalletTransaction(Integer.parseInt(patientId), charge, "debit", reason);
-        tvWalletBalance.setText("₹" + String.format(Locale.getDefault(),"%.2f", walletBalance));
-        recomputeTotalsAndUI();
+    // ── Release reservation lock when user backs out of billing without paying ──
+    @Override
+    public void onBackPressed() {
+        if (paymentStarted && !appointmentConfirmed) {
+            boolean offline = "Offline".equals(selectedPaymentMethod);
+            String message = offline
+                    ? "Your wallet booking may already be confirming on the server. Do not create another booking or wallet charge for the same visit. If you leave, the same booking reference can be recovered when you return."
+                    : "If PhonePe was opened or payment was completed, do not pay again. The same payment and booking reference can be recovered safely even if you leave this screen.";
+            new AlertDialog.Builder(this)
+                    .setTitle("Confirmation is still in progress")
+                    .setMessage(message)
+                    .setNegativeButton("Stay here", null)
+                    .setPositiveButton("Leave safely", (dlg, which) -> finish())
+                    .show();
+            return;
+        }
+        releaseReservationLockIfSafe("onBackPressed");
+        super.onBackPressed();
     }
 
-    private void updateUserWallet(String userId, double newBalance) {
-        String url = ApiConfig.endpoint("update_wallet.php");
-        d("updateUserWallet() POST -> " + url + " user_id=" + safe(userId) + " newBalance=" + fmt2(newBalance));
 
-        StringRequest req = new StringRequest(Request.Method.POST, url,
-                resp -> d("Wallet updated response: " + resp),
-                err -> e("Wallet update error", err)
-        ) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> p = new HashMap<>();
-                p.put("user_id", userId);
-                p.put("wallet_balance", String.format(Locale.getDefault(), "%.2f", newBalance));
-                return p;
-            }
-        };
-        req.setShouldCache(false);
-        req.setRetryPolicy(new DefaultRetryPolicy(10000, 1, 1.5f));
-        Volley.newRequestQueue(this).add(req);
-    }
+    /**
+     * Safe, idempotent lock release.
+     * Checks all safety flags before firing any network call.
+     * Will NOT release if:
+     *   - reservationToken or patientId is empty 
+     *   - payment has already started (PhonePe or offline)
+     *   - save_appointment.php call is currently in flight
+     *   - appointment was already confirmed by server
+     *   - release was already sent once
+     */
+    private void releaseReservationLockIfSafe(String reason) {
+        if (reservationToken.isEmpty() || patientId.isEmpty()) return;
+        if (paymentStarted)            { d("releaseReservationLockIfSafe blocked: paymentStarted [" + reason + "]");         return; }
+        if (appointmentSaveInProgress) { d("releaseReservationLockIfSafe blocked: saveInProgress [" + reason + "]");          return; }
+        if (appointmentConfirmed)      { d("releaseReservationLockIfSafe blocked: appointmentConfirmed [" + reason + "]");    return; }
+        if (lockReleased)              { d("releaseReservationLockIfSafe blocked: alreadyReleased [" + reason + "]");          return; }
 
-    private void addWalletTransaction(int patientId, double amount, String type, String reason) {
-        String url = ApiConfig.endpoint("add_wallet_transaction.php");
-        d("addWalletTransaction() POST -> " + url
-                + " patientId=" + patientId
-                + " amount=" + fmt2(amount)
-                + " type=" + type
-                + " reason=" + reason);
-
-        StringRequest req = new StringRequest(Request.Method.POST, url,
-                resp -> d("Wallet txn added response: " + resp),
-                err -> e("Wallet txn error", err)
-        ) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> p = new HashMap<>();
-                p.put("patient_id", String.valueOf(patientId));
-                // keeping your existing behavior unchanged:
-                p.put("amount", String.valueOf(finalPayRupees));
-                p.put("type", type);
-                p.put("reason", reason);
-                return p;
-            }
-        };
-        req.setShouldCache(false);
-        req.setRetryPolicy(new DefaultRetryPolicy(10000, 1, 1.5f));
-        Volley.newRequestQueue(this).add(req);
-    }
-
-    /* ---------------- Save booking ---------------- */
-
-    private void saveBookingData(String googleMapsLink) {
-        String url = ApiConfig.endpoint("save_appointment.php");
-        d("saveBookingData() POST -> " + url);
-        d("saveBookingData() location=" + safe(googleMapsLink) + " userLatLng=" + userLat + "," + userLng);
-        logBillingState("saveBookingData_start");
-
-        StringRequest req = new StringRequest(Request.Method.POST, url,
-                resp -> {
-                    d("saveBookingData() response=" + resp);
-                    try {
-                        JSONObject r = new JSONObject(resp);
-                        String appointmentId = r.optString("appointment_id", "0");
-                        d("Appointment saved. appointmentId=" + appointmentId + " -> inserting payment history...");
-                        insertPaymentHistory(appointmentId);
-                    } catch (JSONException e) {
-                        loaderutil.hideLoader();
-                        e("saveBookingData() parse error", e);
-                    }
-                    Toast.makeText(this, "Your appointment has been booked successfully!", Toast.LENGTH_SHORT).show();
-                },
-                err -> {
-                    loaderutil.hideLoader();
-                    e("saveBookingData() network error", err);
-                    Toast.makeText(this, "Could not book your appointment. Please check your connection and try again.", Toast.LENGTH_LONG).show();
+        lockReleased = true; // set before async call to prevent duplicate fires
+        d("releaseReservationLockIfSafe: releasing lock, reason=" + reason);
+        try {
+            StringRequest rel = new StringRequest(
+                    Request.Method.POST,
+                    ApiConfig.RELEASE_DOCTOR_LOCK,
+                    resp -> d("pending_bill lock released [" + reason + "]: " + resp),
+                    err  -> w("pending_bill lock release failed (auto-expire ok) [" + reason + "]: " + err)
+            ) {
+                @Override
+                protected Map<String, String> getParams() {
+                    Map<String, String> p = new HashMap<>();
+                    p.put("reservation_token", reservationToken);
+                    p.put("patient_id",        patientId);
+                    return p;
                 }
-        ) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> p = new HashMap<>();
-                p.put("patient_id", patientId);
-                p.put("patient_name", patientName);
-                p.put("age", patientAge);
-                p.put("gender", patientGender);
-                p.put("address", patientAddress);
-                p.put("doctor_id", doctorId);
-                p.put("reason_for_visit", patientProblem);
-
-                Date now = new Date();
-                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-                SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a", Locale.getDefault());
-                p.put("appointment_date", dateFormat.format(now));
-                p.put("time_slot", timeFormat.format(now));
-                p.put("pincode", pincode);
-                p.put("appointment_mode", "Online");
-                p.put("payment_method", selectedPaymentMethod);
-                p.put("status", status);
-                p.put("location", googleMapsLink);
-
-                p.put("is_vet_case", String.valueOf(isVetCase));
-                if (isVetCase == 1) {
-                    if (animalCategoryId != null && !animalCategoryId.trim().isEmpty())
-                        p.put("animal_category_id", animalCategoryId);
-                    if (animalName != null && !animalName.trim().isEmpty())
-                        p.put("animal_name", animalName);
-                    if (animalGender != null && !animalGender.trim().isEmpty())
-                        p.put("animal_gender", animalGender);
-                    if (animalAge != null && !animalAge.trim().isEmpty())
-                        p.put("animal_age", animalAge);
-                    if (animalBreed != null && !animalBreed.trim().isEmpty())
-                        p.put("animal_breed", animalBreed);
-                    if (vaccinationId != null && !vaccinationId.trim().isEmpty())
-                        p.put("vaccination_id", vaccinationId);
-                    if (vaccinationName != null && !vaccinationName.trim().isEmpty())
-                        p.put("vaccination_name", vaccinationName);
-                }
-
-                d("saveBookingData() params summary:"
-                        + " patient_id=" + safe(patientId)
-                        + ", doctor_id=" + safe(doctorId)
-                        + ", pincode=" + safe(pincode)
-                        + ", payment_method=" + safe(selectedPaymentMethod)
-                        + ", status=" + safe(status)
-                        + ", is_vet_case=" + isVetCase
-                        + ", location=" + safe(googleMapsLink));
-
-                return p;
-            }
-        };
-        req.setShouldCache(false);
-        req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
-        Volley.newRequestQueue(this).add(req);
-    }
-
-    private void insertPaymentHistory(String appointmentId) {
-        String url = ApiConfig.endpoint("payment_history.php");
-        d("insertPaymentHistory() POST -> " + url + " appointmentId=" + appointmentId);
-        logBillingState("insertPaymentHistory_start");
-
-        StringRequest req = new StringRequest(Request.Method.POST, url,
-                resp -> {
-                    loaderutil.hideLoader();
-                    Toast.makeText(this, "Your payment details have been saved.", Toast.LENGTH_SHORT).show();
-                    d("Payment inserted => " + resp);
-                    onBookingSuccess();
-                },
-                err -> {
-                    loaderutil.hideLoader();
-                    e("insertPaymentHistory() error", err);
-                    Toast.makeText(this, "Could not save payment details. Please try again.", Toast.LENGTH_SHORT).show();
-                }
-        ) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> p = new HashMap<>();
-                p.put("patient_id", patientId);
-                p.put("appointment_id", appointmentId);
-                p.put("doctor_id", doctorId);
-                p.put("patient_name", patientName);
-                p.put("amount", String.format(Locale.getDefault(), "%.2f", finalCost));
-                p.put("consultation_fee", String.format(Locale.getDefault(), "%.2f", consultingFee));
-                p.put("deposit", String.format(Locale.getDefault(), "%.2f", DEPOSIT));
-
-                if (lastConfirmedDepositMode == DepositMode.WALLET) {
-                    p.put("deposit_status", "Wallet Debited");
-                } else if (lastConfirmedDepositMode == DepositMode.BILL) {
-                    p.put("deposit_status", "Added in Bill");
-                } else {
-                    p.put("deposit_status", "None");
-                }
-
-                p.put("payment_method", selectedPaymentMethod);
-                p.put("distance", String.format(Locale.getDefault(), "%.2f", distanceKm));
-                p.put("distance_charge", String.format(Locale.getDefault(), "%.2f", distanceCharge));
-                p.put("gst", String.format(Locale.getDefault(), "%.2f", gstAmount));
-                p.put("total_payment", String.format(Locale.getDefault(), "%.2f", APPOINTMENT_CHARGE));
-                p.put("admin_commission", "0.00");
-                p.put("doctor_earning", "0.00");
-
-                String resolvedPaymentStatus =
-                        ("Online".equalsIgnoreCase(selectedPaymentMethod)) ? "Completed" : "Pending";
-                p.put("payment_status", resolvedPaymentStatus);
-                p.put("refund_status", "None");
-
-                if (ppMerchantOrderId != null) {
-                    p.put("payment_reference", ppMerchantOrderId);
-                }
-
-                if (isVetCase == 1 && vaccinationPrice > 0.0) {
-                    p.put("notes", "Vaccine: " + vaccinationName + " | Price: ₹" + (int) Math.round(vaccinationPrice));
-                } else {
-                    p.put("notes", "None");
-                }
-
-                p.put("upi_id", (enteredUpiId == null ? "" : enteredUpiId));
-
-                d("insertPaymentHistory() params summary:"
-                        + " patient_id=" + safe(patientId)
-                        + ", appointment_id=" + appointmentId
-                        + ", doctor_id=" + safe(doctorId)
-                        + ", amount(finalCost)=" + fmt2(finalCost)
-                        + ", consultingFee=" + fmt2(consultingFee)
-                        + ", deposit=" + fmt2(DEPOSIT)
-                        + ", deposit_status=" + lastConfirmedDepositMode
-                        + ", payment_method=" + safe(selectedPaymentMethod)
-                        + ", payment_status=" + resolvedPaymentStatus
-                        + ", distanceKm=" + fmt2(distanceKm)
-                        + ", distanceCharge=" + fmt2(distanceCharge)
-                        + ", gstAmount=" + fmt2(gstAmount)
-                        + ", payment_reference=" + safe(ppMerchantOrderId)
-                        + ", upi(masked)=" + maskUpi(enteredUpiId));
-
-                return p;
-            }
-        };
-        req.setShouldCache(false);
-        req.setRetryPolicy(new DefaultRetryPolicy(15000, 1, 1.5f));
-        Volley.newRequestQueue(this).add(req);
+            };
+            rel.setShouldCache(false);
+            VolleySingleton.getInstance(this).getRequestQueue().add(rel);
+        } catch (Exception e) {
+            w("releaseReservationLockIfSafe exception [" + reason + "]: " + e.getMessage());
+        }
     }
 
     private void onBookingSuccess() {
@@ -1547,3 +1758,7 @@ public class pending_bill extends AppCompatActivity {
         d("Pay button DISABLED");
     }
 }
+
+// Last Updated: 2026-09-18 14:42 IST
+
+// Last Updated: 2026-09-18 16:56 IST

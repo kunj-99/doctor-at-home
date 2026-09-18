@@ -110,7 +110,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
             return;
         }
 
-        RequestQueue queue = Volley.newRequestQueue(ctx);
+        RequestQueue queue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(ctx);
         String url = ApiConfig.endpoint("save_patient_token.php");
 
         final String model = Build.MANUFACTURER + " " + Build.MODEL;
@@ -254,3 +254,5 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

@@ -131,7 +131,7 @@ public class DegreeSelectionActivity extends AppCompatActivity {
 
     private void fetchVetCategories() {
         Log.d(TAG, "GET " + VET_CATEGORY_URL);
-        RequestQueue q = Volley.newRequestQueue(this);
+        RequestQueue q = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this);
 
         JsonObjectRequest req = new JsonObjectRequest(
                 Request.Method.GET,
@@ -192,3 +192,5 @@ public class DegreeSelectionActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() { super.onBackPressed(); }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

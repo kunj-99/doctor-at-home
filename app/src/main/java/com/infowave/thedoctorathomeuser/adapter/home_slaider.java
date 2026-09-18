@@ -40,10 +40,14 @@ public class home_slaider extends RecyclerView.Adapter<home_slaider.ImageViewHol
     @Override
     public void onBindViewHolder(ImageViewHolder holder, int position) {
         String url = imageUrlList.get(position);
-        Glide.with(holder.imageView.getContext())
-                .load(url)
-                .placeholder(R.drawable.plasholder) // Make sure you have this image in your drawables!
-                .into(holder.imageView);
+        com.infowave.thedoctorathomeuser.network.SlowImageLoader.loadCenterCrop(
+                holder.imageView, url, R.drawable.plasholder, R.drawable.plaseholder_error);
+    }
+
+    @Override
+    public void onViewRecycled(ImageViewHolder holder) {
+        com.infowave.thedoctorathomeuser.network.SlowImageLoader.clear(holder.imageView);
+        super.onViewRecycled(holder);
     }
 
     @Override
@@ -51,3 +55,5 @@ public class home_slaider extends RecyclerView.Adapter<home_slaider.ImageViewHol
         return imageUrlList.size();
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

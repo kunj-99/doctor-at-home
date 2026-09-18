@@ -140,7 +140,7 @@ public class doctor_details extends AppCompatActivity {
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
 
-        RequestQueue queue = Volley.newRequestQueue(this);
+        RequestQueue queue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this);
         queue.add(request);
     }
 
@@ -171,3 +171,5 @@ public class doctor_details extends AppCompatActivity {
         return u; // relative → leave untouched (no prefixing here)
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

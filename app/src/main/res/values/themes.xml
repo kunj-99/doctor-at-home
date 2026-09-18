@@ -7,7 +7,6 @@
 
     <style name="Theme.TheDoctorAtHomeUser" parent="Base.Theme.TheDoctorAtHomeUser" />
     <style name="Theme.MyApp" parent="Theme.Material3.DayNight">
-        ...
         <item name="colorOutline">@color/card_stroke</item>
     </style>
 </resources>

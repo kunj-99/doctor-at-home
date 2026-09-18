@@ -61,6 +61,16 @@
             android:background="@android:color/transparent" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tvLoginStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:gravity="center"
+        android:textColor="#5F6368"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
     <Button
         android:id="@+id/btnSendOtp"
         android:layout_width="match_parent"
@@ -87,4 +97,5 @@
         android:clickable="true"
         android:focusable="true" />
 
+    <!-- Last Updated: 2026-09-18 13:31 IST - Phase 1-3 safe UX/logic optimization -->
 </LinearLayout>

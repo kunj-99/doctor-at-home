@@ -189,6 +189,8 @@ public class RefundStatus extends AppCompatActivity {
                 1,     // one retry
                 1.0f   // backoff
         ));
-        Volley.newRequestQueue(this).add(request);
+        com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this).add(request);
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

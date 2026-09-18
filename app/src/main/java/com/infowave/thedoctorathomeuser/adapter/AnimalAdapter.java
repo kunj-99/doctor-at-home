@@ -58,12 +58,10 @@ public class AnimalAdapter extends RecyclerView.Adapter<AnimalAdapter.VH> {
         // Load image
         String url = a.getImageUrl();
         if (url != null && !url.trim().isEmpty()) {
-            Glide.with(h.img.getContext())
-                    .load(url)
-                    .placeholder(R.drawable.plaseholder_error)
-                    .error(R.drawable.plaseholder_error)
-                    .into(h.img);
+            com.infowave.thedoctorathomeuser.network.SlowImageLoader.load(
+                    h.img, url, R.drawable.plaseholder_error, R.drawable.plaseholder_error);
         } else {
+            com.infowave.thedoctorathomeuser.network.SlowImageLoader.clear(h.img);
             int resId = a.getDrawableRes();
             h.img.setImageResource(resId != 0 ? resId : R.drawable.plaseholder_error);
         }
@@ -71,6 +69,12 @@ public class AnimalAdapter extends RecyclerView.Adapter<AnimalAdapter.VH> {
         h.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onAnimalClick(a);
         });
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull VH holder) {
+        com.infowave.thedoctorathomeuser.network.SlowImageLoader.clear(holder.img);
+        super.onViewRecycled(holder);
     }
 
     @Override
@@ -88,3 +92,5 @@ public class AnimalAdapter extends RecyclerView.Adapter<AnimalAdapter.VH> {
         }
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

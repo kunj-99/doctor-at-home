@@ -134,7 +134,7 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         recyclerView.addItemDecoration(new GridSpacingDecoration(16));
 
         // Volley
-        requestQueue = Volley.newRequestQueue(this);
+        requestQueue = com.infowave.thedoctorathomeuser.network.VolleySingleton.queue(this);
 
         // Adapter
         adapter = new AnimalAdapter(filteredAnimals, this);
@@ -272,3 +272,5 @@ public class VetAnimalsActivity extends AppCompatActivity implements AnimalAdapt
         startActivity(intent);
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST

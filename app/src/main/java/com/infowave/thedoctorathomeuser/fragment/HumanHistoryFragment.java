@@ -25,9 +25,9 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
 import com.infowave.thedoctorathomeuser.ApiConfig;
 import com.infowave.thedoctorathomeuser.R;
+import com.infowave.thedoctorathomeuser.network.VolleySingleton;
 import com.infowave.thedoctorathomeuser.adapter.DoctorHistoryAdapter;
 
 import org.json.JSONArray;
@@ -44,7 +44,7 @@ import java.util.Locale;
 
 public class HumanHistoryFragment extends Fragment {
 
-    private static final long POLL_INTERVAL_MS = 6000L;
+    private static final long POLL_INTERVAL_MS = 15_000L;
     private static final String REQ_TAG = "history_poll";
 
     private RecyclerView recyclerView;
@@ -74,6 +74,7 @@ public class HumanHistoryFragment extends Fragment {
     private final Handler liveHandler = new Handler();
     private Runnable liveRunnable;
     private boolean isPolling = false;
+    private boolean requestInFlight = false;
 
     // lightweight diff
     private String lastSig = "";
@@ -90,7 +91,7 @@ public class HumanHistoryFragment extends Fragment {
         swipeRefresh  = view.findViewById(R.id.swipeRefreshHistory);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        requestQueue = Volley.newRequestQueue(requireContext());
+        requestQueue = VolleySingleton.getInstance(requireContext()).getRequestQueue();
 
         SharedPreferences sp = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         patientId = sp.getString("patient_id", "");
@@ -150,6 +151,8 @@ public class HumanHistoryFragment extends Fragment {
             isPolling = false;
             liveHandler.removeCallbacks(liveRunnable);
         }
+        if (requestQueue != null) requestQueue.cancelAll(REQ_TAG);
+        requestInFlight = false;
     }
 
     @Override public void onDestroyView() {
@@ -170,11 +173,18 @@ public class HumanHistoryFragment extends Fragment {
      * @param silent      true ⇒ कोई Toast/Log नहीं
      */
     private void fetchData(boolean showLoader, boolean silent) {
+        if (requestInFlight) {
+            startLoader(false);
+            stopSwipe();
+            return;
+        }
+        requestInFlight = true;
         startLoader(showLoader);
 
         @SuppressLint("NotifyDataSetChanged")
         StringRequest request = new StringRequest(Request.Method.GET, apiUrl,
                 response -> {
+                    requestInFlight = false;
                     startLoader(false);
                     stopSwipe();
                     try {
@@ -275,6 +285,7 @@ public class HumanHistoryFragment extends Fragment {
                     }
                 },
                 error -> {
+                    requestInFlight = false;
                     startLoader(false);
                     stopSwipe();
                 }) {
@@ -282,6 +293,7 @@ public class HumanHistoryFragment extends Fragment {
         };
 
         request.setTag(REQ_TAG);
+        request.setShouldCache(false);
         requestQueue.add(request);
     }
 

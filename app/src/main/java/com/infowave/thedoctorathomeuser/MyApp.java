@@ -16,6 +16,9 @@ public class MyApp extends Application {
         // Firebase (optional)
         FirebaseApp.initializeApp(this);
 
+        // Warm one process-wide Volley queue/cache for every screen.
+        com.infowave.thedoctorathomeuser.network.VolleySingleton.getInstance(this);
+
         try {
             // ✅ DEMO / SANDBOX init
             // ✅ PRODUCTION init (for real payments)
@@ -40,3 +43,5 @@ public class MyApp extends Application {
         }
     }
 }
+
+// Last Updated: 2026-09-18 14:00 IST
